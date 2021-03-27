@@ -43,7 +43,7 @@ if (bytes.length > 0) _saveFile(bytes);
 
 `*** Purpose: The three above functions will help developer to get screenshot of html content as  Uint8List Image and push it to esc printer`
 
-![Receipt screenshot] (screenshots/receipt.jpeg?raw=true Receipt)
+![Receipt screenshot] (https://raw.githubusercontent.com/kechankrisna/webcontent_converter/master/screenshots/receipt.jpeg?raw=true "Receipt")
 
 `CONVERT TO PDF`
 
