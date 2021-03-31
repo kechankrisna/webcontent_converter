@@ -1403,7 +1403,7 @@ class Demo {
     body {
         background: #eee;
         width: 576px;
-        font-size: 25px
+        font-size: 1.8em;
     }
     
     .receipt {
@@ -1819,7 +1819,8 @@ class Demo {
     body {
         background: #eee;
         width: 576px;
-        font-size: 25px
+        font-size: 1.8em;
+        margin: 15px auto;
     }
     
     .receipt {
@@ -1940,6 +1941,7 @@ class Demo {
     </div>
     <div class="container text-center">
         <br>
+        <p>សូមអរគុណ</p>
         <p>@2020 <a href="https://mylekha.app">MYLEKHA</a>. All right reserved.</p>
     </div>
 

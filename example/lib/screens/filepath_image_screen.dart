@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:webcontent_converter/webcontent_converter.dart';
-import 'package:webcontent_converter_example/services/PrinterService.dart';
 
 class FilePathToImageScreen extends StatefulWidget {
   @override
@@ -62,7 +61,7 @@ class _FilePathToImageScreenState extends State<FilePathToImageScreen> {
   }
 
   _testPrint() async {
-    var p = PrinterService(_bytes);
-    p.startPrint();
+    // var p = ESCPrinterService(_bytes);
+    // p.startPrint();
   }
 }

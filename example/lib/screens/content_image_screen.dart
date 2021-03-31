@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:webcontent_converter/webcontent_converter.dart';
-import 'package:webcontent_converter_example/services/PrinterService.dart';
 import 'package:webcontent_converter_example/services/demo.dart';
 
 class ContentToImageScreen extends StatefulWidget {
@@ -27,8 +26,12 @@ class _ContentToImageScreenState extends State<ContentToImageScreen> {
             onPressed: _convert,
           ),
           IconButton(
-            icon: Icon(Icons.print),
-            onPressed: _testPrint,
+            icon: Icon(Icons.wifi_rounded),
+            onPressed: _startPrintWireless,
+          ),
+          IconButton(
+            icon: Icon(Icons.bluetooth),
+            onPressed: _startPrintBluetooth,
           ),
         ],
       ),
@@ -62,8 +65,13 @@ class _ContentToImageScreenState extends State<ContentToImageScreen> {
     setState(() => _file = file);
   }
 
-  _testPrint() async {
-    var p = PrinterService(_bytes);
-    p.startPrint();
+  _startPrintWireless() async {
+    // var p = ESCPrinterService(_bytes);
+    // p.startPrint();
+  }
+
+  _startPrintBluetooth() {
+    // var p = ESCPrinterService(_bytes);
+    // p.startBluePrint();
   }
 }

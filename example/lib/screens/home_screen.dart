@@ -46,14 +46,19 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           ListTile(
             title: Text("weburi to pdf"),
-            onTap: () =>
-                Navigator.of(context).pushNamed("/weburi_pdf_screen"),
+            onTap: () => Navigator.of(context).pushNamed("/weburi_pdf_screen"),
             trailing: Icon(Icons.arrow_right),
           ),
           ListTile(
             title: Text("file path to pdf"),
             onTap: () => Navigator.of(context).pushNamed("/path_pdf_screen"),
             trailing: Icon(Icons.arrow_right),
+          ),
+          ListTile(
+            title: Text("bluetooth device screen"),
+            onTap: () =>
+                Navigator.of(context).pushNamed("/bluetooth_device_screen"),
+            trailing: Icon(Icons.bluetooth_connected),
           ),
         ],
       ),

@@ -26,40 +26,30 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
             var bytes = FlutterStandardTypedData.init(bytes: Data() )
             urlObservation = webView.observe(\.isLoading, changeHandler: { (webView, change) in
                 DispatchQueue.main.asyncAfter(deadline: .now() + (duration!/10000) ) {
-                    if #available(iOS 11.0, *) {
                         print("height = \(self.webView.scrollView.contentSize.height)")
                         print("width = \(self.webView.scrollView.contentSize.width)")
                         let configuration = WKSnapshotConfiguration()
                         configuration.rect = CGRect(origin: .zero, size: (self.webView.scrollView.contentSize))
-                        
+                    if #available(iOS 11.0, *) {
                         self.webView.snapshotView(afterScreenUpdates: true)
                         self.webView.takeSnapshot(with: configuration) { (image, error) in
-                            if image != nil {
-                                let data = image!.jpegData(compressionQuality: 1)
-                                bytes = FlutterStandardTypedData.init(bytes: data!)
-                                result(bytes)
-                                print("Got snapshot")
-                            } else {
-                                print("Failed taking snapshot: \(error?.localizedDescription ?? "--")")
+                            guard let data = image!.jpegData(compressionQuality: 1) else {
                                 result( bytes )
+                                self.dispose()
+                                return
                             }
+                            bytes = FlutterStandardTypedData.init(bytes: data)
+                            result(bytes)
+                            // UIImageWriteToSavedPhotosAlbum(image!, nil, nil, nil)
+                            //dispose
+                            self.dispose()
+                            print("Got snapshot")
                         }
                     } else {
                         result( bytes )
+                        self.dispose()
                     }
-                    //dispose
-                    if let viewWithTag = self.webView.viewWithTag(100) {
-                        viewWithTag.removeFromSuperview() // remove hidden webview when pdf is generated
-                        // clear WKWebView cache
-                        if #available(iOS 9.0, *) {
-                            WKWebsiteDataStore.default().fetchDataRecords(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes()) { records in
-                                records.forEach { record in
-                                    WKWebsiteDataStore.default().removeData(ofTypes: record.dataTypes, for: [record], completionHandler: {})
-                                }
-                            }
-                        }
-                    }
-                    self.webView = nil
+                    
                 }
             })
             
@@ -75,34 +65,17 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
             self.webView.loadHTMLString(content!, baseURL: Bundle.main.resourceURL)// load html into hidden webview
             urlObservation = webView.observe(\.isLoading, changeHandler: { (webView, change) in
                 DispatchQueue.main.asyncAfter(deadline: .now() + (duration!/10000) ) {
-                    if #available(iOS 11.0, *) {
                         print("height = \(self.webView.scrollView.contentSize.height)")
                         print("width = \(self.webView.scrollView.contentSize.width)")
                         let configuration = WKSnapshotConfiguration()
-                        //                        configuration.rect = CGRect(origin: .zero, size: (self.webView.scrollView.contentSize))
-                        
-                        //                        let configuration = WKSnapshotConfiguration()
                         configuration.rect = CGRect(x: 0, y: 0, width: CGFloat(format!["width"] ?? 8.27).toPixel(), height: CGFloat(format!["height"] ?? 11.27).toPixel() )
-                        if let path = self.webView.exportAsPdfFromWebView(savedPath: savedPath!, format: format!, margins: margins!){
-                            result(path)
+                        guard let path = self.webView.exportAsPdfFromWebView(savedPath: savedPath!, format: format!, margins: margins!) else {
+                            result(nil)
+                            return
                         }
-                    } else {
-                        result(nil)
-                    }
-                    
+                        result(path)
                     //dispose
-                    if let viewWithTag = self.webView.viewWithTag(100) {
-                        viewWithTag.removeFromSuperview() // remove hidden webview when pdf is generated
-                        // clear WKWebView cache
-                        if #available(iOS 9.0, *) {
-                            WKWebsiteDataStore.default().fetchDataRecords(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes()) { records in
-                                records.forEach { record in
-                                    WKWebsiteDataStore.default().removeData(ofTypes: record.dataTypes, for: [record], completionHandler: {})
-                                }
-                            }
-                        }
-                    }
-                    self.webView = nil
+                    self.dispose()
                 }
             })
             break
@@ -110,6 +83,23 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
             result("iOS " + UIDevice.current.systemVersion)
         }
         
+    }
+    
+    
+    func dispose() {
+        //dispose
+        if let viewWithTag = self.webView.viewWithTag(100) {
+            viewWithTag.removeFromSuperview() // remove hidden webview when pdf is generated
+            // clear WKWebView cache
+            if #available(iOS 9.0, *) {
+                WKWebsiteDataStore.default().fetchDataRecords(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes()) { records in
+                    records.forEach { record in
+                        WKWebsiteDataStore.default().removeData(ofTypes: record.dataTypes, for: [record], completionHandler: {})
+                    }
+                }
+            }
+        }
+        self.webView = nil
     }
     
     func getPath() -> String {
@@ -124,6 +114,7 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
 
 // WKWebView extension for export web html content into pdf
 extension WKWebView {
+
     
     // Call this function when WKWebView finish loading
     func exportAsPdfFromWebView(savedPath: String, format: Dictionary<String, Double>, margins: Dictionary<String, Double>) -> String? {

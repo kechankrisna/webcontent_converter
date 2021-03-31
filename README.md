@@ -2,11 +2,16 @@
 
 This plugin was made for developer to convert any webcontent, web uri to image bitmap or pdf file. This plugin use WebView on android, WKWebView on Ios and chromium for desktop support. This plugin was test for android, ios and desktop. 
 
-## Support:
+## Support :
 
-- [x] Android Minimum SDK Version: 21
-- [x] IOS minimum target Version: 11
-- [x] Deskop linux, windows, macos
+- &check; Android Minimum SDK Version: 21
+- &check; IOS minimum target Version: 11
+- &check; Deskop linux, windows, macos
+
+| Android | IOS | Desktop|
+| --- | --- | --- |
+|  WebView | WkWebView | Puppeteer |
+
 
 ## Methods
 
