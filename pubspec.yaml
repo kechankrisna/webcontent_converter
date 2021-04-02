@@ -1,6 +1,6 @@
 name: webcontent_converter
 description: This plugin was made for developer to convert any webcontent, web uri to image bitmap or pdf file. This plugin use WebView on android, WKWebView on Ios and chromium for desktop support.
-version: 0.0.2
+version: 0.0.3
 homepage: https://github.com/kechankrisna/webcontent_converter.git
 
 environment:
