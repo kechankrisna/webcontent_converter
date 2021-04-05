@@ -1,3 +1,7 @@
+## 0.0.4
+
+* add fromString to PaperFormat
+
 ## 0.0.3
 
 * Hotfix IOS minimum version 11

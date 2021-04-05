@@ -21,4 +21,8 @@ void main() {
     expect(await WebcontentConverter.platformVersion, '42');
     expect((await WebcontentConverter.filePathToImage(path: '')).length, 0);
   });
+
+  test("paper format", () {
+    expect(PaperFormat.fromString("a5"), PaperFormat.a5);
+  });
 }
