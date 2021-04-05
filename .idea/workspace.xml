@@ -1,13 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="55a46a89-3e9e-4217-a0c4-735a820fe7c4" name="Default Changelist" comment="" />
+    <list default="true" id="55a46a89-3e9e-4217-a0c4-735a820fe7c4" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/lib/page.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/page.dart" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
-  <component name="ExecutionTargetManager" SELECTED_TARGET="device_and_snapshot_combo_box_target[Pixel_3a_API_30_x86_64]" />
+  <component name="ExecutionTargetManager" SELECTED_TARGET="device_and_snapshot_combo_box_target[]" />
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
   <component name="ProjectId" id="1q9fB8x3t6xaSKrDxyQEo6hLj2f" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />

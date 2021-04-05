@@ -19,6 +19,48 @@ class PaperFormat {
   static const a5 = PaperFormat.inches(width: 5.83, height: 8.27);
   static const a6 = PaperFormat.inches(width: 4.13, height: 5.83);
 
+  /// [value] is paper size in string | default: a4
+  /// Example : `PaperFormat.fromString("a4")`
+  factory PaperFormat.fromString(String value) {
+    switch (value.toLowerCase()) {
+      case "letter":
+        return PaperFormat.letter;
+        break;
+      case "legal":
+        return PaperFormat.legal;
+        break;
+      case "tabloid":
+        return PaperFormat.tabloid;
+        break;
+      case "ledger":
+        return PaperFormat.ledger;
+        break;
+      case "a0":
+        return PaperFormat.a0;
+        break;
+      case "a1":
+        return PaperFormat.a1;
+        break;
+      case "a2":
+        return PaperFormat.a2;
+        break;
+      case "a3":
+        return PaperFormat.a3;
+        break;
+      case "a4":
+        return PaperFormat.a4;
+        break;
+      case "a5":
+        return PaperFormat.a5;
+        break;
+      case "a6":
+        return PaperFormat.a6;
+        break;
+      default:
+        return PaperFormat.a4;
+    }
+  }
+
   final num width, height;
 
   const PaperFormat.inches({@required this.width, @required this.height});
