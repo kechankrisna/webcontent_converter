@@ -5,9 +5,11 @@ import 'package:easy_logger/easy_logger.dart';
 import 'package:flutter/services.dart' show MethodChannel, rootBundle;
 import 'package:flutter/widgets.dart';
 import 'package:dio/dio.dart';
+import 'package:webcontent_converter/webview_widget.dart';
 import 'page.dart';
 import 'package:puppeteer/puppeteer.dart' as pp;
 export 'page.dart';
+export 'webview_widget.dart';
 
 /// [WebcontentConverter] will convert html, html file, web uri, into raw bytes image or pdf file
 class WebcontentConverter {
@@ -298,4 +300,12 @@ class WebcontentConverter {
     }
     return result;
   }
+
+  /// [WevView]
+  static Widget webivew(String content, {double width, double height}) =>
+      WebViewWidget(
+        content,
+        width: width,
+        height: height,
+      );
 }

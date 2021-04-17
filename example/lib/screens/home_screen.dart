@@ -60,6 +60,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.of(context).pushNamed("/bluetooth_device_screen"),
             trailing: Icon(Icons.bluetooth_connected),
           ),
+          ListTile(
+            title: Text("webview screen"),
+            onTap: () => Navigator.of(context).pushNamed("/webview_screen"),
+            trailing: Icon(Icons.open_in_browser_outlined),
+          ),
         ],
       ),
     );

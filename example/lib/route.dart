@@ -9,6 +9,7 @@ import 'screens/filepath_pdf_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/weburi_image_screen.dart';
 import 'screens/weburi_pdf_screen.dart';
+import 'screens/webview_screen.dart';
 
 Map<String, Widget Function(BuildContext)> routes = {
   '/': (_) => HomeScreen(),
@@ -57,6 +58,12 @@ Route<dynamic> onGenerateRoute(RouteSettings settings) {
     case "/path_pdf_screen":
       return MaterialPageRoute(
         builder: (context) => FilePathToPDFScreen(),
+        settings: settings,
+      );
+      break;
+    case "/webview_screen":
+      return MaterialPageRoute(
+        builder: (context) => WebViewScreen(),
         settings: settings,
       );
       break;

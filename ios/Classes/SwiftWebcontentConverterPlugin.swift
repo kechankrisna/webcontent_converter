@@ -9,6 +9,11 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
         let channel = FlutterMethodChannel(name: "webcontent_converter", binaryMessenger: registrar.messenger())
         let instance = SwiftWebcontentConverterPlugin()
         registrar.addMethodCallDelegate(instance, channel: channel)
+        
+        // binding native view to flutter widget
+        let viewID = "webview-view-type"
+        let factory = FLNativeViewFactory(messenger: registrar.messenger())
+        registrar.register(factory, withId: viewID)
     }
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {

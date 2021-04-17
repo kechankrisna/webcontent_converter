@@ -6,11 +6,8 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.Build
 import android.os.Handler
-import android.os.SystemClock
 import android.print.PrintAttributes
-import android.print.PrintDocumentAdapter
 import android.print.PdfPrinter
-import android.util.DisplayMetrics
 import android.view.View
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -40,6 +37,8 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
     private lateinit var webView: WebView
 
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+        val viewID = "webview-view-type"
+        flutterPluginBinding.platformViewRegistry.registerViewFactory(viewID, FLNativeViewFactory())
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "webcontent_converter")
         channel.setMethodCallHandler(this)
         context = flutterPluginBinding.applicationContext
