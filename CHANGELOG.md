@@ -1,3 +1,7 @@
+## 0.0.5
+
+* add webview widget
+
 ## 0.0.4
 
 * add fromString to PaperFormat
