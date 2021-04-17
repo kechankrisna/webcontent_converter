@@ -19,9 +19,12 @@ class WebcontentConverter {
     return version;
   }
 
-  /// [logger] allow to pretty text
-  ///
-  /// [Usage]: `WebcontentConverter.logger('Your log text', level: LevelMessages.info);`
+  /// ## `WebcontentConverter.logger`
+  /// `allow to pretty text`
+  /// #### Example:
+  /// ```
+  /// WebcontentConverter.logger('Your log text', level: LevelMessages.info);
+  /// ```
   static final logger = EasyLogger(
     name: 'webcontent_converter',
     defaultLevel: LevelMessages.debug,
@@ -35,15 +38,23 @@ class WebcontentConverter {
   );
 
   /**
+   * `IMAGE`
    * Convert html content, file, uri to image
    * Methods: [filePathToImage], [webUriToImage], [contentToImage]
    */
 
-  /// [filePathToImage]: this method read content from file vai path
-  ///
-  /// [Goal]: `var content = await rootBundle.loadString(path) `
-  ///
-  /// [Usage]: `filePathToImage(path:path)`
+  /// ## `WebcontentConverter.filePathToImage`
+  /// `this method read content from file vai path then call contentToImage`
+  /// #### Example:
+  /// ```
+  ///  var bytes = await WebcontentConverter.filePathToImage(path: "assets/receipt.html");
+  /// if (bytes.length > 0){
+  ///   var dir = await getTemporaryDirectory();
+  ///   var path = join(dir.path, "receipt.jpg");
+  ///   File file = File(path);
+  ///   await file.writeAsBytes(bytes);
+  /// }
+  /// ```
   static Future<Uint8List> filePathToImage({
     @required String path,
     double duration: 2000,
@@ -62,11 +73,18 @@ class WebcontentConverter {
     return result;
   }
 
-  /// [webUriToImage]: this method read content from uri by using dio
-  ///
-  /// [Goal]: `var content = (await Dio().get(uri)).data.toString()`
-  ///
-  /// [Usage]: `webUriToImage(uri:uri)`
+  /// ## `WebcontentConverter.webUriToImage`
+  /// `This method read content from uri by using dio then call contentToImage`
+  /// #### Example:
+  /// ```
+  /// var bytes = await WebcontentConverter.webUriToImage(uri: "http://127.0.0.1:5500/example/assets/receipt.html");
+  /// if (bytes.length > 0){
+  ///   var dir = await getTemporaryDirectory();
+  ///   var path = join(dir.path, "receipt.jpg");
+  ///   File file = File(path);
+  ///   await file.writeAsBytes(bytes);
+  /// }
+  /// ```
   static Future<Uint8List> webUriToImage({
     @required String uri,
     double duration: 2000,
@@ -83,11 +101,19 @@ class WebcontentConverter {
     return result;
   }
 
-  /// [contentToImage]: this method use html content directly to convert html to List<Int> image
-  ///
-  /// [Goal]: `var content = "<html> <body> <b>hello world</b></body> </html>"`
-  ///
-  /// [Usage]: `contentToImage(content:content)`
+  /// ## `WebcontentConverter.contentToImage`
+  /// `This method use html content directly to convert html to List<Int> image`
+  /// ### Example:
+  /// ```
+  /// final content = Demo.getReceiptContent();
+  /// var bytes = await WebcontentConverter.contentToImage(content: content);
+  /// if (bytes.length > 0){
+  ///   var dir = await getTemporaryDirectory();
+  ///   var path = join(dir.path, "receipt.jpg");
+  ///   File file = File(path);
+  ///   await file.writeAsBytes(bytes);
+  /// }
+  /// ```
   static Future<Uint8List> contentToImage({
     @required String content,
     double duration: 2000,
@@ -126,15 +152,25 @@ class WebcontentConverter {
   }
 
   /**
+   * `PDF`
    * Convert html content, file, uri to pdf
    * Methods: [filePathToPdf], [webUriToPdf], [contentToPDF]
    */
 
-  /// [filePathToPdf]: this method read content from file vai path
-  ///
-  /// [Goal]: `var content = await rootBundle.loadString(path) `
-  ///
-  /// [Usage]: `filePathToPdf(path:path)`
+  /// ## `WebcontentConverter.filePathToPdf`
+  /// `This method read content from file vai path`
+  /// #### Example:
+  /// ```
+  /// var dir = await getApplicationDocumentsDirectory();
+  /// var savedPath = join(dir.path, "sample.pdf");
+  /// var result = await WebcontentConverter.filePathToPdf(
+  ///   path: "assets/invoice.html",
+  ///   savedPath: savedPath,
+  ///   format: PaperFormat.a4,
+  ///   margins: PdfMargins.px(top: 35, bottom: 35, right: 35, left: 35),
+  /// );
+  ///```
+
   static Future<String> filePathToPdf({
     @required String path,
     double duration: 2000,
@@ -161,11 +197,17 @@ class WebcontentConverter {
     return result;
   }
 
-  /// [webUriToPdf]: this method read content from uri by using dio
-  ///
-  /// [Goal]: `var content = (await Dio().get(uri)).data.toString()`
-  ///
-  /// [Usage]: `webUriToPdf(uri:uri)`
+  /// ## WebcontentConverter.webUriToPdf
+  /// `This method read content from uri by using dio`
+  /// #### Example:
+  /// ```
+  /// var dir = await getApplicationDocumentsDirectory();
+  /// var savedPath = join(dir.path, "sample.pdf");
+  /// var result = await WebcontentConverter.webUriToPdf(
+  ///     uri: "http://127.0.0.1:5500/example/assets/invoice.html",
+  ///     savedPath: savedPat,
+  /// );
+  /// ```
   static Future<String> webUriToPdf({
     @required String uri,
     double duration: 2000,
@@ -191,11 +233,20 @@ class WebcontentConverter {
     return result;
   }
 
-  /// [contentToPDF]: this method use html content directly to convert html to pdf then return path
-  ///
-  /// [Goal]: `var content = "<html> <body> <b>hello world</b></body> </html>"`
-  ///
-  /// [Usage]: `contentToPDF(content:content)`
+  /// ## `WebcontentConverter.contentToPDF`
+  /// `This method use html content directly to convert html to pdf then return path`
+  /// #### Example:
+  /// ```
+  /// final content = Demo.getInvoiceContent();
+  /// var dir = await getApplicationDocumentsDirectory();
+  /// var savedPath = join(dir.path, "sample.pdf");
+  /// var result = await WebcontentConverter.contentToPDF(
+  ///     content: content,
+  ///     savedPath: savedPath,
+  ///     format: PaperFormat.a4,
+  ///     margins: PdfMargins.px(top: 55, bottom: 55, right: 55, left: 55),
+  /// );
+  /// ```
   static Future<String> contentToPDF({
     @required String content,
     double duration: 2000,
