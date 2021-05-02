@@ -1,6 +1,10 @@
+## 0.0.6
+
+* add executablePath enable flexible for destkop deployment,
+
 ## 0.0.5
 
-* add webview widget
+* add webview widget (allow to view webview in flutter app)
 
 ## 0.0.4
 

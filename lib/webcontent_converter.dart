@@ -60,13 +60,18 @@ class WebcontentConverter {
   static Future<Uint8List> filePathToImage({
     @required String path,
     double duration: 2000,
+    String executablePath,
   }) async {
     Uint8List result = Uint8List.fromList([]);
     try {
       String content = await rootBundle.loadString(path);
 
       if (content != null) {
-        result = await contentToImage(content: content, duration: duration);
+        result = await contentToImage(
+          content: content,
+          duration: duration,
+          executablePath: executablePath,
+        );
       }
     } on Exception catch (e) {
       WebcontentConverter.logger.error("[method:filePathToImage]: $e");
@@ -90,12 +95,17 @@ class WebcontentConverter {
   static Future<Uint8List> webUriToImage({
     @required String uri,
     double duration: 2000,
+    String executablePath,
   }) async {
     Uint8List result = Uint8List.fromList([]);
     try {
       var response = await Dio().get(uri);
       final String content = response.data.toString();
-      result = await contentToImage(content: content, duration: duration);
+      result = await contentToImage(
+        content: content,
+        duration: duration,
+        executablePath: executablePath,
+      );
     } on Exception catch (e) {
       WebcontentConverter.logger.error("[method:webUriToImage]: $e");
       throw Exception("Error: $e");
@@ -119,6 +129,7 @@ class WebcontentConverter {
   static Future<Uint8List> contentToImage({
     @required String content,
     double duration: 2000,
+    String executablePath,
   }) async {
     final Map<String, dynamic> arguments = {
       'content': content,
@@ -128,7 +139,7 @@ class WebcontentConverter {
     try {
       if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
         WebcontentConverter.logger.info("Desktop support");
-        var browser = await pp.puppeteer.launch();
+        var browser = await pp.puppeteer.launch(executablePath: executablePath);
         var page = await browser.newPage();
         await page.setContent(content, wait: pp.Until.load);
         await page.emulateMediaType(pp.MediaType.print);
@@ -179,6 +190,7 @@ class WebcontentConverter {
     @required String savedPath,
     PdfMargins margins,
     PaperFormat format: PaperFormat.a4,
+    String executablePath,
   }) async {
     var result;
     try {
@@ -190,6 +202,7 @@ class WebcontentConverter {
           savedPath: savedPath,
           margins: margins,
           format: format,
+          executablePath: executablePath,
         );
       }
     } on Exception catch (e) {
@@ -216,6 +229,7 @@ class WebcontentConverter {
     @required String savedPath,
     PdfMargins margins,
     PaperFormat format: PaperFormat.a4,
+    String executablePath,
   }) async {
     var result;
     try {
@@ -227,6 +241,7 @@ class WebcontentConverter {
         savedPath: savedPath,
         margins: margins,
         format: format,
+        executablePath: executablePath,
       );
     } on Exception catch (e) {
       WebcontentConverter.logger.error("[method:webUriToImage]: $e");
@@ -255,6 +270,7 @@ class WebcontentConverter {
     @required String savedPath,
     PdfMargins margins,
     PaperFormat format: PaperFormat.a4,
+    String executablePath,
   }) async {
     PdfMargins _margins = margins ?? PdfMargins.zero;
     final Map<String, dynamic> arguments = {
@@ -271,7 +287,7 @@ class WebcontentConverter {
     try {
       if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
         WebcontentConverter.logger.info("Desktop support");
-        var browser = await pp.puppeteer.launch();
+        var browser = await pp.puppeteer.launch(executablePath: executablePath);
         var page = await browser.newPage();
         await page.setContent(content, wait: pp.Until.load);
         await page.pdf(
