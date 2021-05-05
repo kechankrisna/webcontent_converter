@@ -289,7 +289,11 @@ class WebcontentConverter {
         WebcontentConverter.logger.info("Desktop support");
         var browser = await pp.puppeteer.launch(executablePath: executablePath);
         var page = await browser.newPage();
-        await page.setContent(content, wait: pp.Until.load);
+        await page.setContent(content,
+            wait: pp.Until.all([
+              pp.Until.load,
+              pp.Until.domContentLoaded,
+            ]));
         await page.pdf(
           format: pp.PaperFormat.inches(
             width: format.width,

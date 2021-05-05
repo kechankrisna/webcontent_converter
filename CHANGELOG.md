@@ -1,3 +1,7 @@
+## 0.0.6+1
+
+* fixed convert pdf on desktop
+
 ## 0.0.6
 
 * add executablePath enable flexible for destkop deployment,
