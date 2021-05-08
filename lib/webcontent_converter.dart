@@ -293,6 +293,8 @@ class WebcontentConverter {
             wait: pp.Until.all([
               pp.Until.load,
               pp.Until.domContentLoaded,
+              pp.Until.networkAlmostIdle,
+              pp.Until.networkIdle,
             ]));
         await page.pdf(
           format: pp.PaperFormat.inches(

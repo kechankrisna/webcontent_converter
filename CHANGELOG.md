@@ -1,6 +1,10 @@
 ## 0.0.6+1
 
-* fixed convert pdf on desktop
+* fixed convert pdf on desktop (macos)
+
+## 0.0.6+1
+
+* fixed convert pdf on desktop (windows)
 
 ## 0.0.6
 
