@@ -6,6 +6,7 @@ import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
 import 'package:webcontent_converter/webcontent_converter.dart';
 import 'package:webcontent_converter_example/services/demo.dart';
+import 'package:webcontent_converter_example/services/webview_helper.dart';
 
 class ContentToPDFScreen extends StatefulWidget {
   @override
@@ -32,12 +33,21 @@ class _ContentToPDFScreenState extends State<ContentToPDFScreen> {
         ],
       ),
       body: Container(
+        alignment: Alignment.center,
         color: Colors.white,
-        child: ListView(
-          children: [
-            if (_file != null) Image.memory(_file.readAsBytesSync()),
-          ],
-        ),
+        child: _file != null
+            ? Container(
+                constraints: BoxConstraints(maxWidth: 600),
+                child: PdfPreview(
+                  build: (format) async {
+                    return await _file.readAsBytes();
+                  },
+                  useActions: false,
+                  scrollViewDecoration:
+                      BoxDecoration(color: Colors.transparent),
+                ),
+              )
+            : null,
       ),
     );
   }
@@ -52,12 +62,14 @@ class _ContentToPDFScreenState extends State<ContentToPDFScreen> {
       savedPath: savedPath,
       format: PaperFormat.a4,
       margins: PdfMargins.px(top: 55, bottom: 55, right: 55, left: 55),
+      executablePath: WebViewHelper.executablePath(),
     );
 
+    setState(() => _file = File(savedPath));
+
     /// [printing]
-    await Printing.layoutPdf(onLayout: (PdfPageFormat format) async {
-      return await File(savedPath).readAsBytes();
-    });
+    // await Printing.layoutPdf(
+    //     onLayout: (PdfPageFormat format) => _file.readAsBytes());
 
     WebcontentConverter.logger.info(result);
   }
