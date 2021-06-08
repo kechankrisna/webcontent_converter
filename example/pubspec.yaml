@@ -14,6 +14,7 @@ dependencies:
   path: ^1.8.0
   path_provider: ^2.0.1
   esc_pos_utils_plus: ^2.0.1+2
+  printing: ^5.2.1
   # esc_pos_printer: 
   #   path: ../../esc_pos_printer
 
