@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:pdf/pdf.dart';
+import 'package:printing/printing.dart';
 import 'package:webcontent_converter/webcontent_converter.dart';
 import 'package:webcontent_converter_example/services/demo.dart';
 
@@ -51,6 +53,11 @@ class _ContentToPDFScreenState extends State<ContentToPDFScreen> {
       format: PaperFormat.a4,
       margins: PdfMargins.px(top: 55, bottom: 55, right: 55, left: 55),
     );
+
+    /// [printing]
+    await Printing.layoutPdf(onLayout: (PdfPageFormat format) async {
+      return await File(savedPath).readAsBytes();
+    });
 
     WebcontentConverter.logger.info(result);
   }
