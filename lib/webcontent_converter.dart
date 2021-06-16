@@ -124,7 +124,7 @@ class WebcontentConverter {
   ///   await file.writeAsBytes(bytes);
   /// }
   /// ```
-  static Future<Uint8List> contentToImage({
+  static Future contentToImage({
     required String content,
     double duration: 2000,
     String? executablePath,
@@ -153,8 +153,7 @@ class WebcontentConverter {
         await page.close();
       } else {
         WebcontentConverter.logger.info("Mobile support");
-        results = await (_channel.invokeMethod('contentToImage', arguments)
-            as FutureOr<Uint8List>);
+        results = await (_channel.invokeMethod('contentToImage', arguments));
       }
     } on Exception catch (e) {
       WebcontentConverter.logger.error("[method:contentToImage]: $e");

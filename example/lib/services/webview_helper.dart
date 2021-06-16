@@ -1,8 +1,8 @@
-import 'dart:io' as  io;
+import 'dart:io' as io;
 
 class WebViewHelper {
   static String executablePath() {
-    var result;
+    String result = '';
     var paths = [];
     if (io.Platform.isWindows) {
       paths = [
