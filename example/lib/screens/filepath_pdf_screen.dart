@@ -10,7 +10,7 @@ class FilePathToPDFScreen extends StatefulWidget {
 }
 
 class _FilePathToPDFScreenState extends State<FilePathToPDFScreen> {
-  File _file;
+  File? _file;
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +32,7 @@ class _FilePathToPDFScreenState extends State<FilePathToPDFScreen> {
         color: Colors.white,
         child: ListView(
           children: [
-            if (_file != null) Image.memory(_file.readAsBytesSync()),
+            if (_file != null) Image.memory(_file!.readAsBytesSync()),
           ],
         ),
       ),
@@ -50,7 +50,7 @@ class _FilePathToPDFScreenState extends State<FilePathToPDFScreen> {
       margins: PdfMargins.px(top: 35, bottom: 35, right: 35, left: 35),
     );
 
-    WebcontentConverter.logger.info(result);
+    WebcontentConverter.logger.info(result ?? '');
   }
 
   _previewPDF() async {}

@@ -12,8 +12,8 @@ class ContentToImageScreen extends StatefulWidget {
 }
 
 class _ContentToImageScreenState extends State<ContentToImageScreen> {
-  Uint8List _bytes;
-  File _file;
+  Uint8List? _bytes;
+  File? _file;
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +39,7 @@ class _ContentToImageScreenState extends State<ContentToImageScreen> {
         color: Colors.white,
         child: ListView(
           children: [
-            if (_file != null) Image.memory(_file.readAsBytesSync()),
+            if (_file != null) Image.memory(_file!.readAsBytesSync()),
           ],
         ),
       ),

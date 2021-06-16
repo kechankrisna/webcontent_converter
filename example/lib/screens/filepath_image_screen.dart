@@ -11,8 +11,8 @@ class FilePathToImageScreen extends StatefulWidget {
 }
 
 class _FilePathToImageScreenState extends State<FilePathToImageScreen> {
-  Uint8List _bytes;
-  File _file;
+  Uint8List? _bytes;
+  File? _file;
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +34,7 @@ class _FilePathToImageScreenState extends State<FilePathToImageScreen> {
         color: Colors.white,
         child: ListView(
           children: [
-            if (_file != null) Image.memory(_file.readAsBytesSync()),
+            if (_file != null) Image.memory(_file!.readAsBytesSync()),
           ],
         ),
       ),
