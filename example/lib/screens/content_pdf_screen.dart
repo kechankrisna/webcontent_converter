@@ -13,7 +13,7 @@ class ContentToPDFScreen extends StatefulWidget {
 }
 
 class _ContentToPDFScreenState extends State<ContentToPDFScreen> {
-  File _file;
+  File? _file;
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +39,7 @@ class _ContentToPDFScreenState extends State<ContentToPDFScreen> {
                 constraints: BoxConstraints(maxWidth: 600),
                 child: PdfPreview(
                   build: (format) async {
-                    return await _file.readAsBytes();
+                    return await _file!.readAsBytes();
                   },
                   useActions: false,
                   scrollViewDecoration:
@@ -70,7 +70,7 @@ class _ContentToPDFScreenState extends State<ContentToPDFScreen> {
     // await Printing.layoutPdf(
     //     onLayout: (PdfPageFormat format) => _file.readAsBytes());
 
-    WebcontentConverter.logger.info(result);
+    WebcontentConverter.logger.info(result ?? '');
   }
 
   _previewPDF() async {}

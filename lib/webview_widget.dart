@@ -6,14 +6,13 @@ import 'package:flutter/services.dart';
 
 class WebViewWidget extends StatelessWidget {
   final String content;
-  final double width;
-  final double height;
+  final double? width;
+  final double? height;
 
-  const WebViewWidget(this.content, {Key key, this.width, this.height})
+  const WebViewWidget(this.content, {Key? key, this.width, this.height})
       : super(key: key);
   @override
   Widget build(BuildContext context) {
-    assert(content != null);
     return LayoutBuilder(builder: (_, ctn) {
       final _width = width ?? ctn.maxWidth;
       final _height = height ?? ctn.maxHeight;
@@ -43,7 +42,7 @@ class WebViewWidget extends StatelessWidget {
           surfaceFactory:
               (BuildContext context, PlatformViewController controller) {
             return AndroidViewSurface(
-              controller: controller,
+              controller: controller as AndroidViewController,
               gestureRecognizers: const <
                   Factory<OneSequenceGestureRecognizer>>{},
               hitTestBehavior: PlatformViewHitTestBehavior.opaque,

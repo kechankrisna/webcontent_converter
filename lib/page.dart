@@ -63,17 +63,17 @@ class PaperFormat {
 
   final num width, height;
 
-  const PaperFormat.inches({@required this.width, @required this.height});
+  const PaperFormat.inches({required this.width, required this.height});
 
-  PaperFormat.px({@required int width, @required int height})
+  PaperFormat.px({required int width, required int height})
       : width = _pxToInches(width),
         height = _pxToInches(height);
 
-  PaperFormat.cm({@required num width, @required num height})
+  PaperFormat.cm({required num width, required num height})
       : width = _cmToInches(width),
         height = _cmToInches(height);
 
-  PaperFormat.mm({@required num width, @required num height})
+  PaperFormat.mm({required num width, required num height})
       : width = _mmToInches(width),
         height = _mmToInches(height);
 
@@ -95,7 +95,7 @@ class PdfMargins {
 
   PdfMargins({this.top: 0, this.bottom: 0, this.left: 0, this.right: 0});
 
-  PdfMargins.inches({num top, num bottom, num left, num right})
+  PdfMargins.inches({num? top, num? bottom, num? left, num? right})
       : top = top ?? 0,
         bottom = bottom ?? 0,
         left = left ?? 0,
@@ -105,10 +105,10 @@ class PdfMargins {
   factory PdfMargins.px(
       {int top: 0, int bottom: 0, int left: 0, int right: 0}) {
     return PdfMargins.inches(
-      top: _pxToInches(top ?? 0),
-      bottom: _pxToInches(bottom ?? 0),
-      left: _pxToInches(left ?? 0),
-      right: _pxToInches(right ?? 0),
+      top: _pxToInches(top),
+      bottom: _pxToInches(bottom),
+      left: _pxToInches(left),
+      right: _pxToInches(right),
     );
   }
 
@@ -116,10 +116,10 @@ class PdfMargins {
   factory PdfMargins.cm(
       {num top: 0, num bottom: 0, num left: 0, num right: 0}) {
     return PdfMargins.inches(
-      top: _cmToInches(top ?? 0),
-      bottom: _cmToInches(bottom ?? 0),
-      left: _cmToInches(left ?? 0),
-      right: _cmToInches(right ?? 0),
+      top: _cmToInches(top),
+      bottom: _cmToInches(bottom),
+      left: _cmToInches(left),
+      right: _cmToInches(right),
     );
   }
 
@@ -127,10 +127,10 @@ class PdfMargins {
   factory PdfMargins.mm(
       {num top: 0, num bottom: 0, num left: 0, num right: 0}) {
     return PdfMargins.inches(
-      top: _mmToInches(top ?? 0),
-      bottom: _mmToInches(bottom ?? 0),
-      left: _mmToInches(left ?? 0),
-      right: _mmToInches(right ?? 0),
+      top: _mmToInches(top),
+      bottom: _mmToInches(bottom),
+      left: _mmToInches(left),
+      right: _mmToInches(right),
     );
   }
 

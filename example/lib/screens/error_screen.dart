@@ -9,7 +9,8 @@ class ErrorScreen extends StatelessWidget {
   final dynamic arguments;
 
   ///
-  const ErrorScreen({Key key, this.name, this.arguments}) : super(key: key);
+  const ErrorScreen({Key? key, required this.name, this.arguments})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {

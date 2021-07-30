@@ -10,7 +10,7 @@ class WebUriToPDFScreen extends StatefulWidget {
 }
 
 class _WebUriToPDFScreenState extends State<WebUriToPDFScreen> {
-  File _file;
+  File? _file;
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +32,7 @@ class _WebUriToPDFScreenState extends State<WebUriToPDFScreen> {
         color: Colors.white,
         child: ListView(
           children: [
-            if (_file != null) Image.memory(_file.readAsBytesSync()),
+            if (_file != null) Image.memory(_file!.readAsBytesSync()),
           ],
         ),
       ),
@@ -46,7 +46,7 @@ class _WebUriToPDFScreenState extends State<WebUriToPDFScreen> {
     var result = await WebcontentConverter.webUriToPdf(
         uri: "http://127.0.0.1:5500/example/assets/invoice.html",
         savedPath: savedPath);
-    WebcontentConverter.logger.info(result);
+    WebcontentConverter.logger.info(result ?? '');
   }
 
   _previewPDF() async {}
