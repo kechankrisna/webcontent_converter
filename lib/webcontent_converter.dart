@@ -1,13 +1,17 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:easy_logger/easy_logger.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show MethodChannel, rootBundle;
 import 'package:flutter/widgets.dart';
 import 'package:dio/dio.dart';
 import 'package:webcontent_converter/webview_widget.dart';
 import 'page.dart';
 import 'package:puppeteer/puppeteer.dart' as pp;
+
+import 'web_support.dart';
 export 'page.dart';
 export 'webview_widget.dart';
 
@@ -137,6 +141,15 @@ class WebcontentConverter {
     };
     Uint8List results = Uint8List.fromList([]);
     try {
+      if (kIsWeb) {
+        // TODO: web
+        var blob = await WebSupport.toBlob();
+        blob = blob.replaceAll(RegExp(r"data:image/png;base64,"), "");
+
+        results = base64.decode(blob);
+
+        return results;
+      }
       if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
         WebcontentConverter.logger.info("Desktop support");
         var browser = await pp.puppeteer.launch(executablePath: executablePath);
@@ -312,9 +325,12 @@ class WebcontentConverter {
         );
         await page.close();
         result = savedPath;
-      } else {
+      } else if (Platform.isAndroid || Platform.isIOS) {
         WebcontentConverter.logger.info("Mobile support");
         result = await _channel.invokeMethod('contentToPDF', arguments);
+      } else {
+        // todo web
+        result = null;
       }
     } on Exception catch (e) {
       WebcontentConverter.logger.error("[method:contentToPDF]: $e");
