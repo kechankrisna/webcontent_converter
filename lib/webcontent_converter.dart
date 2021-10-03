@@ -143,7 +143,8 @@ class WebcontentConverter {
     try {
       if (kIsWeb) {
         // TODO: web
-        var blob = await WebSupport.toBlob();
+        // var blob = await WebSupport.toBlob();
+        var blob = "";
         blob = blob.replaceAll(RegExp(r"data:image/png;base64,"), "");
 
         results = base64.decode(blob);

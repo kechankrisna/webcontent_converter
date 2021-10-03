@@ -6,6 +6,7 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:webcontent_converter/webcontent_converter.dart';
 import 'package:webcontent_converter_example/services/demo.dart';
+import 'package:webcontent_converter_example/services/webview_helper.dart';
 
 class ContentToImageScreen extends StatefulWidget {
   @override
@@ -58,7 +59,10 @@ class _ContentToImageScreenState extends State<ContentToImageScreen> {
   ///[convert html] content into bytes
   _convert() async {
     final content = Demo.getReceiptContent();
-    var bytes = await WebcontentConverter.contentToImage(content: content);
+    var bytes = await WebcontentConverter.contentToImage(
+      content: content,
+      executablePath: WebViewHelper.executablePath(),
+    );
     if (bytes.length > 0) _saveFile(bytes);
     WebcontentConverter.logger.info(bytes);
   }
