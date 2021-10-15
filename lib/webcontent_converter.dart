@@ -197,6 +197,7 @@ class WebcontentConverter {
         );
         if (autoClosePage) {
           await windowBrowserPage.close();
+          windowBrowserPage = null;
         }
       } else {
         WebcontentConverter.logger.info("Mobile support");
@@ -316,6 +317,7 @@ class WebcontentConverter {
     PdfMargins margins,
     PaperFormat format: PaperFormat.a4,
     String executablePath,
+    bool autoClosePage = true,
   }) async {
     PdfMargins _margins = margins ?? PdfMargins.zero;
     final Map<String, dynamic> arguments = {
@@ -332,16 +334,23 @@ class WebcontentConverter {
     try {
       if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
         WebcontentConverter.logger.info("Desktop support");
-        var browser = await pp.puppeteer.launch(executablePath: executablePath);
-        var page = await browser.newPage();
-        await page.setContent(content,
+
+        /// if window browser is null
+        windowBrower ??= await pp.puppeteer.launch(
+            headless: true,
+            executablePath: executablePath ?? WebViewHelper.executablePath());
+
+        /// if window browser page is null
+        windowBrowserPage ??= await windowBrower.newPage();
+
+        await windowBrowserPage.setContent(content,
             wait: pp.Until.all([
               pp.Until.load,
               pp.Until.domContentLoaded,
               pp.Until.networkAlmostIdle,
               pp.Until.networkIdle,
             ]));
-        await page.pdf(
+        await windowBrowserPage.pdf(
           format: pp.PaperFormat.inches(
             width: format.width,
             height: format.height,
@@ -355,7 +364,10 @@ class WebcontentConverter {
           printBackground: true,
           output: File(savedPath).openWrite(),
         );
-        await page.close();
+        if (autoClosePage) {
+          await windowBrowserPage.close();
+          windowBrowserPage = null;
+        }
         result = savedPath;
       } else if (Platform.isAndroid || Platform.isIOS) {
         WebcontentConverter.logger.info("Mobile support");

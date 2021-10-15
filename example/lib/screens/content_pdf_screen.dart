@@ -62,7 +62,10 @@ class _ContentToPDFScreenState extends State<ContentToPDFScreen> {
       format: PaperFormat.a4,
       margins: PdfMargins.px(top: 55, bottom: 55, right: 55, left: 55),
       executablePath: WebViewHelper.executablePath(),
+      autoClosePage: false,
     );
+
+    WebcontentConverter.logger.info("completed");
 
     setState(() => _file = File(savedPath));
 
