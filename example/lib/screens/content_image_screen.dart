@@ -62,7 +62,9 @@ class _ContentToImageScreenState extends State<ContentToImageScreen> {
     var bytes = await WebcontentConverter.contentToImage(
       content: content,
       executablePath: WebViewHelper.executablePath(),
+      autoClosePage: false,
     );
+    WebcontentConverter.logger.info("completed");
     if (bytes.length > 0) _saveFile(bytes);
     WebcontentConverter.logger.info(bytes);
   }

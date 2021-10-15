@@ -10,7 +10,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  puppeteer: ^2.0.0  
+  puppeteer: ^2.3.0  
   dio: ^4.0.0  
   easy_logger: ^0.0.2  
 
@@ -34,8 +34,8 @@ flutter:
         pluginClass: WebcontentConverterPlugin
       ios:
         pluginClass: WebcontentConverterPlugin
-      macos:
-        pluginClass: WebcontentConverterPlugin  
+      # macos:
+      #   pluginClass: WebcontentConverterPlugin  
 
   # To add assets to your plugin package, add an assets section, like this:
   # assets:

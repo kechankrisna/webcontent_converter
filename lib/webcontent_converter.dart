@@ -11,9 +11,13 @@ import 'package:webcontent_converter/webview_widget.dart';
 import 'page.dart';
 import 'package:puppeteer/puppeteer.dart' as pp;
 
-import 'web_support.dart';
+import 'webview_helper.dart';
 export 'page.dart';
 export 'webview_widget.dart';
+
+/// instance of window browser
+pp.Browser windowBrower;
+pp.Page windowBrowserPage;
 
 /// [WebcontentConverter] will convert html, html file, web uri, into raw bytes image or pdf file
 class WebcontentConverter {
@@ -23,6 +27,21 @@ class WebcontentConverter {
   static Future<String> get platformVersion async {
     final String version = await _channel.invokeMethod('getPlatformVersion');
     return version;
+  }
+
+  static Future<void> ensureInitialized() async =>
+      WebcontentConverter.initWebcontentConverter();
+
+  static Future<void> initWebcontentConverter({String executablePath}) async {
+    if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
+      windowBrower ??= await pp.puppeteer.launch(
+        headless: true,
+        executablePath: executablePath ?? WebViewHelper.executablePath(),
+      );
+      windowBrowserPage ??= await windowBrower.newPage();
+    } else {}
+
+    WebcontentConverter.logger.debug('webcontent converter initialized');
   }
 
   /// ## `WebcontentConverter.logger`
@@ -134,6 +153,7 @@ class WebcontentConverter {
     @required String content,
     double duration: 2000,
     String executablePath,
+    bool autoClosePage = true,
   }) async {
     final Map<String, dynamic> arguments = {
       'content': content,
@@ -153,20 +173,31 @@ class WebcontentConverter {
       }
       if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
         WebcontentConverter.logger.info("Desktop support");
-        var browser = await pp.puppeteer.launch(executablePath: executablePath);
-        var page = await browser.newPage();
-        await page.setContent(content, wait: pp.Until.load);
-        await page.emulateMediaType(pp.MediaType.print);
-        var offsetHeight = await page.evaluate('document.body.offsetHeight');
-        var offsetWidth = await page.evaluate('document.body.offsetWidth');
-        results = await page.screenshot(
+
+        /// if window browser is null
+        windowBrower ??= await pp.puppeteer.launch(
+            headless: true,
+            executablePath: executablePath ?? WebViewHelper.executablePath());
+
+        /// if window browser page is null
+        windowBrowserPage ??= await windowBrower.newPage();
+
+        await windowBrowserPage.setContent(content, wait: pp.Until.load);
+        await windowBrowserPage.emulateMediaType(pp.MediaType.print);
+        var offsetHeight =
+            await windowBrowserPage.evaluate('document.body.offsetHeight');
+        var offsetWidth =
+            await windowBrowserPage.evaluate('document.body.offsetWidth');
+        results = await windowBrowserPage.screenshot(
           format: pp.ScreenshotFormat.png,
           clip: pp.Rectangle.fromPoints(
               pp.Point(0, 0), pp.Point(offsetWidth, offsetHeight)),
           fullPage: false,
           omitBackground: true,
         );
-        await page.close();
+        if (autoClosePage) {
+          await windowBrowserPage.close();
+        }
       } else {
         WebcontentConverter.logger.info("Mobile support");
         results = await _channel.invokeMethod('contentToImage', arguments);
