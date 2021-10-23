@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:webcontent_converter/webcontent_converter.dart';
 import 'route.dart';
 
-void main() {
+void main() async {
   /// [make widget built before other configurations]
   WidgetsFlutterBinding.ensureInitialized();
 
   /// ensure brower is initialized
-  WebcontentConverter.ensureInitialized();
+  await WebcontentConverter.ensureInitialized();
   runApp(MyApp());
 }
 

@@ -8,6 +8,7 @@ import 'package:flutter/services.dart' show MethodChannel, rootBundle;
 import 'package:flutter/widgets.dart';
 import 'package:dio/dio.dart';
 import 'package:webcontent_converter/webview_widget.dart';
+import 'demo.dart';
 import 'page.dart';
 import 'package:puppeteer/puppeteer.dart' as pp;
 
@@ -18,6 +19,7 @@ export 'webview_widget.dart';
 /// instance of window browser
 pp.Browser windowBrower;
 pp.Page windowBrowserPage;
+Uint8List preloadBytes = Uint8List.fromList([]);
 
 /// [WebcontentConverter] will convert html, html file, web uri, into raw bytes image or pdf file
 class WebcontentConverter {
@@ -32,14 +34,20 @@ class WebcontentConverter {
   static Future<void> ensureInitialized() async =>
       WebcontentConverter.initWebcontentConverter();
 
-  static Future<void> initWebcontentConverter({String executablePath}) async {
+  static Future<void> initWebcontentConverter({
+    String executablePath,
+    String content,
+  }) async {
     if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
       windowBrower ??= await pp.puppeteer.launch(
         headless: true,
         executablePath: executablePath ?? WebViewHelper.executablePath(),
       );
       windowBrowserPage ??= await windowBrower.newPage();
-    } else {}
+    } else {
+      preloadBytes ??=
+          await contentToImage(content: content ?? Demo.getReceiptContent());
+    }
 
     WebcontentConverter.logger.debug('webcontent converter initialized');
   }

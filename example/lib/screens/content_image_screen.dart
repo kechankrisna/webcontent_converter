@@ -14,6 +14,7 @@ class ContentToImageScreen extends StatefulWidget {
 }
 
 class _ContentToImageScreenState extends State<ContentToImageScreen> {
+  int _counter = 1;
   Uint8List _bytes;
   io.File _file;
 
@@ -58,13 +59,18 @@ class _ContentToImageScreenState extends State<ContentToImageScreen> {
 
   ///[convert html] content into bytes
   _convert() async {
-    final content = Demo.getReceiptContent();
+    final content = _counter.isEven
+        ? Demo.getShortReceiptContent()
+        : Demo.getReceiptContent();
+    var stopwatch = Stopwatch()..start();
     var bytes = await WebcontentConverter.contentToImage(
       content: content,
       executablePath: WebViewHelper.executablePath(),
       autoClosePage: false,
     );
-    WebcontentConverter.logger.info("completed");
+    WebcontentConverter.logger
+        .info("completed executed in ${stopwatch.elapsed}");
+    setState(() => _counter += 1);
     if (bytes.length > 0) _saveFile(bytes);
     WebcontentConverter.logger.info(bytes);
   }
