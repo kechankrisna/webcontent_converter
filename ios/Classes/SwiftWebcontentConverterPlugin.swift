@@ -33,9 +33,9 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                 DispatchQueue.main.asyncAfter(deadline: .now() + (duration!/10000) ) {
                         print("height = \(self.webView.scrollView.contentSize.height)")
                         print("width = \(self.webView.scrollView.contentSize.width)")
+                    if #available(iOS 11.0, *) {
                         let configuration = WKSnapshotConfiguration()
                         configuration.rect = CGRect(origin: .zero, size: (self.webView.scrollView.contentSize))
-                    if #available(iOS 11.0, *) {
                         self.webView.snapshotView(afterScreenUpdates: true)
                         self.webView.takeSnapshot(with: configuration) { (image, error) in
                             guard let data = image!.jpegData(compressionQuality: 1) else {
@@ -50,7 +50,24 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                             self.dispose()
                             print("Got snapshot")
                         }
-                    } else {
+                    } else if #available(iOS 9.0, *) {
+                       
+                        let image =  self.webView.snapshot()
+                        guard let data = image!.jpegData(compressionQuality: 1) else {
+                            result( bytes )
+                            self.dispose()
+                            return
+                        }
+                        bytes = FlutterStandardTypedData.init(bytes: data)
+                        result(bytes)
+                        // UIImageWriteToSavedPhotosAlbum(image!, nil, nil, nil)
+                        //dispose
+                        self.dispose()
+                        print("Got snapshot")
+                        
+                       
+                    }else {
+                        
                         result( bytes )
                         self.dispose()
                     }
@@ -72,6 +89,7 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                 DispatchQueue.main.asyncAfter(deadline: .now() + (duration!/10000) ) {
                         print("height = \(self.webView.scrollView.contentSize.height)")
                         print("width = \(self.webView.scrollView.contentSize.width)")
+                    if #available(iOS 11.0, *) {
                         let configuration = WKSnapshotConfiguration()
                         configuration.rect = CGRect(x: 0, y: 0, width: CGFloat(format!["width"] ?? 8.27).toPixel(), height: CGFloat(format!["height"] ?? 11.27).toPixel() )
                         guard let path = self.webView.exportAsPdfFromWebView(savedPath: savedPath!, format: format!, margins: margins!) else {
@@ -79,6 +97,9 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                             return
                         }
                         result(path)
+                    }else{
+                        result(nil)
+                    }
                     //dispose
                     self.dispose()
                 }
@@ -119,7 +140,15 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
 
 // WKWebView extension for export web html content into pdf
 extension WKWebView {
-
+    
+    func snapshot() -> UIImage?
+    {
+        UIGraphicsBeginImageContextWithOptions(self.bounds.size, true, 0);
+        self.drawHierarchy(in: self.bounds, afterScreenUpdates: true);
+        let snapshotImage = UIGraphicsGetImageFromCurrentImageContext();
+        UIGraphicsEndImageContext();
+        return snapshotImage;
+    }
     
     // Call this function when WKWebView finish loading
     func exportAsPdfFromWebView(savedPath: String, format: Dictionary<String, Double>, margins: Dictionary<String, Double>) -> String? {
