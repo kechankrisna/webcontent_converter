@@ -12,7 +12,7 @@ dependencies:
     sdk: flutter
   puppeteer: ^2.3.0  
   dio: ^4.0.0  
-  easy_logger: ^0.0.2  
+  easy_logger: ^0.0.2
 
 dev_dependencies:
   flutter_test:

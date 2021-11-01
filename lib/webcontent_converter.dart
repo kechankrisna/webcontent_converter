@@ -39,17 +39,27 @@ class WebcontentConverter {
     String content,
   }) async {
     if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
-      windowBrower ??= await pp.puppeteer.launch(
-        headless: true,
-        executablePath: executablePath ?? WebViewHelper.executablePath(),
-      );
-      windowBrowserPage ??= await windowBrower.newPage();
-    } else {
+      if (WebViewHelper.isChromeAvailable) {
+        windowBrower ??= await pp.puppeteer.launch(
+          headless: true,
+          executablePath: executablePath ?? WebViewHelper.executablePath(),
+        );
+        windowBrowserPage ??= await windowBrower.newPage();
+      }
+    } else if (Platform.isAndroid || Platform.isIOS) {
       preloadBytes ??=
           await contentToImage(content: content ?? Demo.getReceiptContent());
     }
 
     WebcontentConverter.logger.debug('webcontent converter initialized');
+  }
+
+  static Future<void> deinitWebcontentConverter({
+    bool isClosePage = true,
+    bool isCloseBrower = true,
+  }) async {
+    if (isClosePage) await windowBrowserPage?.close();
+    if (isCloseBrower) await windowBrower?.close();
   }
 
   /// ## `WebcontentConverter.logger`
@@ -180,32 +190,34 @@ class WebcontentConverter {
         return results;
       }
       if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
-        WebcontentConverter.logger.info("Desktop support");
+        if (WebViewHelper.isChromeAvailable) {
+          WebcontentConverter.logger.info("Desktop support");
 
-        /// if window browser is null
-        windowBrower ??= await pp.puppeteer.launch(
-            headless: true,
-            executablePath: executablePath ?? WebViewHelper.executablePath());
+          /// if window browser is null
+          windowBrower ??= await pp.puppeteer.launch(
+              headless: true,
+              executablePath: executablePath ?? WebViewHelper.executablePath());
 
-        /// if window browser page is null
-        windowBrowserPage ??= await windowBrower.newPage();
+          /// if window browser page is null
+          windowBrowserPage ??= await windowBrower.newPage();
 
-        await windowBrowserPage.setContent(content, wait: pp.Until.load);
-        await windowBrowserPage.emulateMediaType(pp.MediaType.print);
-        var offsetHeight =
-            await windowBrowserPage.evaluate('document.body.offsetHeight');
-        var offsetWidth =
-            await windowBrowserPage.evaluate('document.body.offsetWidth');
-        results = await windowBrowserPage.screenshot(
-          format: pp.ScreenshotFormat.png,
-          clip: pp.Rectangle.fromPoints(
-              pp.Point(0, 0), pp.Point(offsetWidth, offsetHeight)),
-          fullPage: false,
-          omitBackground: true,
-        );
-        if (autoClosePage) {
-          await windowBrowserPage.close();
-          windowBrowserPage = null;
+          await windowBrowserPage.setContent(content, wait: pp.Until.load);
+          await windowBrowserPage.emulateMediaType(pp.MediaType.print);
+          var offsetHeight =
+              await windowBrowserPage.evaluate('document.body.offsetHeight');
+          var offsetWidth =
+              await windowBrowserPage.evaluate('document.body.offsetWidth');
+          results = await windowBrowserPage.screenshot(
+            format: pp.ScreenshotFormat.png,
+            clip: pp.Rectangle.fromPoints(
+                pp.Point(0, 0), pp.Point(offsetWidth, offsetHeight)),
+            fullPage: false,
+            omitBackground: true,
+          );
+          if (autoClosePage) {
+            await windowBrowserPage.close();
+            windowBrowserPage = null;
+          }
         }
       } else {
         WebcontentConverter.logger.info("Mobile support");
@@ -342,41 +354,42 @@ class WebcontentConverter {
     try {
       if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
         WebcontentConverter.logger.info("Desktop support");
+        if (WebViewHelper.isChromeAvailable) {
+          /// if window browser is null
+          windowBrower ??= await pp.puppeteer.launch(
+              headless: true,
+              executablePath: executablePath ?? WebViewHelper.executablePath());
 
-        /// if window browser is null
-        windowBrower ??= await pp.puppeteer.launch(
-            headless: true,
-            executablePath: executablePath ?? WebViewHelper.executablePath());
+          /// if window browser page is null
+          windowBrowserPage ??= await windowBrower.newPage();
 
-        /// if window browser page is null
-        windowBrowserPage ??= await windowBrower.newPage();
-
-        await windowBrowserPage.setContent(content,
-            wait: pp.Until.all([
-              pp.Until.load,
-              pp.Until.domContentLoaded,
-              pp.Until.networkAlmostIdle,
-              pp.Until.networkIdle,
-            ]));
-        await windowBrowserPage.pdf(
-          format: pp.PaperFormat.inches(
-            width: format.width,
-            height: format.height,
-          ),
-          margins: pp.PdfMargins.inches(
-            top: _margins.top,
-            bottom: _margins.bottom,
-            left: _margins.left,
-            right: _margins.right,
-          ),
-          printBackground: true,
-          output: File(savedPath).openWrite(),
-        );
-        if (autoClosePage) {
-          await windowBrowserPage.close();
-          windowBrowserPage = null;
+          await windowBrowserPage.setContent(content,
+              wait: pp.Until.all([
+                pp.Until.load,
+                pp.Until.domContentLoaded,
+                pp.Until.networkAlmostIdle,
+                pp.Until.networkIdle,
+              ]));
+          await windowBrowserPage.pdf(
+            format: pp.PaperFormat.inches(
+              width: format.width,
+              height: format.height,
+            ),
+            margins: pp.PdfMargins.inches(
+              top: _margins.top,
+              bottom: _margins.bottom,
+              left: _margins.left,
+              right: _margins.right,
+            ),
+            printBackground: true,
+            output: File(savedPath).openWrite(),
+          );
+          if (autoClosePage) {
+            await windowBrowserPage.close();
+            windowBrowserPage = null;
+          }
+          result = savedPath;
         }
-        result = savedPath;
       } else if (Platform.isAndroid || Platform.isIOS) {
         WebcontentConverter.logger.info("Mobile support");
         result = await _channel.invokeMethod('contentToPDF', arguments);
