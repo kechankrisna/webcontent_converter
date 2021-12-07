@@ -11,9 +11,10 @@ import 'package:webcontent_converter/webview_widget.dart';
 import 'demo.dart';
 import 'page.dart';
 import 'package:puppeteer/puppeteer.dart' as pp;
-
 import 'webview_helper.dart';
+
 export 'page.dart';
+export 'webview_helper.dart';
 export 'webview_widget.dart';
 
 /// instance of window browser
