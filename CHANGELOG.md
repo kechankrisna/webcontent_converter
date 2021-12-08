@@ -1,3 +1,7 @@
+## 0.0.7
+
+* null-safety merged
+
 ## 0.0.6+2
 
 * fixed convert pdf on desktop (macos)

@@ -43,7 +43,7 @@ class WebSupport {
     final completer = Completer<Uint8List>();
     final reader = html.FileReader();
     reader.readAsArrayBuffer(blob);
-    reader.onLoad.listen((_) => completer.complete(reader.result));
+    reader.onLoad.listen((_) => completer.complete(reader.result as Uint8List));
     return (await completer.future);
   }
 }
