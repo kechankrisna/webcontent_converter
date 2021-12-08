@@ -20,8 +20,8 @@ class WebcontentConverter {
   static const MethodChannel _channel =
       const MethodChannel('webcontent_converter');
 
-  static Future<String> get platformVersion async {
-    final String version = await _channel.invokeMethod('getPlatformVersion');
+  static Future<String?> get platformVersion async {
+    final String? version = await _channel.invokeMethod('getPlatformVersion');
     return version;
   }
 
@@ -62,21 +62,19 @@ class WebcontentConverter {
   /// }
   /// ```
   static Future<Uint8List> filePathToImage({
-    @required String path,
+    required String path,
     double duration: 2000,
-    String executablePath,
+    String? executablePath,
   }) async {
     Uint8List result = Uint8List.fromList([]);
     try {
       String content = await rootBundle.loadString(path);
 
-      if (content != null) {
-        result = await contentToImage(
-          content: content,
-          duration: duration,
-          executablePath: executablePath,
-        );
-      }
+      result = await contentToImage(
+        content: content,
+        duration: duration,
+        executablePath: executablePath,
+      );
     } on Exception catch (e) {
       WebcontentConverter.logger.error("[method:filePathToImage]: $e");
       throw Exception("Error: $e");
@@ -97,9 +95,9 @@ class WebcontentConverter {
   /// }
   /// ```
   static Future<Uint8List> webUriToImage({
-    @required String uri,
+    required String uri,
     double duration: 2000,
-    String executablePath,
+    String? executablePath,
   }) async {
     Uint8List result = Uint8List.fromList([]);
     try {
@@ -130,16 +128,16 @@ class WebcontentConverter {
   ///   await file.writeAsBytes(bytes);
   /// }
   /// ```
-  static Future<Uint8List> contentToImage({
-    @required String content,
+  static Future contentToImage({
+    required String content,
     double duration: 2000,
-    String executablePath,
+    String? executablePath,
   }) async {
     final Map<String, dynamic> arguments = {
       'content': content,
       'duration': duration
     };
-    Uint8List results = Uint8List.fromList([]);
+    Uint8List? results = Uint8List.fromList([]);
     try {
       if (kIsWeb) {
         // TODO: web
@@ -168,7 +166,7 @@ class WebcontentConverter {
         await page.close();
       } else {
         WebcontentConverter.logger.info("Mobile support");
-        results = await _channel.invokeMethod('contentToImage', arguments);
+        results = await (_channel.invokeMethod('contentToImage', arguments));
       }
     } on Exception catch (e) {
       WebcontentConverter.logger.error("[method:contentToImage]: $e");
@@ -197,27 +195,25 @@ class WebcontentConverter {
   /// );
   ///```
 
-  static Future<String> filePathToPdf({
-    @required String path,
+  static Future<String?> filePathToPdf({
+    required String path,
     double duration: 2000,
-    @required String savedPath,
-    PdfMargins margins,
+    required String savedPath,
+    PdfMargins? margins,
     PaperFormat format: PaperFormat.a4,
-    String executablePath,
+    String? executablePath,
   }) async {
     var result;
     try {
       String content = await rootBundle.loadString(path);
-      if (content != null) {
-        result = await contentToPDF(
-          content: content,
-          duration: duration,
-          savedPath: savedPath,
-          margins: margins,
-          format: format,
-          executablePath: executablePath,
-        );
-      }
+      result = await contentToPDF(
+        content: content,
+        duration: duration,
+        savedPath: savedPath,
+        margins: margins,
+        format: format,
+        executablePath: executablePath,
+      );
     } on Exception catch (e) {
       WebcontentConverter.logger.error("[method:filePathToPdf]: $e");
       throw Exception("Error: $e");
@@ -236,13 +232,13 @@ class WebcontentConverter {
   ///     savedPath: savedPat,
   /// );
   /// ```
-  static Future<String> webUriToPdf({
-    @required String uri,
+  static Future<String?> webUriToPdf({
+    required String uri,
     double duration: 2000,
-    @required String savedPath,
-    PdfMargins margins,
+    required String savedPath,
+    PdfMargins? margins,
     PaperFormat format: PaperFormat.a4,
-    String executablePath,
+    String? executablePath,
   }) async {
     var result;
     try {
@@ -277,13 +273,13 @@ class WebcontentConverter {
   ///     margins: PdfMargins.px(top: 55, bottom: 55, right: 55, left: 55),
   /// );
   /// ```
-  static Future<String> contentToPDF({
-    @required String content,
+  static Future<String?> contentToPDF({
+    required String content,
     double duration: 2000,
-    @required String savedPath,
-    PdfMargins margins,
+    required String savedPath,
+    PdfMargins? margins,
     PaperFormat format: PaperFormat.a4,
-    String executablePath,
+    String? executablePath,
   }) async {
     PdfMargins _margins = margins ?? PdfMargins.zero;
     final Map<String, dynamic> arguments = {
@@ -340,7 +336,7 @@ class WebcontentConverter {
   }
 
   /// [WevView]
-  static Widget webivew(String content, {double width, double height}) =>
+  static Widget webivew(String content, {double? width, double? height}) =>
       WebViewWidget(
         content,
         width: width,

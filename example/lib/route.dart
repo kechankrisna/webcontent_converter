@@ -70,7 +70,7 @@ Route<dynamic> onGenerateRoute(RouteSettings settings) {
     default:
       return MaterialPageRoute(
         builder: (context) => ErrorScreen(
-          name: name,
+          name: name!,
           arguments: arguments,
         ),
         settings: settings,

@@ -30,7 +30,7 @@ class WebViewHelper {
   }
 
   static String executablePath() {
-    var result;
+    String result = '';
     var paths = [];
     if (io.Platform.isWindows) {
       paths = [
