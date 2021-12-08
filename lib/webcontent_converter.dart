@@ -11,7 +11,7 @@ import 'package:webcontent_converter/webview_widget.dart';
 import 'page.dart';
 import 'package:puppeteer/puppeteer.dart' as pp;
 
-import 'web_support.dart';
+// import 'web_support.dart';
 export 'page.dart';
 export 'webview_widget.dart';
 
@@ -139,15 +139,15 @@ class WebcontentConverter {
     };
     Uint8List? results = Uint8List.fromList([]);
     try {
-      if (kIsWeb) {
-        // TODO: web
-        var blob = await WebSupport.toBlob();
-        blob = blob.replaceAll(RegExp(r"data:image/png;base64,"), "");
+      // if (kIsWeb) {
+      //   // TODO: web
+      //   var blob = await WebSupport.toBlob();
+      //   blob = blob.replaceAll(RegExp(r"data:image/png;base64,"), "");
 
-        results = base64.decode(blob);
+      //   results = base64.decode(blob);
 
-        return results;
-      }
+      //   return results;
+      // }
       if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
         WebcontentConverter.logger.info("Desktop support");
         var browser = await pp.puppeteer.launch(executablePath: executablePath);

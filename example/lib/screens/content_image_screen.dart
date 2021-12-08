@@ -6,6 +6,7 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:webcontent_converter/webcontent_converter.dart';
 import 'package:webcontent_converter_example/services/demo.dart';
+import 'package:webcontent_converter_example/services/webview_helper.dart';
 
 class ContentToImageScreen extends StatefulWidget {
   @override
@@ -13,10 +14,8 @@ class ContentToImageScreen extends StatefulWidget {
 }
 
 class _ContentToImageScreenState extends State<ContentToImageScreen> {
-
   Uint8List? _bytes;
-  File? _file;
-
+  io.File? _file;
 
   @override
   Widget build(BuildContext context) {
@@ -40,22 +39,29 @@ class _ContentToImageScreenState extends State<ContentToImageScreen> {
       ),
       body: Container(
         color: Colors.white,
-        child: ListView(
-          children: [
+        alignment: Alignment.topCenter,
+        child: SingleChildScrollView(
+          primary: false,
+          child: Column(
+            children: [
+              if (_file != null)
+                Container(
+                  width: 400,
+                  alignment: Alignment.topCenter,
+                  child: Image.memory(_file!.readAsBytesSync()),
+                ),
 
-            if (_file != null) Image.memory(_file!.readAsBytesSync()),
-
-            // if (_file != null) Image.memory(_file.readAsBytesSync()),
-            if (_bytes?.isNotEmpty == true)
-              Container(
-                decoration: BoxDecoration(
-                    border: Border.all(
-                  color: Colors.blue,
-                )),
-                child: Image.memory(_bytes),
-              )
-
-          ],
+              // if (_file != null) Image.memory(_file.readAsBytesSync()),
+              if (_bytes?.isNotEmpty == true)
+                Container(
+                  width: 400,
+                  alignment: Alignment.topCenter,
+                  decoration:
+                      BoxDecoration(border: Border.all(color: Colors.blue)),
+                  child: Image.memory(_bytes!),
+                )
+            ],
+          ),
         ),
       ),
     );
@@ -63,8 +69,13 @@ class _ContentToImageScreenState extends State<ContentToImageScreen> {
 
   ///[convert html] content into bytes
   _convert() async {
+    var executablePath =
+        WebViewHelper.isChromeAvailable ? WebViewHelper.executablePath() : null;
     final content = Demo.getReceiptContent();
-    var bytes = await WebcontentConverter.contentToImage(content: content);
+    var bytes = await WebcontentConverter.contentToImage(
+      content: content,
+      executablePath: executablePath,
+    );
     if (bytes.length > 0) _saveFile(bytes);
     WebcontentConverter.logger.info(bytes);
   }

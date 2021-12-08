@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:io' as io;
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
@@ -13,7 +13,7 @@ class ContentToPDFScreen extends StatefulWidget {
 }
 
 class _ContentToPDFScreenState extends State<ContentToPDFScreen> {
-  File? _file;
+  io.File? _file;
 
   @override
   Widget build(BuildContext context) {
@@ -53,6 +53,8 @@ class _ContentToPDFScreenState extends State<ContentToPDFScreen> {
 
   ///[convert html] content into pdf
   _convert() async {
+    var executablePath =
+        WebViewHelper.isChromeAvailable ? WebViewHelper.executablePath() : null;
     final content = Demo.getInvoiceContent();
     var dir = await getApplicationDocumentsDirectory();
     var savedPath = join(dir.path, "sample.pdf");
@@ -61,10 +63,10 @@ class _ContentToPDFScreenState extends State<ContentToPDFScreen> {
       savedPath: savedPath,
       format: PaperFormat.a4,
       margins: PdfMargins.px(top: 55, bottom: 55, right: 55, left: 55),
-      executablePath: WebViewHelper.executablePath(),
+      executablePath: executablePath,
     );
 
-    setState(() => _file = File(savedPath));
+    setState(() => _file = io.File(savedPath));
 
     /// [printing]
     // await Printing.layoutPdf(
