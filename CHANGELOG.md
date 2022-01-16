@@ -1,3 +1,7 @@
+## 0.0.7+1
+
+* puppeteer 2.5
+
 ## 0.0.7
 
 * null-safety merged
