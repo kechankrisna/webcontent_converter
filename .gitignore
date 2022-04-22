@@ -11,3 +11,4 @@ pubspec.lock
 example/pubspec.lock
 example/pubspec.yaml
 example/windows/flutter/generated_plugins.cmake
+pubspec.lock
