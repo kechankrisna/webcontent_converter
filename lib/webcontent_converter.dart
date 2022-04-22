@@ -32,8 +32,11 @@ class WebcontentConverter {
     return version;
   }
 
-  static Future<void> ensureInitialized() async =>
+  static Future<void> ensureInitialized() async {
+    if (windowBrower == null || windowBrower?.isConnected != true) {
       await WebcontentConverter.initWebcontentConverter();
+    }
+  }
 
   static Future<void> initWebcontentConverter({
     String executablePath,
@@ -195,12 +198,17 @@ class WebcontentConverter {
           WebcontentConverter.logger.info("Desktop support");
 
           /// if window browser is null
-          windowBrower ??= await pp.puppeteer.launch(
-              headless: true,
-              executablePath: executablePath ?? WebViewHelper.executablePath());
+          if (windowBrower == null || windowBrower?.isConnected != true) {
+            windowBrower = await pp.puppeteer.launch(
+                headless: true,
+                executablePath:
+                    executablePath ?? WebViewHelper.executablePath());
+          }
 
           /// if window browser page is null
-          windowBrowserPage ??= await windowBrower.newPage();
+          if (windowBrowserPage == null || windowBrowserPage?.isClosed == true) {
+            windowBrowserPage = await windowBrower.newPage();
+          }
 
           await windowBrowserPage.setContent(content, wait: pp.Until.load);
           await windowBrowserPage.emulateMediaType(pp.MediaType.print);
