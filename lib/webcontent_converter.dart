@@ -62,6 +62,7 @@ class WebcontentConverter {
     bool isClosePage = true,
     bool isCloseBrower = true,
   }) async {
+    WebcontentConverter.logger.debug('webcontent converter deinitWebcontentConverter');
     if (isClosePage) await windowBrowserPage?.close();
     if (isCloseBrower) await windowBrower?.close();
   }
