@@ -33,7 +33,7 @@ class WebcontentConverter {
   }
 
   static Future<void> ensureInitialized() async =>
-      WebcontentConverter.initWebcontentConverter();
+      await WebcontentConverter.initWebcontentConverter();
 
   static Future<void> initWebcontentConverter({
     String executablePath,
