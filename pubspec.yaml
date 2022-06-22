@@ -10,9 +10,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  puppeteer: ^2.5.0  
-  dio: ^4.0.0  
-  easy_logger: ^0.0.2  
+  puppeteer: ^2.10.0
+  dio: ^4.0.6
+  easy_logger: ^0.0.2
 
 dev_dependencies:
   flutter_test:
