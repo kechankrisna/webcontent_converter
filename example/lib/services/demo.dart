@@ -625,6 +625,7 @@ class Demo {
         background: #eee;
         width: 576px;
         font-size: 1.8em;
+        margin: 15px auto;
     }
     
     .receipt {
