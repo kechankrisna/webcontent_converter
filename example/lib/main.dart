@@ -9,11 +9,11 @@ void main() async {
   /// [make widget built before other configurations]
   WidgetsFlutterBinding.ensureInitialized();
 
-  /// ensure brower is initialized
-  await WebcontentConverter.ensureInitialized();
-
   if (WebViewHelper.isDesktop) {
     await windowManager.ensureInitialized();
+
+    /// ensure brower is initialized
+    await WebcontentConverter.ensureInitialized();
   }
   runApp(MyApp());
 }
