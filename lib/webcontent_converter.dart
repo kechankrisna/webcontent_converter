@@ -195,7 +195,7 @@ class WebcontentConverter {
 
         //   results = base64.decode(blob);
 
-          return results;
+        return results;
       }
 
       if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {

@@ -53,7 +53,6 @@ class _ContentToPDFScreenState extends State<ContentToPDFScreen> {
 
   ///[convert html] content into pdf
   _convert() async {
-   
     final content = Demo.getInvoiceContent();
     var dir = await getApplicationDocumentsDirectory();
     var savedPath = join(dir.path, "sample.pdf");
