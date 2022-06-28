@@ -1,5 +1,7 @@
 import 'dart:io' as io;
 
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
+
 class WebViewHelper {
   static List<String> get desktopBrowserAvailablePath {
     if (io.Platform.isWindows) {
@@ -56,4 +58,13 @@ class WebViewHelper {
     print("====== not exist ====== ");
     return null;
   }
+
+  bool get isDesktop {
+  if (kIsWeb) return false;
+  return [
+    TargetPlatform.windows,
+    TargetPlatform.linux,
+    TargetPlatform.macOS,
+  ].contains(defaultTargetPlatform);
+}
 }
