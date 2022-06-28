@@ -11,6 +11,7 @@ class WebUriToImageScreen extends StatefulWidget {
 }
 
 class _WebUriToImageScreenState extends State<WebUriToImageScreen> {
+  int _counter = 1;
   Uint8List? _bytes;
   io.File? _file;
 
@@ -64,11 +65,14 @@ class _WebUriToImageScreenState extends State<WebUriToImageScreen> {
   _convert() async {
     var stopwatch = Stopwatch()..start();
     var bytes = await WebcontentConverter.webUriToImage(
-      uri: "http://127.0.0.1:5500/example/assets/receipt.html",
+      uri: _counter.isEven
+          ? "http://127.0.0.1:5500/example/assets/short_receipt.html"
+          : "http://127.0.0.1:5500/example/assets/receipt.html",
       executablePath: WebViewHelper.executablePath(),
     );
     WebcontentConverter.logger
         .info("completed executed in ${stopwatch.elapsed}");
+    setState(() => _counter += 1);
     if (bytes.isNotEmpty) {
       _saveFile(bytes);
       WebcontentConverter.logger.info("bytes.length ${bytes.length}");

@@ -69,12 +69,11 @@ class _ContentToImageScreenState extends State<ContentToImageScreen> {
 
   ///[convert html] content into bytes
   _convert() async {
-    final content = _counter.isEven
-        ? Demo.getShortReceiptContent()
-        : Demo.getReceiptContent();
     var stopwatch = Stopwatch()..start();
     var bytes = await WebcontentConverter.contentToImage(
-      content: content,
+      content: _counter.isEven
+          ? Demo.getShortReceiptContent()
+          : Demo.getReceiptContent(),
       executablePath: WebViewHelper.executablePath(),
       autoClosePage: true,
     );

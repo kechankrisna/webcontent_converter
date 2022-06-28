@@ -11,6 +11,7 @@ class FilePathToImageScreen extends StatefulWidget {
 }
 
 class _FilePathToImageScreenState extends State<FilePathToImageScreen> {
+  int _counter = 1;
   Uint8List? _bytes;
   File? _file;
 
@@ -63,11 +64,13 @@ class _FilePathToImageScreenState extends State<FilePathToImageScreen> {
   _convert() async {
     var stopwatch = Stopwatch()..start();
     var bytes = await WebcontentConverter.filePathToImage(
-      path: "assets/receipt.html",
+      path:
+          _counter.isEven ? "assets/short_receipt.html" : "assets/receipt.html",
       executablePath: WebViewHelper.executablePath(),
     );
     WebcontentConverter.logger
         .info("completed executed in ${stopwatch.elapsed}");
+    setState(() => _counter += 1);
     if (bytes.isNotEmpty) {
       _saveFile(bytes);
       WebcontentConverter.logger.info("bytes.length ${bytes.length}");

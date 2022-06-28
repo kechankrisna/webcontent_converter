@@ -1035,13 +1035,11 @@ class Demo {
     
     body {
         background: #eee;
-        width: 576px;
-        font-size: 1.8em;
-        margin: 15px auto;
+        width: 302.36px;
     }
     
     .receipt {
-        max-width: 576px;
+        max-width: 302.36px;
         margin: auto;
         background: white;
     }
@@ -1079,7 +1077,7 @@ class Demo {
     }
     
     .total {
-        font-size: 2.5em;
+        font-size: 1.5em;
         margin: 5px;
     }
     
@@ -1088,7 +1086,7 @@ class Demo {
     }
     
     span {
-        color: black;
+        color: grey;
     }
     
     .full-width {
