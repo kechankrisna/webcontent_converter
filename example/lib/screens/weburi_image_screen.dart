@@ -32,10 +32,29 @@ class _WebUriToImageScreenState extends State<WebUriToImageScreen> {
       ),
       body: Container(
         color: Colors.white,
-        child: ListView(
-          children: [
-            if (_file != null) Image.memory(_file!.readAsBytesSync()),
-          ],
+        alignment: Alignment.topCenter,
+        child: SingleChildScrollView(
+          primary: false,
+          child: Column(
+            children: [
+              if (_file != null)
+                Container(
+                  width: 400,
+                  alignment: Alignment.topCenter,
+                  child: Image.memory(_file!.readAsBytesSync()),
+                ),
+
+              // if (_file != null) Image.memory(_file.readAsBytesSync()),
+              if (_bytes?.isNotEmpty == true)
+                Container(
+                  width: 400,
+                  alignment: Alignment.topCenter,
+                  decoration:
+                      BoxDecoration(border: Border.all(color: Colors.blue)),
+                  child: Image.memory(_bytes!),
+                )
+            ],
+          ),
         ),
       ),
     );
@@ -43,11 +62,17 @@ class _WebUriToImageScreenState extends State<WebUriToImageScreen> {
 
   ///[convert html] content into bytes
   _convert() async {
+    var stopwatch = Stopwatch()..start();
     var bytes = await WebcontentConverter.webUriToImage(
       uri: "http://127.0.0.1:5500/example/assets/receipt.html",
       executablePath: WebViewHelper.executablePath(),
     );
-    if (bytes.length > 0) _saveFile(bytes);
+    WebcontentConverter.logger
+        .info("completed executed in ${stopwatch.elapsed}");
+    if (bytes.isNotEmpty) {
+      _saveFile(bytes);
+      WebcontentConverter.logger.info("bytes.length ${bytes.length}");
+    }
   }
 
   ///[save bytes] into file

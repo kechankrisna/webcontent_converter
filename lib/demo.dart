@@ -605,6 +605,7 @@ class Demo {
 
   static String getReceiptContent() {
     return """
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -623,12 +624,11 @@ class Demo {
     
     body {
         background: #eee;
-        width: 576px;
-        font-size: 1.8em;
+        width: 302.36px;
     }
     
     .receipt {
-        max-width: 576px;
+        max-width: 302.36px;
         margin: auto;
         background: white;
     }
@@ -666,7 +666,7 @@ class Demo {
     }
     
     .total {
-        font-size: 2.5em;
+        font-size: 1.5em;
         margin: 5px;
     }
     
@@ -675,7 +675,7 @@ class Demo {
     }
     
     span {
-        color: black;
+        color: grey;
     }
     
     .full-width {
@@ -1011,11 +1011,7 @@ class Demo {
         <br>
         <p>@2020 <a href="https://mylekha.app">MYLEKHA</a>. All right reserved.</p>
     </div>
-
-
-</body>
-
-</html>  
+</html> 
   """;
   }
 

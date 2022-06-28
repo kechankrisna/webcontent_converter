@@ -108,6 +108,7 @@ class WebcontentConverter {
     required String path,
     double duration: 2000,
     String? executablePath,
+    bool autoClosePage = true,
   }) async {
     Uint8List result = Uint8List.fromList([]);
     try {
@@ -117,6 +118,7 @@ class WebcontentConverter {
         content: content,
         duration: duration,
         executablePath: executablePath,
+        autoClosePage: autoClosePage,
       );
     } on Exception catch (e) {
       WebcontentConverter.logger.error("[method:filePathToImage]: $e");
@@ -141,6 +143,7 @@ class WebcontentConverter {
     required String uri,
     double duration: 2000,
     String? executablePath,
+    bool autoClosePage = true,
   }) async {
     Uint8List result = Uint8List.fromList([]);
     try {
@@ -150,6 +153,7 @@ class WebcontentConverter {
         content: content,
         duration: duration,
         executablePath: executablePath,
+        autoClosePage: autoClosePage,
       );
     } on Exception catch (e) {
       WebcontentConverter.logger.error("[method:webUriToImage]: $e");
@@ -171,7 +175,7 @@ class WebcontentConverter {
   ///   await file.writeAsBytes(bytes);
   /// }
   /// ```
-  static Future contentToImage({
+  static Future<Uint8List> contentToImage({
     required String content,
     double duration: 2000,
     String? executablePath,
@@ -181,7 +185,7 @@ class WebcontentConverter {
       'content': content,
       'duration': duration
     };
-    Uint8List? results = Uint8List.fromList([]);
+    Uint8List results = Uint8List.fromList([]);
     try {
       if (kIsWeb) {
         // TODO: web
@@ -191,7 +195,7 @@ class WebcontentConverter {
 
         //   results = base64.decode(blob);
 
-        //   return results;
+          return results;
       }
 
       if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
