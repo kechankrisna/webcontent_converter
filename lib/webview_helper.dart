@@ -1,24 +1,36 @@
 import 'dart:io' as io;
 
 class WebViewHelper {
-  static bool get isChromeAvailable {
-    List<String> paths = [];
+  static List<String> get desktopBrowserAvailablePath {
     if (io.Platform.isWindows) {
-      paths = [
-        "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
-        "C:\\ProgramFiles(x86)\\Google\\Chrome\\Application\\chrome.exe",
-        "C:\\Program Files\\Mozilla Firefox\\firefox.exe"
-      ];
+      return windowBrowserAvailablePath;
     } else if (io.Platform.isMacOS) {
-      paths = [
+      return macosBrowserAvailablePath;
+    }
+    return [];
+  }
+
+  static List<String> get windowBrowserAvailablePath => [
+        "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+        "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+        "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+        "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
+        "C:\\Program Files\\Mozilla Firefox\\firefox.exe",
+        io.Directory("chromium").absolute.path,
+      ];
+
+  static List<String> get macosBrowserAvailablePath => [
         "/Applications/Microsoft\ Edge\ Canary.app/Contents/MacOS/Microsoft\ Edge\ Canary",
         "/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome",
         "/Applications/Google\ Chrome\ Canary.app/Contents/MacOS/Google\ Chrome\ Canary",
         "/Applications/Chromium.app/Contents/MacOS/Chromium",
         "/Applications/Firefox.app/Contents/MacOS/firefox",
-        "/Applications/Firefox.app/Contents/MacOS/firefox-bin"
+        "/Applications/Firefox.app/Contents/MacOS/firefox-bin",
+        io.Directory("chromium").absolute.path,
       ];
-    }
+
+  static bool get isChromeAvailable {
+    List<String> paths = desktopBrowserAvailablePath;
 
     for (var path in paths) {
       bool isExist = io.File(path).existsSync();
@@ -32,28 +44,7 @@ class WebViewHelper {
 
   static String executablePath() {
     var result;
-    var paths = [];
-    if (io.Platform.isWindows) {
-      paths = [
-        "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
-        "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-        "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
-        "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
-        "C:\\Program Files\\Mozilla Firefox\\firefox.exe",
-        io.Directory("chromium").absolute.path,
-      ];
-    } else if (io.Platform.isMacOS) {
-      paths = [
-        // "/Applications/Safari.app/Contents/MacOS/SafariForWebKitDevelopment",
-        "/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome",
-        "/Applications/Google\ Chrome\ Canary.app/Contents/MacOS/Google\ Chrome\ Canary",
-        "/Applications/Microsoft\ Edge\ Canary.app/Contents/MacOS/Microsoft\ Edge\ Canary",
-        "/Applications/Chromium.app/Contents/MacOS/Chromium",
-        "/Applications/Firefox.app/Contents/MacOS/firefox",
-        "/Applications/Firefox.app/Contents/MacOS/firefox-bin",
-        io.Directory("chromium").absolute.path,
-      ];
-    }
+    var paths = desktopBrowserAvailablePath;
     if (paths.isNotEmpty) {
       for (var path in paths) {
         if (io.File(path).existsSync()) {
@@ -63,7 +54,6 @@ class WebViewHelper {
         }
       }
     }
-
     print("====== not exist ====== ");
     return result;
   }
