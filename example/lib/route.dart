@@ -28,19 +28,16 @@ Route<dynamic> onGenerateRoute(RouteSettings settings) {
         builder: (context) => ContentToImageScreen(),
         settings: settings,
       );
-      break;
     case "/weburi_image_screen":
       return MaterialPageRoute(
         builder: (context) => WebUriToImageScreen(),
         settings: settings,
       );
-      break;
     case "/path_image_screen":
       return MaterialPageRoute(
         builder: (context) => FilePathToImageScreen(),
         settings: settings,
       );
-      break;
 
     /// `PDF converter`
     case "/content_pdf_screen":
@@ -48,25 +45,23 @@ Route<dynamic> onGenerateRoute(RouteSettings settings) {
         builder: (context) => ContentToPDFScreen(),
         settings: settings,
       );
-      break;
+
     case "/weburi_pdf_screen":
       return MaterialPageRoute(
         builder: (context) => WebUriToPDFScreen(),
         settings: settings,
       );
-      break;
+
     case "/path_pdf_screen":
       return MaterialPageRoute(
         builder: (context) => FilePathToPDFScreen(),
         settings: settings,
       );
-      break;
     case "/webview_screen":
       return MaterialPageRoute(
         builder: (context) => WebViewScreen(),
         settings: settings,
       );
-      break;
     default:
       return MaterialPageRoute(
         builder: (context) => ErrorScreen(
