@@ -13,17 +13,13 @@ import 'page.dart';
 import 'package:puppeteer/puppeteer.dart' as pp;
 import 'webview_helper.dart';
 
-<<<<<<< HEAD
-// import 'web_support.dart';
-=======
->>>>>>> custom
 export 'page.dart';
 export 'webview_helper.dart';
 export 'webview_widget.dart';
 
 /// instance of window browser
-pp.Browser windowBrower;
-pp.Page windowBrowserPage;
+pp.Browser? windowBrower;
+pp.Page? windowBrowserPage;
 Uint8List preloadBytes = Uint8List.fromList([]);
 
 /// [WebcontentConverter] will convert html, html file, web uri, into raw bytes image or pdf file
@@ -43,8 +39,8 @@ class WebcontentConverter {
   }
 
   static Future<void> initWebcontentConverter({
-    String executablePath,
-    String content,
+    String? executablePath,
+    String? content,
   }) async {
     if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
       if (WebViewHelper.isChromeAvailable) {
@@ -52,10 +48,10 @@ class WebcontentConverter {
           headless: true,
           executablePath: executablePath ?? WebViewHelper.executablePath(),
         );
-        windowBrowserPage ??= await windowBrower.newPage();
+        windowBrowserPage ??= await windowBrower!.newPage();
       }
     } else if (Platform.isAndroid || Platform.isIOS) {
-      preloadBytes ??=
+      preloadBytes =
           await contentToImage(content: content ?? Demo.getReceiptContent());
     }
 
@@ -177,12 +173,8 @@ class WebcontentConverter {
   static Future contentToImage({
     required String content,
     double duration: 2000,
-<<<<<<< HEAD
     String? executablePath,
-=======
-    String executablePath,
     bool autoClosePage = true,
->>>>>>> custom
   }) async {
     final Map<String, dynamic> arguments = {
       'content': content,
@@ -190,23 +182,17 @@ class WebcontentConverter {
     };
     Uint8List? results = Uint8List.fromList([]);
     try {
-<<<<<<< HEAD
-      // if (kIsWeb) {
-      //   // TODO: web
-      //   var blob = await WebSupport.toBlob();
-      //   blob = blob.replaceAll(RegExp(r"data:image/png;base64,"), "");
-=======
       if (kIsWeb) {
         // TODO: web
         // var blob = await WebSupport.toBlob();
         var blob = "";
         blob = blob.replaceAll(RegExp(r"data:image/png;base64,"), "");
->>>>>>> custom
 
       //   results = base64.decode(blob);
 
       //   return results;
-      // }
+      }
+
       if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
         if (WebViewHelper.isChromeAvailable) {
           WebcontentConverter.logger.info("Desktop support");
@@ -221,16 +207,16 @@ class WebcontentConverter {
 
           /// if window browser page is null
           if (windowBrowserPage == null || windowBrowserPage?.isClosed == true) {
-            windowBrowserPage = await windowBrower.newPage();
+            windowBrowserPage = await windowBrower!.newPage();
           }
 
-          await windowBrowserPage.setContent(content, wait: pp.Until.load);
-          await windowBrowserPage.emulateMediaType(pp.MediaType.print);
+          await windowBrowserPage!.setContent(content, wait: pp.Until.load);
+          await windowBrowserPage!.emulateMediaType(pp.MediaType.print);
           var offsetHeight =
-              await windowBrowserPage.evaluate('document.body.offsetHeight');
+              await windowBrowserPage!.evaluate('document.body.offsetHeight');
           var offsetWidth =
-              await windowBrowserPage.evaluate('document.body.offsetWidth');
-          results = await windowBrowserPage.screenshot(
+              await windowBrowserPage!.evaluate('document.body.offsetWidth');
+          results = await windowBrowserPage!.screenshot(
             format: pp.ScreenshotFormat.png,
             clip: pp.Rectangle.fromPoints(
                 pp.Point(0, 0), pp.Point(offsetWidth, offsetHeight)),
@@ -238,7 +224,7 @@ class WebcontentConverter {
             omitBackground: true,
           );
           if (autoClosePage) {
-            await windowBrowserPage.close();
+            await windowBrowserPage!.close();
             windowBrowserPage = null;
           }
         }
@@ -357,12 +343,8 @@ class WebcontentConverter {
     required String savedPath,
     PdfMargins? margins,
     PaperFormat format: PaperFormat.a4,
-<<<<<<< HEAD
     String? executablePath,
-=======
-    String executablePath,
     bool autoClosePage = true,
->>>>>>> custom
   }) async {
     PdfMargins _margins = margins ?? PdfMargins.zero;
     final Map<String, dynamic> arguments = {
@@ -386,16 +368,16 @@ class WebcontentConverter {
               executablePath: executablePath ?? WebViewHelper.executablePath());
 
           /// if window browser page is null
-          windowBrowserPage ??= await windowBrower.newPage();
+          windowBrowserPage ??= await windowBrower!.newPage();
 
-          await windowBrowserPage.setContent(content,
+          await windowBrowserPage!.setContent(content,
               wait: pp.Until.all([
                 pp.Until.load,
                 pp.Until.domContentLoaded,
                 pp.Until.networkAlmostIdle,
                 pp.Until.networkIdle,
               ]));
-          await windowBrowserPage.pdf(
+          await windowBrowserPage!.pdf(
             format: pp.PaperFormat.inches(
               width: format.width,
               height: format.height,
@@ -410,7 +392,7 @@ class WebcontentConverter {
             output: File(savedPath).openWrite(),
           );
           if (autoClosePage) {
-            await windowBrowserPage.close();
+            await windowBrowserPage!.close();
             windowBrowserPage = null;
           }
           result = savedPath;

@@ -5,24 +5,14 @@ homepage: https://github.com/kechankrisna/webcontent_converter.git
 
 environment:
   sdk: ">=2.12.0 <3.0.0"
-<<<<<<< HEAD
-  flutter: ">=1.20.0"
-=======
   flutter: ">=3.0.0"
->>>>>>> custom
 
 dependencies:
   flutter:
     sdk: flutter
-<<<<<<< HEAD
-  puppeteer: ^2.5.0  
-  dio: ^4.0.0  
-  easy_logger: ^0.0.2  
-=======
   puppeteer: ^2.11.0  
   dio: ^4.0.6  
   easy_logger: ^0.0.2
->>>>>>> custom
 
 dev_dependencies:
   flutter_test:

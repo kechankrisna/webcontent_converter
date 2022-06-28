@@ -39,16 +39,6 @@
 //     // return blob;
 //   }
 
-<<<<<<< HEAD
-  static Future<Uint8List> getBlobData(html.Blob blob) async {
-    final completer = Completer<Uint8List>();
-    final reader = html.FileReader();
-    reader.readAsArrayBuffer(blob);
-    reader.onLoad.listen((_) => completer.complete(reader.result as Uint8List));
-    return (await completer.future);
-  }
-}
-=======
 //   static Future<Uint8List> getBlobData(html.Blob blob) async {
 //     final completer = Completer<Uint8List>();
 //     final reader = html.FileReader();
@@ -57,4 +47,3 @@
 //     return (await completer.future);
 //   }
 // }
->>>>>>> custom
