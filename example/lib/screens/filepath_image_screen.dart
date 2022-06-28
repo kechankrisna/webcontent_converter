@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:webcontent_converter/webcontent_converter.dart';
-import 'package:webcontent_converter_example/services/webview_helper.dart';
 
 class FilePathToImageScreen extends StatefulWidget {
   @override
@@ -44,11 +43,9 @@ class _FilePathToImageScreenState extends State<FilePathToImageScreen> {
 
   ///[convert asset file html] content into bytes
   _convert() async {
-    var executablePath =
-        WebViewHelper.isChromeAvailable ? WebViewHelper.executablePath() : null;
     var bytes = await WebcontentConverter.filePathToImage(
       path: "assets/receipt.html",
-      executablePath: executablePath,
+      executablePath: WebViewHelper.executablePath(),
     );
     if (bytes.length > 0) _saveFile(bytes);
     WebcontentConverter.logger.info(bytes);

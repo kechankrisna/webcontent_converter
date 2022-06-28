@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:webcontent_converter/webcontent_converter.dart';
-import 'package:webcontent_converter_example/services/webview_helper.dart';
 
 class FilePathToPDFScreen extends StatefulWidget {
   @override
@@ -42,8 +41,6 @@ class _FilePathToPDFScreenState extends State<FilePathToPDFScreen> {
 
   ///[convert asset file html] content into pdf
   _convert() async {
-    var executablePath =
-        WebViewHelper.isChromeAvailable ? WebViewHelper.executablePath() : null;
     var dir = await getApplicationDocumentsDirectory();
     var savedPath = join(dir.path, "sample.pdf");
     var result = await WebcontentConverter.filePathToPdf(
@@ -51,7 +48,7 @@ class _FilePathToPDFScreenState extends State<FilePathToPDFScreen> {
       savedPath: savedPath,
       format: PaperFormat.a4,
       margins: PdfMargins.px(top: 35, bottom: 35, right: 35, left: 35),
-      executablePath: executablePath,
+      executablePath: WebViewHelper.executablePath(),
     );
 
     WebcontentConverter.logger.info(result ?? '');

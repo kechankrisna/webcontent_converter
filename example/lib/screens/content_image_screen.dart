@@ -1,16 +1,11 @@
 import 'dart:io' as io;
-import 'dart:typed_data' show Uint8List;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:webcontent_converter/webcontent_converter.dart';
 import 'package:webcontent_converter_example/services/demo.dart';
-<<<<<<< HEAD
-import 'package:webcontent_converter_example/services/webview_helper.dart';
-=======
 // import 'package:webcontent_converter_example/services/webview_helper.dart';
->>>>>>> custom
 
 class ContentToImageScreen extends StatefulWidget {
   @override
@@ -18,14 +13,9 @@ class ContentToImageScreen extends StatefulWidget {
 }
 
 class _ContentToImageScreenState extends State<ContentToImageScreen> {
-<<<<<<< HEAD
+  int _counter = 1;
   Uint8List? _bytes;
   io.File? _file;
-=======
-  int _counter = 1;
-  Uint8List _bytes;
-  io.File _file;
->>>>>>> custom
 
   @override
   Widget build(BuildContext context) {
@@ -79,15 +69,6 @@ class _ContentToImageScreenState extends State<ContentToImageScreen> {
 
   ///[convert html] content into bytes
   _convert() async {
-<<<<<<< HEAD
-    var executablePath =
-        WebViewHelper.isChromeAvailable ? WebViewHelper.executablePath() : null;
-    final content = Demo.getReceiptContent();
-    var bytes = await WebcontentConverter.contentToImage(
-      content: content,
-      executablePath: executablePath,
-    );
-=======
     final content = _counter.isEven
         ? Demo.getShortReceiptContent()
         : Demo.getReceiptContent();
@@ -100,7 +81,6 @@ class _ContentToImageScreenState extends State<ContentToImageScreen> {
     WebcontentConverter.logger
         .info("completed executed in ${stopwatch.elapsed}");
     setState(() => _counter += 1);
->>>>>>> custom
     if (bytes.length > 0) _saveFile(bytes);
     WebcontentConverter.logger.info(bytes);
   }

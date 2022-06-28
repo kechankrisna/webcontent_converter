@@ -42,19 +42,18 @@ class WebViewHelper {
     return false;
   }
 
-  static String executablePath() {
-    var result;
+  static String? executablePath() {
+
     var paths = desktopBrowserAvailablePath;
     if (paths.isNotEmpty) {
       for (var path in paths) {
         if (io.File(path).existsSync()) {
           print("====== exist ====== $path");
-          result = path;
-          return result;
+          return path;
         }
       }
     }
     print("====== not exist ====== ");
-    return result;
+    return null;
   }
 }

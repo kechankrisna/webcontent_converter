@@ -53,8 +53,7 @@ class _ContentToPDFScreenState extends State<ContentToPDFScreen> {
 
   ///[convert html] content into pdf
   _convert() async {
-    var executablePath =
-        WebViewHelper.isChromeAvailable ? WebViewHelper.executablePath() : null;
+   
     final content = Demo.getInvoiceContent();
     var dir = await getApplicationDocumentsDirectory();
     var savedPath = join(dir.path, "sample.pdf");
@@ -69,7 +68,7 @@ class _ContentToPDFScreenState extends State<ContentToPDFScreen> {
 
     WebcontentConverter.logger.info("completed");
 
-    setState(() => _file = File(savedPath));
+    setState(() => _file = io.File(savedPath));
 
     /// [printing]
     // await Printing.layoutPdf(
