@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 num _pxToInches(num px) => px / 96;
 
 num _cmToInches(num cm) => _pxToInches(cm / 37.8);
@@ -25,37 +23,26 @@ class PaperFormat {
     switch (value.toLowerCase()) {
       case "letter":
         return PaperFormat.letter;
-        break;
       case "legal":
         return PaperFormat.legal;
-        break;
       case "tabloid":
         return PaperFormat.tabloid;
-        break;
       case "ledger":
         return PaperFormat.ledger;
-        break;
       case "a0":
         return PaperFormat.a0;
-        break;
       case "a1":
         return PaperFormat.a1;
-        break;
       case "a2":
         return PaperFormat.a2;
-        break;
       case "a3":
         return PaperFormat.a3;
-        break;
       case "a4":
         return PaperFormat.a4;
-        break;
       case "a5":
         return PaperFormat.a5;
-        break;
       case "a6":
         return PaperFormat.a6;
-        break;
       default:
         return PaperFormat.a4;
     }
