@@ -1,3 +1,9 @@
+## 0.0.7+2
+
+* puppeteer 2.11
+* inlucde browser path with initialize and deinitialize to close background browser
+* flutter 3 integrate
+
 ## 0.0.7+1
 
 * puppeteer 2.5
