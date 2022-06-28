@@ -59,7 +59,7 @@ class WebViewHelper {
     return null;
   }
 
-  bool get isDesktop {
+  static bool get isDesktop {
   if (kIsWeb) return false;
   return [
     TargetPlatform.windows,
