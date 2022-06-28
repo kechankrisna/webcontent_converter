@@ -1,6 +1,7 @@
 import 'dart:io' as io;
 
-import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
 
 class WebViewHelper {
   static List<String> get desktopBrowserAvailablePath {
@@ -22,9 +23,9 @@ class WebViewHelper {
       ];
 
   static List<String> get macosBrowserAvailablePath => [
-        "/Applications/Microsoft\ Edge\ Canary.app/Contents/MacOS/Microsoft\ Edge\ Canary",
         "/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome",
         "/Applications/Google\ Chrome\ Canary.app/Contents/MacOS/Google\ Chrome\ Canary",
+        "/Applications/Microsoft\ Edge\ Canary.app/Contents/MacOS/Microsoft\ Edge\ Canary",
         "/Applications/Chromium.app/Contents/MacOS/Chromium",
         "/Applications/Firefox.app/Contents/MacOS/firefox",
         "/Applications/Firefox.app/Contents/MacOS/firefox-bin",
@@ -45,7 +46,6 @@ class WebViewHelper {
   }
 
   static String? executablePath() {
-
     var paths = desktopBrowserAvailablePath;
     if (paths.isNotEmpty) {
       for (var path in paths) {
@@ -60,11 +60,11 @@ class WebViewHelper {
   }
 
   static bool get isDesktop {
-  if (kIsWeb) return false;
-  return [
-    TargetPlatform.windows,
-    TargetPlatform.linux,
-    TargetPlatform.macOS,
-  ].contains(defaultTargetPlatform);
-}
+    if (kIsWeb) return false;
+    return [
+      TargetPlatform.windows,
+      TargetPlatform.linux,
+      TargetPlatform.macOS,
+    ].contains(defaultTargetPlatform);
+  }
 }
