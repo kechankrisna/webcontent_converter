@@ -67,6 +67,7 @@ class _FilePathToImageScreenState extends State<FilePathToImageScreen> {
       path:
           _counter.isEven ? "assets/short_receipt.html" : "assets/receipt.html",
       executablePath: WebViewHelper.executablePath(),
+      autoClosePage: false,
     );
     WebcontentConverter.logger
         .info("completed executed in ${stopwatch.elapsed}");

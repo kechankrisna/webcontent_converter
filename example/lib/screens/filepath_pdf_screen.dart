@@ -2,6 +2,7 @@ import 'dart:io' as io;
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:printing/printing.dart';
 import 'package:webcontent_converter/webcontent_converter.dart';
 
 class FilePathToPDFScreen extends StatefulWidget {
@@ -29,12 +30,21 @@ class _FilePathToPDFScreenState extends State<FilePathToPDFScreen> {
         ],
       ),
       body: Container(
+        alignment: Alignment.center,
         color: Colors.white,
-        child: ListView(
-          children: [
-            if (_file != null) Image.memory(_file!.readAsBytesSync()),
-          ],
-        ),
+        child: _file != null
+            ? Container(
+                constraints: BoxConstraints(maxWidth: 600),
+                child: PdfPreview(
+                  build: (format) async {
+                    return await _file!.readAsBytes();
+                  },
+                  useActions: false,
+                  scrollViewDecoration:
+                      BoxDecoration(color: Colors.transparent),
+                ),
+              )
+            : null,
       ),
     );
   }
@@ -50,6 +60,14 @@ class _FilePathToPDFScreenState extends State<FilePathToPDFScreen> {
       margins: PdfMargins.px(top: 35, bottom: 35, right: 35, left: 35),
       executablePath: WebViewHelper.executablePath(),
     );
+
+    WebcontentConverter.logger.info("completed");
+
+    setState(() => _file = io.File(savedPath));
+
+    /// [printing]
+    // await Printing.layoutPdf(
+    //     onLayout: (PdfPageFormat format) => _file.readAsBytes());
 
     WebcontentConverter.logger.info(result ?? '');
   }

@@ -75,7 +75,7 @@ class _ContentToImageScreenState extends State<ContentToImageScreen> {
           ? Demo.getShortReceiptContent()
           : Demo.getReceiptContent(),
       executablePath: WebViewHelper.executablePath(),
-      autoClosePage: true,
+      autoClosePage: false,
     );
     WebcontentConverter.logger
         .info("completed executed in ${stopwatch.elapsed}");
