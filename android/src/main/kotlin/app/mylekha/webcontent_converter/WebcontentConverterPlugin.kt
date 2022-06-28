@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.Build
 import android.os.Handler
+import android.os.Looper
 import android.print.PrintAttributes
 import android.print.PdfPrinter
 import android.view.View
@@ -20,6 +21,7 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import org.json.JSONArray
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
@@ -81,28 +83,34 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
                     override fun onPageFinished(view: WebView, url: String) {
                         super.onPageFinished(view, url)
 
-                        Handler().postDelayed({
+                        var _duration = (dheight / 1000 ).toInt() * 200 ; /// delay 300 ms for every dheight 2000
+                        print("\n _duration ${_duration}");
+
+                        Handler(Looper.getMainLooper()).postDelayed({
                             print("\nOS Version: ${android.os.Build.VERSION.SDK_INT}")
                             print("\n ================ webview completed ==============")
                             print("\n scroll delayed ${webView.scrollBarFadeDuration}")
 
                             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
-                                webView.evaluateJavascript("document.body.offsetWidth") { offsetWidth ->
-                                    webView.evaluateJavascript("document.body.offsetHeight") { offsetHeight ->
-                                        print("\noffsetWidth : $offsetWidth")
-                                        print("\noffsetHeight : $offsetHeight")
-                                        var data = webView.toBitmap(offsetWidth!!.toDouble(), offsetHeight!!.toDouble())
-                                        if (data != null) {
-                                            val bytes = data.toByteArray()
-//                                            saveWebView(data)
-                                            //ByteArray(0)
-                                            result.success(bytes)
-                                            println("\n Got snapshot")
-                                        }
+                                webView.evaluateJavascript("(function() { return [document.body.offsetWidth, document.body.offsetHeight]; })();"){it
+                                    var xy = JSONArray(it)
+                                    var offsetWidth = xy[0].toString();
+                                    var offsetHeight = xy[1].toString();
+                                    if( offsetHeight.toInt() < 1000 ){
+                                        offsetHeight = (xy[1].toString().toInt() + 20).toString();
+                                    }
+                                    print("\n width height $it ${it is String} ${xy[0]} ${xy[1]}");
+                                    var data = webView.toBitmap(offsetWidth!!.toDouble(), offsetHeight!!.toDouble())
+                                    if (data != null) {
+                                        val bytes = data.toByteArray()
+//                                      saveWebView(data)
+                                        //ByteArray(0)
+                                        result.success(bytes)
+                                        println("\n Got snapshot")
                                     }
                                 }
                             }
-                        }, duration!!.toLong())
+                        }, _duration!!.toLong())
                     }
                 }
             }

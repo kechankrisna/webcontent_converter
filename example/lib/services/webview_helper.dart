@@ -11,6 +11,7 @@ class WebViewHelper {
       ];
     } else if (io.Platform.isMacOS) {
       paths = [
+        "/Applications/Microsoft\ Edge\ Canary.app/Contents/MacOS/Microsoft\ Edge\ Canary",
         "/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome",
         "/Applications/Google\ Chrome\ Canary.app/Contents/MacOS/Google\ Chrome\ Canary",
         "/Applications/Chromium.app/Contents/MacOS/Chromium",
@@ -18,7 +19,7 @@ class WebViewHelper {
         "/Applications/Firefox.app/Contents/MacOS/firefox-bin"
       ];
     }
-    
+
     for (var path in paths) {
       bool isExist = io.File(path).existsSync();
       if (isExist) {
@@ -41,6 +42,8 @@ class WebViewHelper {
       ];
     } else if (io.Platform.isMacOS) {
       paths = [
+        // "/Applications/Safari.app/Contents/MacOS/SafariForWebKitDevelopment",
+        "/Applications/Microsoft\ Edge\ Canary.app/Contents/MacOS/Microsoft\ Edge\ Canary",
         "/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome",
         "/Applications/Google\ Chrome\ Canary.app/Contents/MacOS/Google\ Chrome\ Canary",
         "/Applications/Chromium.app/Contents/MacOS/Chromium",

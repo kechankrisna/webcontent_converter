@@ -8,12 +8,23 @@ import 'package:flutter/services.dart' show MethodChannel, rootBundle;
 import 'package:flutter/widgets.dart';
 import 'package:dio/dio.dart';
 import 'package:webcontent_converter/webview_widget.dart';
+import 'demo.dart';
 import 'page.dart';
 import 'package:puppeteer/puppeteer.dart' as pp;
+import 'webview_helper.dart';
 
+<<<<<<< HEAD
 // import 'web_support.dart';
+=======
+>>>>>>> custom
 export 'page.dart';
+export 'webview_helper.dart';
 export 'webview_widget.dart';
+
+/// instance of window browser
+pp.Browser windowBrower;
+pp.Page windowBrowserPage;
+Uint8List preloadBytes = Uint8List.fromList([]);
 
 /// [WebcontentConverter] will convert html, html file, web uri, into raw bytes image or pdf file
 class WebcontentConverter {
@@ -23,6 +34,41 @@ class WebcontentConverter {
   static Future<String?> get platformVersion async {
     final String? version = await _channel.invokeMethod('getPlatformVersion');
     return version;
+  }
+
+  static Future<void> ensureInitialized() async {
+    if (windowBrower == null || windowBrower?.isConnected != true) {
+      await WebcontentConverter.initWebcontentConverter();
+    }
+  }
+
+  static Future<void> initWebcontentConverter({
+    String executablePath,
+    String content,
+  }) async {
+    if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
+      if (WebViewHelper.isChromeAvailable) {
+        windowBrower ??= await pp.puppeteer.launch(
+          headless: true,
+          executablePath: executablePath ?? WebViewHelper.executablePath(),
+        );
+        windowBrowserPage ??= await windowBrower.newPage();
+      }
+    } else if (Platform.isAndroid || Platform.isIOS) {
+      preloadBytes ??=
+          await contentToImage(content: content ?? Demo.getReceiptContent());
+    }
+
+    WebcontentConverter.logger.debug('webcontent converter initialized');
+  }
+
+  static Future<void> deinitWebcontentConverter({
+    bool isClosePage = true,
+    bool isCloseBrower = true,
+  }) async {
+    WebcontentConverter.logger.debug('webcontent converter deinitWebcontentConverter');
+    if (isClosePage) await windowBrowserPage?.close();
+    if (isCloseBrower) await windowBrower?.close();
   }
 
   /// ## `WebcontentConverter.logger`
@@ -131,7 +177,12 @@ class WebcontentConverter {
   static Future contentToImage({
     required String content,
     double duration: 2000,
+<<<<<<< HEAD
     String? executablePath,
+=======
+    String executablePath,
+    bool autoClosePage = true,
+>>>>>>> custom
   }) async {
     final Map<String, dynamic> arguments = {
       'content': content,
@@ -139,31 +190,58 @@ class WebcontentConverter {
     };
     Uint8List? results = Uint8List.fromList([]);
     try {
+<<<<<<< HEAD
       // if (kIsWeb) {
       //   // TODO: web
       //   var blob = await WebSupport.toBlob();
       //   blob = blob.replaceAll(RegExp(r"data:image/png;base64,"), "");
+=======
+      if (kIsWeb) {
+        // TODO: web
+        // var blob = await WebSupport.toBlob();
+        var blob = "";
+        blob = blob.replaceAll(RegExp(r"data:image/png;base64,"), "");
+>>>>>>> custom
 
       //   results = base64.decode(blob);
 
       //   return results;
       // }
       if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
-        WebcontentConverter.logger.info("Desktop support");
-        var browser = await pp.puppeteer.launch(executablePath: executablePath);
-        var page = await browser.newPage();
-        await page.setContent(content, wait: pp.Until.load);
-        await page.emulateMediaType(pp.MediaType.print);
-        var offsetHeight = await page.evaluate('document.body.offsetHeight');
-        var offsetWidth = await page.evaluate('document.body.offsetWidth');
-        results = await page.screenshot(
-          format: pp.ScreenshotFormat.png,
-          clip: pp.Rectangle.fromPoints(
-              pp.Point(0, 0), pp.Point(offsetWidth, offsetHeight)),
-          fullPage: false,
-          omitBackground: true,
-        );
-        await page.close();
+        if (WebViewHelper.isChromeAvailable) {
+          WebcontentConverter.logger.info("Desktop support");
+
+          /// if window browser is null
+          if (windowBrower == null || windowBrower?.isConnected != true) {
+            windowBrower = await pp.puppeteer.launch(
+                headless: true,
+                executablePath:
+                    executablePath ?? WebViewHelper.executablePath());
+          }
+
+          /// if window browser page is null
+          if (windowBrowserPage == null || windowBrowserPage?.isClosed == true) {
+            windowBrowserPage = await windowBrower.newPage();
+          }
+
+          await windowBrowserPage.setContent(content, wait: pp.Until.load);
+          await windowBrowserPage.emulateMediaType(pp.MediaType.print);
+          var offsetHeight =
+              await windowBrowserPage.evaluate('document.body.offsetHeight');
+          var offsetWidth =
+              await windowBrowserPage.evaluate('document.body.offsetWidth');
+          results = await windowBrowserPage.screenshot(
+            format: pp.ScreenshotFormat.png,
+            clip: pp.Rectangle.fromPoints(
+                pp.Point(0, 0), pp.Point(offsetWidth, offsetHeight)),
+            fullPage: false,
+            omitBackground: true,
+          );
+          if (autoClosePage) {
+            await windowBrowserPage.close();
+            windowBrowserPage = null;
+          }
+        }
       } else {
         WebcontentConverter.logger.info("Mobile support");
         results = await (_channel.invokeMethod('contentToImage', arguments));
@@ -279,7 +357,12 @@ class WebcontentConverter {
     required String savedPath,
     PdfMargins? margins,
     PaperFormat format: PaperFormat.a4,
+<<<<<<< HEAD
     String? executablePath,
+=======
+    String executablePath,
+    bool autoClosePage = true,
+>>>>>>> custom
   }) async {
     PdfMargins _margins = margins ?? PdfMargins.zero;
     final Map<String, dynamic> arguments = {
@@ -296,31 +379,42 @@ class WebcontentConverter {
     try {
       if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
         WebcontentConverter.logger.info("Desktop support");
-        var browser = await pp.puppeteer.launch(executablePath: executablePath);
-        var page = await browser.newPage();
-        await page.setContent(content,
-            wait: pp.Until.all([
-              pp.Until.load,
-              pp.Until.domContentLoaded,
-              pp.Until.networkAlmostIdle,
-              pp.Until.networkIdle,
-            ]));
-        await page.pdf(
-          format: pp.PaperFormat.inches(
-            width: format.width,
-            height: format.height,
-          ),
-          margins: pp.PdfMargins.inches(
-            top: _margins.top,
-            bottom: _margins.bottom,
-            left: _margins.left,
-            right: _margins.right,
-          ),
-          printBackground: true,
-          output: File(savedPath).openWrite(),
-        );
-        await page.close();
-        result = savedPath;
+        if (WebViewHelper.isChromeAvailable) {
+          /// if window browser is null
+          windowBrower ??= await pp.puppeteer.launch(
+              headless: true,
+              executablePath: executablePath ?? WebViewHelper.executablePath());
+
+          /// if window browser page is null
+          windowBrowserPage ??= await windowBrower.newPage();
+
+          await windowBrowserPage.setContent(content,
+              wait: pp.Until.all([
+                pp.Until.load,
+                pp.Until.domContentLoaded,
+                pp.Until.networkAlmostIdle,
+                pp.Until.networkIdle,
+              ]));
+          await windowBrowserPage.pdf(
+            format: pp.PaperFormat.inches(
+              width: format.width,
+              height: format.height,
+            ),
+            margins: pp.PdfMargins.inches(
+              top: _margins.top,
+              bottom: _margins.bottom,
+              left: _margins.left,
+              right: _margins.right,
+            ),
+            printBackground: true,
+            output: File(savedPath).openWrite(),
+          );
+          if (autoClosePage) {
+            await windowBrowserPage.close();
+            windowBrowserPage = null;
+          }
+          result = savedPath;
+        }
       } else if (Platform.isAndroid || Platform.isIOS) {
         WebcontentConverter.logger.info("Mobile support");
         result = await _channel.invokeMethod('contentToPDF', arguments);

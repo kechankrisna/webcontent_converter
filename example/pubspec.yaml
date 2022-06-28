@@ -1,5 +1,6 @@
 name: webcontent_converter_example
 description: Demonstrates how to use the webcontent_converter plugin.
+version: 1.0.0+1
 
 # The following line prevents the package from being accidentally published to
 # pub.dev using `pub publish`. This is preferred for private packages.
@@ -7,14 +8,15 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
 environment:
   sdk: ">=2.12.0 <3.0.0"
+  # flutter: ">=3.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
   path: ^1.8.0
-  path_provider: ^2.0.1
+  path_provider: ^2.0.6
   esc_pos_utils_plus: ^2.0.1+2
-  printing: ^5.2.1
+  printing: ^5.8.0
   # esc_pos_printer: 
   #   path: ../../esc_pos_printer
 

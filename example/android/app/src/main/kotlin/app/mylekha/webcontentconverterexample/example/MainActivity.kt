@@ -1,4 +1,4 @@
-package app.mylekha.webcontent_converter_example.example
+package app.mylekha.webcontentconverterexample.example
 
 import io.flutter.embedding.android.FlutterActivity
 

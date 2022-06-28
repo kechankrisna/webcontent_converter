@@ -35,7 +35,10 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                         print("width = \(self.webView.scrollView.contentSize.width)")
                     if #available(iOS 11.0, *) {
                         let configuration = WKSnapshotConfiguration()
-                        configuration.rect = CGRect(origin: .zero, size: (self.webView.scrollView.contentSize))
+                        var size = self.webView.scrollView.contentSize
+                        size.height = size.height + 50
+                        print("height = \(size.height)")
+                        configuration.rect = CGRect(origin: .zero, size: size)
                         self.webView.snapshotView(afterScreenUpdates: true)
                         self.webView.takeSnapshot(with: configuration) { (image, error) in
                             guard let data = image!.jpegData(compressionQuality: 1) else {

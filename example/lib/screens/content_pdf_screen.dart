@@ -5,7 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:printing/printing.dart';
 import 'package:webcontent_converter/webcontent_converter.dart';
 import 'package:webcontent_converter_example/services/demo.dart';
-import 'package:webcontent_converter_example/services/webview_helper.dart';
+// import 'package:webcontent_converter_example/services/webview_helper.dart';
 
 class ContentToPDFScreen extends StatefulWidget {
   @override
@@ -63,10 +63,13 @@ class _ContentToPDFScreenState extends State<ContentToPDFScreen> {
       savedPath: savedPath,
       format: PaperFormat.a4,
       margins: PdfMargins.px(top: 55, bottom: 55, right: 55, left: 55),
-      executablePath: executablePath,
+      executablePath: WebViewHelper.executablePath(),
+      autoClosePage: false,
     );
 
-    setState(() => _file = io.File(savedPath));
+    WebcontentConverter.logger.info("completed");
+
+    setState(() => _file = File(savedPath));
 
     /// [printing]
     // await Printing.layoutPdf(
