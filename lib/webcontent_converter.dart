@@ -43,7 +43,7 @@ class WebcontentConverter {
     String? content,
   }) async {
     if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
-      if (WebViewHelper.isChromeAvailable) {
+      if (WebViewHelper.isChromeAvailable) { 
         windowBrower ??= await pp.puppeteer.launch(
           headless: true,
           executablePath: executablePath ?? WebViewHelper.executablePath(),
@@ -199,7 +199,7 @@ class WebcontentConverter {
       }
 
       if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
-        if (WebViewHelper.isChromeAvailable) {
+        if (WebViewHelper.isChromeAvailable || Platform.isLinux ) { // funcion "WebViewHelper.isChromeAvailable" ,  doesn't have implementation in Platform linux
           WebcontentConverter.logger.info("Desktop support");
 
           /// if window browser is null
