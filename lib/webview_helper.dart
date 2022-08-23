@@ -9,6 +9,8 @@ class WebViewHelper {
       return windowBrowserAvailablePath;
     } else if (io.Platform.isMacOS) {
       return macosBrowserAvailablePath;
+    }else if (io.Platform.isLinux) {
+      return linuxBrowserAvailablePath;
     }
     return [];
   }
@@ -30,6 +32,10 @@ class WebViewHelper {
         "/Applications/Firefox.app/Contents/MacOS/firefox",
         "/Applications/Firefox.app/Contents/MacOS/firefox-bin",
         io.Directory("chromium").absolute.path,
+      ];
+    
+    static List<String> get linuxBrowserAvailablePath => [
+        "/usr/bin/google-chrome"
       ];
 
   static bool get isChromeAvailable {
