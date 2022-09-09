@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:easy_logger/easy_logger.dart';
@@ -210,13 +209,13 @@ class WebcontentConverter {
 
           /// if window browser page is null
             windowBrowserPage = await windowBrower!.newPage();
-          await windowBrowserPage!.setContent(content, wait: pp.Until.load);
-          await windowBrowserPage!.emulateMediaType(pp.MediaType.print);
+          await windowBrowserPage.setContent(content, wait: pp.Until.load);
+          await windowBrowserPage.emulateMediaType(pp.MediaType.print);
           var offsetHeight =
-          await windowBrowserPage!.evaluate('document.body.offsetHeight');
+          await windowBrowserPage.evaluate('document.body.offsetHeight');
           var offsetWidth =
-          await windowBrowserPage!.evaluate('document.body.offsetWidth');
-          results = await windowBrowserPage!.screenshot(
+          await windowBrowserPage.evaluate('document.body.offsetWidth');
+          results = await windowBrowserPage.screenshot(
             format: pp.ScreenshotFormat.png,
             clip: pp.Rectangle.fromPoints(
                 pp.Point(0, 0), pp.Point(offsetWidth, offsetHeight)),
@@ -371,16 +370,16 @@ class WebcontentConverter {
             executablePath: executablePath ?? WebViewHelper.executablePath());
 
         /// if window browser page is null
-        windowBrowserPage ??= await windowBrower!.newPage();
+        windowBrowserPage = await windowBrower!.newPage();
 
-        await windowBrowserPage!.setContent(content,
+        await windowBrowserPage.setContent(content,
             wait: pp.Until.all([
               pp.Until.load,
               pp.Until.domContentLoaded,
               pp.Until.networkAlmostIdle,
               pp.Until.networkIdle,
             ]));
-        await windowBrowserPage!.pdf(
+        await windowBrowserPage.pdf(
           format: pp.PaperFormat.inches(
             width: format.width,
             height: format.height,
