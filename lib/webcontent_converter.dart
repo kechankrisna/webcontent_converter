@@ -32,9 +32,39 @@ class WebcontentConverter {
   }
 
 
+  static Future<void> ensureInitialized() async {
+    if (windowBrower == null || windowBrower?.isConnected != true) {
+      await WebcontentConverter.initWebcontentConverter();
+    }
+  }
 
+  static Future<void> initWebcontentConverter({
+    String? executablePath,
+    String? content,
+  }) async {
+    if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
+      if (WebViewHelper.isChromeAvailable) {
+        windowBrower ??= await pp.puppeteer.launch(
+          headless: true,
+          executablePath: executablePath ?? WebViewHelper.executablePath(),
+        );
+      }
+    } else if (Platform.isAndroid || Platform.isIOS) {
+      preloadBytes =
+      await contentToImage(content: content ?? Demo.getReceiptContent());
+    }
 
+    WebcontentConverter.logger.debug('webcontent converter initialized');
+  }
 
+  static Future<void> deinitWebcontentConverter({
+    bool isClosePage = true,
+    bool isCloseBrower = true,
+  }) async {
+    WebcontentConverter.logger
+        .debug('webcontent converter deinitWebcontentConverter');
+    if (isCloseBrower) await windowBrower?.close();
+  }
 
   /// ## `WebcontentConverter.logger`
   /// `allow to pretty text`
