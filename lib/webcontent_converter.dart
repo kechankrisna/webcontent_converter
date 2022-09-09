@@ -19,7 +19,6 @@ export 'webview_widget.dart';
 
 /// instance of window browser
 pp.Browser? windowBrower;
-pp.Page? windowBrowserPage;
 Uint8List preloadBytes = Uint8List.fromList([]);
 
 /// [WebcontentConverter] will convert html, html file, web uri, into raw bytes image or pdf file
@@ -32,41 +31,10 @@ class WebcontentConverter {
     return version;
   }
 
-  static Future<void> ensureInitialized() async {
-    if (windowBrower == null || windowBrower?.isConnected != true) {
-      await WebcontentConverter.initWebcontentConverter();
-    }
-  }
 
-  static Future<void> initWebcontentConverter({
-    String? executablePath,
-    String? content,
-  }) async {
-    if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
-      if (WebViewHelper.isChromeAvailable) {
-        windowBrower ??= await pp.puppeteer.launch(
-          headless: true,
-          executablePath: executablePath ?? WebViewHelper.executablePath(),
-        );
-        windowBrowserPage ??= await windowBrower!.newPage();
-      }
-    } else if (Platform.isAndroid || Platform.isIOS) {
-      preloadBytes =
-          await contentToImage(content: content ?? Demo.getReceiptContent());
-    }
 
-    WebcontentConverter.logger.debug('webcontent converter initialized');
-  }
 
-  static Future<void> deinitWebcontentConverter({
-    bool isClosePage = true,
-    bool isCloseBrower = true,
-  }) async {
-    WebcontentConverter.logger
-        .debug('webcontent converter deinitWebcontentConverter');
-    if (isClosePage) await windowBrowserPage?.close();
-    if (isCloseBrower) await windowBrower?.close();
-  }
+
 
   /// ## `WebcontentConverter.logger`
   /// `allow to pretty text`
@@ -107,8 +75,7 @@ class WebcontentConverter {
   static Future<Uint8List> filePathToImage({
     required String path,
     double duration: 2000,
-    String? executablePath,
-    bool autoClosePage = true,
+    String? executablePath
   }) async {
     Uint8List result = Uint8List.fromList([]);
     try {
@@ -118,7 +85,6 @@ class WebcontentConverter {
         content: content,
         duration: duration,
         executablePath: executablePath,
-        autoClosePage: autoClosePage,
       );
     } on Exception catch (e) {
       WebcontentConverter.logger.error("[method:filePathToImage]: $e");
@@ -143,7 +109,6 @@ class WebcontentConverter {
     required String uri,
     double duration: 2000,
     String? executablePath,
-    bool autoClosePage = true,
   }) async {
     Uint8List result = Uint8List.fromList([]);
     try {
@@ -153,7 +118,6 @@ class WebcontentConverter {
         content: content,
         duration: duration,
         executablePath: executablePath,
-        autoClosePage: autoClosePage,
       );
     } on Exception catch (e) {
       WebcontentConverter.logger.error("[method:webUriToImage]: $e");
@@ -175,17 +139,21 @@ class WebcontentConverter {
   ///   await file.writeAsBytes(bytes);
   /// }
   /// ```
+
+
+
   static Future<Uint8List> contentToImage({
     required String content,
     double duration: 2000,
     String? executablePath,
-    bool autoClosePage = true,
   }) async {
     final Map<String, dynamic> arguments = {
       'content': content,
       'duration': duration
     };
     Uint8List results = Uint8List.fromList([]);
+
+    pp.Page? windowBrowserPage;
     try {
       if (kIsWeb) {
         // TODO: web
@@ -207,21 +175,17 @@ class WebcontentConverter {
             windowBrower = await pp.puppeteer.launch(
                 headless: true,
                 executablePath:
-                    executablePath ?? WebViewHelper.executablePath());
+                executablePath ?? WebViewHelper.executablePath());
           }
 
           /// if window browser page is null
-          if (windowBrowserPage == null ||
-              windowBrowserPage?.isClosed == true) {
             windowBrowserPage = await windowBrower!.newPage();
-          }
-
           await windowBrowserPage!.setContent(content, wait: pp.Until.load);
           await windowBrowserPage!.emulateMediaType(pp.MediaType.print);
           var offsetHeight =
-              await windowBrowserPage!.evaluate('document.body.offsetHeight');
+          await windowBrowserPage!.evaluate('document.body.offsetHeight');
           var offsetWidth =
-              await windowBrowserPage!.evaluate('document.body.offsetWidth');
+          await windowBrowserPage!.evaluate('document.body.offsetWidth');
           results = await windowBrowserPage!.screenshot(
             format: pp.ScreenshotFormat.png,
             clip: pp.Rectangle.fromPoints(
@@ -229,10 +193,7 @@ class WebcontentConverter {
             fullPage: false,
             omitBackground: true,
           );
-          if (autoClosePage) {
-            await windowBrowserPage!.close();
-            windowBrowserPage = null;
-          }
+
         }
       } else {
         WebcontentConverter.logger.info("Mobile support");
@@ -242,8 +203,13 @@ class WebcontentConverter {
       WebcontentConverter.logger.error("[method:contentToImage]: $e");
       throw Exception("Error: $e");
     }
+    finally{
+      await windowBrowserPage!.close();
+      windowBrowserPage = null;
+    }
     return results;
   }
+
 
   /**
    * `PDF`
@@ -349,9 +315,9 @@ class WebcontentConverter {
     required String savedPath,
     PdfMargins? margins,
     PaperFormat format: PaperFormat.a4,
-    String? executablePath,
-    bool autoClosePage = true,
+    String? executablePath
   }) async {
+    pp.Page? windowBrowserPage;
     PdfMargins _margins = margins ?? PdfMargins.zero;
     final Map<String, dynamic> arguments = {
       'content': content,
@@ -398,10 +364,7 @@ class WebcontentConverter {
           printBackground: true,
           output: File(savedPath).openWrite(),
         );
-        if (autoClosePage) {
-          await windowBrowserPage!.close();
-          windowBrowserPage = null;
-        }
+
         result = savedPath;
       } else if (Platform.isAndroid || Platform.isIOS) {
         WebcontentConverter.logger.info("Mobile support");
@@ -413,6 +376,10 @@ class WebcontentConverter {
     } on Exception catch (e) {
       WebcontentConverter.logger.error("[method:contentToPDF]: $e");
       throw Exception("Error: $e");
+    }
+    finally{
+      await windowBrowserPage!.close();
+      windowBrowserPage = null;
     }
     return result;
   }
