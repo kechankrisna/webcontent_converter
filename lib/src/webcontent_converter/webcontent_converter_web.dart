@@ -1,12 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:js';
+import 'dart:js' as js;
 import 'dart:html' as html;
 import 'dart:typed_data';
 import 'package:easy_logger/easy_logger.dart';
 import 'package:flutter/services.dart' show MethodChannel;
 import 'package:flutter/widgets.dart';
 import 'package:js/js.dart';
+import 'package:js/js_util.dart';
 import 'package:puppeteer/puppeteer.dart' as pp;
 import '../../webview_widget.dart';
 import '../../page.dart';
@@ -14,38 +15,11 @@ import '../../page.dart';
 pp.Browser? windowBrower;
 pp.Page? windowBrowserPage;
 
+@anonymous
 @JS('html2pdf')
-external JsFunction html2pdf(html.Element src, Object opt);
+external js.JsFunction html2pdf(html.Element element, dynamic opt);
 
-@JS('html2pdf.Worker')
-external JsFunction Worker;
-
-/// @JS('Worker')
-/// external JsObject Worker(Object option);
-
-/// @JS('html2pdf.Worker')
-/// @anonymous
-/// class Worker {
-///   final Object? src;
-///   final Map? opt;
-
-///   Worker({this.src, this.opt});
-
-///   /// external factory Worker({bool responsive});
-/// }
-
-/// extension WorkerExt on html2pdf {
-///   /// final Object src;
-///   /// final Map opt;
-
-///   /// Worker(this.src, this.opt);
-
-/// }
-
-@JS('JSON.stringify')
-external stringify(Object ojb);
-
-bool checkhtml2pdfInstallation() => context['html2pdf'] != null;
+bool checkhtml2pdfInstallation() => js.context['html2pdf'] != null;
 
 /// [WebcontentConverter] will convert html, html file, web uri, into raw bytes image or pdf file
 class WebcontentConverter {
@@ -165,11 +139,22 @@ class WebcontentConverter {
     div.setInnerHtml(content, validator: AllowAll());
     html.document.body?.children.add(div);
 
-    /// final worker = Worker(src:div,
-    ///     opt: {'filename': 'hellworld.pdf'}); //div, {'filename': 'hellworld.pdf'}
-    /// allowInteropCaptureThis(html2pdf);
-    var result = html2pdf(div, {'filename': 'hellworld.pdf'});
-    
+    var hasHtml2pdf = js.context.hasProperty("html2pdf.Worker");
+    print("hasHtml2pdf $hasHtml2pdf");
+
+    var opt = {
+      "margin": 0,
+      "filename": savedPath,
+      "image": {"type": 'jpeg', "quality": 0.98},
+      "html2canvas": {"scale": 5},
+      "jsPDF": {"unit": 'in', "format": 'a4', "orientation": 'portrait'},
+      "pagebreak": {
+        "mode": ['avoid-all', 'css', 'legacy']
+      }
+    };
+
+    html2pdf(div, jsify(opt));
+
     html.document.body?.children.remove(div);
     return null;
   }
