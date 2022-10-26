@@ -69,7 +69,6 @@ class _WebUriToImageScreenState extends State<WebUriToImageScreen> {
           ? "http://127.0.0.1:5500/example/assets/short_receipt.html"
           : "http://127.0.0.1:5500/example/assets/receipt.html",
       executablePath: WebViewHelper.executablePath(),
-      autoClosePage: false,
     );
     WebcontentConverter.logger
         .info("completed executed in ${stopwatch.elapsed}");

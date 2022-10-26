@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:easy_logger/easy_logger.dart';
@@ -19,7 +18,6 @@ export 'webview_widget.dart';
 
 /// instance of window browser
 pp.Browser? windowBrower;
-pp.Page? windowBrowserPage;
 Uint8List preloadBytes = Uint8List.fromList([]);
 
 /// [WebcontentConverter] will convert html, html file, web uri, into raw bytes image or pdf file
@@ -31,6 +29,7 @@ class WebcontentConverter {
     final String? version = await _channel.invokeMethod('getPlatformVersion');
     return version;
   }
+
 
   static Future<void> ensureInitialized() async {
     if (windowBrower == null || windowBrower?.isConnected != true) {
@@ -48,11 +47,10 @@ class WebcontentConverter {
           headless: true,
           executablePath: executablePath ?? WebViewHelper.executablePath(),
         );
-        windowBrowserPage ??= await windowBrower!.newPage();
       }
     } else if (Platform.isAndroid || Platform.isIOS) {
       preloadBytes =
-          await contentToImage(content: content ?? Demo.getReceiptContent());
+      await contentToImage(content: content ?? Demo.getReceiptContent());
     }
 
     WebcontentConverter.logger.debug('webcontent converter initialized');
@@ -64,7 +62,6 @@ class WebcontentConverter {
   }) async {
     WebcontentConverter.logger
         .debug('webcontent converter deinitWebcontentConverter');
-    if (isClosePage) await windowBrowserPage?.close();
     if (isCloseBrower) await windowBrower?.close();
   }
 
@@ -107,8 +104,7 @@ class WebcontentConverter {
   static Future<Uint8List> filePathToImage({
     required String path,
     double duration: 2000,
-    String? executablePath,
-    bool autoClosePage = true,
+    String? executablePath
   }) async {
     Uint8List result = Uint8List.fromList([]);
     try {
@@ -118,7 +114,6 @@ class WebcontentConverter {
         content: content,
         duration: duration,
         executablePath: executablePath,
-        autoClosePage: autoClosePage,
       );
     } on Exception catch (e) {
       WebcontentConverter.logger.error("[method:filePathToImage]: $e");
@@ -143,7 +138,6 @@ class WebcontentConverter {
     required String uri,
     double duration: 2000,
     String? executablePath,
-    bool autoClosePage = true,
   }) async {
     Uint8List result = Uint8List.fromList([]);
     try {
@@ -153,7 +147,6 @@ class WebcontentConverter {
         content: content,
         duration: duration,
         executablePath: executablePath,
-        autoClosePage: autoClosePage,
       );
     } on Exception catch (e) {
       WebcontentConverter.logger.error("[method:webUriToImage]: $e");
@@ -175,17 +168,21 @@ class WebcontentConverter {
   ///   await file.writeAsBytes(bytes);
   /// }
   /// ```
+
+
+
   static Future<Uint8List> contentToImage({
     required String content,
     double duration: 2000,
     String? executablePath,
-    bool autoClosePage = true,
   }) async {
     final Map<String, dynamic> arguments = {
       'content': content,
       'duration': duration
     };
     Uint8List results = Uint8List.fromList([]);
+
+
     try {
       if (kIsWeb) {
         // TODO: web
@@ -200,36 +197,37 @@ class WebcontentConverter {
 
       if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
         if (WebViewHelper.isChromeAvailable) {
-          WebcontentConverter.logger.info("Desktop support");
+          pp.Page? windowBrowserPage;
+          try {
+            WebcontentConverter.logger.info("Desktop support");
 
-          /// if window browser is null
-          if (windowBrower == null || windowBrower?.isConnected != true) {
-            windowBrower = await pp.puppeteer.launch(
-                headless: true,
-                executablePath:
-                    executablePath ?? WebViewHelper.executablePath());
-          }
+            /// if window browser is null
+            if (windowBrower == null || windowBrower?.isConnected != true) {
+              windowBrower = await pp.puppeteer.launch(
+                  headless: true,
+                  executablePath:
+                  executablePath ?? WebViewHelper.executablePath());
+            }
 
-          /// if window browser page is null
-          if (windowBrowserPage == null ||
-              windowBrowserPage?.isClosed == true) {
+            /// if window browser page is null
             windowBrowserPage = await windowBrower!.newPage();
+            await windowBrowserPage.setContent(content, wait: pp.Until.load);
+            await windowBrowserPage.emulateMediaType(pp.MediaType.print);
+            var offsetHeight =
+            await windowBrowserPage.evaluate('document.body.offsetHeight');
+            var offsetWidth =
+            await windowBrowserPage.evaluate('document.body.offsetWidth');
+            results = await windowBrowserPage.screenshot(
+              format: pp.ScreenshotFormat.png,
+              clip: pp.Rectangle.fromPoints(
+                  pp.Point(0, 0), pp.Point(offsetWidth, offsetHeight)),
+              fullPage: false,
+              omitBackground: true,
+            );
           }
+          catch(e){
 
-          await windowBrowserPage!.setContent(content, wait: pp.Until.load);
-          await windowBrowserPage!.emulateMediaType(pp.MediaType.print);
-          var offsetHeight =
-              await windowBrowserPage!.evaluate('document.body.offsetHeight');
-          var offsetWidth =
-              await windowBrowserPage!.evaluate('document.body.offsetWidth');
-          results = await windowBrowserPage!.screenshot(
-            format: pp.ScreenshotFormat.png,
-            clip: pp.Rectangle.fromPoints(
-                pp.Point(0, 0), pp.Point(offsetWidth, offsetHeight)),
-            fullPage: false,
-            omitBackground: true,
-          );
-          if (autoClosePage) {
+          }finally{
             await windowBrowserPage!.close();
             windowBrowserPage = null;
           }
@@ -244,6 +242,7 @@ class WebcontentConverter {
     }
     return results;
   }
+
 
   /**
    * `PDF`
@@ -349,8 +348,7 @@ class WebcontentConverter {
     required String savedPath,
     PdfMargins? margins,
     PaperFormat format: PaperFormat.a4,
-    String? executablePath,
-    bool autoClosePage = true,
+    String? executablePath
   }) async {
     PdfMargins _margins = margins ?? PdfMargins.zero;
     final Map<String, dynamic> arguments = {
@@ -367,42 +365,48 @@ class WebcontentConverter {
     try {
       if ((Platform.isMacOS || Platform.isLinux || Platform.isWindows) &&
           WebViewHelper.isChromeAvailable) {
-        WebcontentConverter.logger.info("Desktop support");
 
-        /// if window browser is null
-        windowBrower ??= await pp.puppeteer.launch(
-            headless: true,
-            executablePath: executablePath ?? WebViewHelper.executablePath());
+        pp.Page? windowBrowserPage;
+        try {
+          WebcontentConverter.logger.info("Desktop support");
 
-        /// if window browser page is null
-        windowBrowserPage ??= await windowBrower!.newPage();
+          /// if window browser is null
+          windowBrower ??= await pp.puppeteer.launch(
+              headless: true,
+              executablePath: executablePath ?? WebViewHelper.executablePath());
 
-        await windowBrowserPage!.setContent(content,
-            wait: pp.Until.all([
-              pp.Until.load,
-              pp.Until.domContentLoaded,
-              pp.Until.networkAlmostIdle,
-              pp.Until.networkIdle,
-            ]));
-        await windowBrowserPage!.pdf(
-          format: pp.PaperFormat.inches(
-            width: format.width,
-            height: format.height,
-          ),
-          margins: pp.PdfMargins.inches(
-            top: _margins.top,
-            bottom: _margins.bottom,
-            left: _margins.left,
-            right: _margins.right,
-          ),
-          printBackground: true,
-          output: File(savedPath).openWrite(),
-        );
-        if (autoClosePage) {
+          /// if window browser page is null
+          windowBrowserPage = await windowBrower!.newPage();
+
+          await windowBrowserPage.setContent(content,
+              wait: pp.Until.all([
+                pp.Until.load,
+                pp.Until.domContentLoaded,
+                pp.Until.networkAlmostIdle,
+                pp.Until.networkIdle,
+              ]));
+          await windowBrowserPage.pdf(
+            format: pp.PaperFormat.inches(
+              width: format.width,
+              height: format.height,
+            ),
+            margins: pp.PdfMargins.inches(
+              top: _margins.top,
+              bottom: _margins.bottom,
+              left: _margins.left,
+              right: _margins.right,
+            ),
+            printBackground: true,
+            output: File(savedPath).openWrite(),
+          );
+
+          result = savedPath;
+        }
+        catch(e){}
+        finally{
           await windowBrowserPage!.close();
           windowBrowserPage = null;
         }
-        result = savedPath;
       } else if (Platform.isAndroid || Platform.isIOS) {
         WebcontentConverter.logger.info("Mobile support");
         result = await _channel.invokeMethod('contentToPDF', arguments);
@@ -414,6 +418,7 @@ class WebcontentConverter {
       WebcontentConverter.logger.error("[method:contentToPDF]: $e");
       throw Exception("Error: $e");
     }
+
     return result;
   }
 
