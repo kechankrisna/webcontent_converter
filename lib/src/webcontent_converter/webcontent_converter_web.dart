@@ -19,7 +19,7 @@ pp.Page? windowBrowserPage;
 @JS('html2pdf')
 external js.JsFunction html2pdf(html.Element element, dynamic opt);
 
-bool checkhtml2pdfInstallation() => js.context['html2pdf'] != null;
+bool checkHtml2PdfInstallation() => js.context['html2pdf'] != null;
 
 /// [WebcontentConverter] will convert html, html file, web uri, into raw bytes image or pdf file
 class WebcontentConverter {
@@ -50,9 +50,9 @@ class WebcontentConverter {
   );
 
   static Future<void> ensureInitialized() async {
-    if (!checkhtml2pdfInstallation()) {
+    if (!checkHtml2PdfInstallation()) {
       assert(
-          checkhtml2pdfInstallation(),
+          checkHtml2PdfInstallation(),
           'html2pdf not added in web/index.html. '
           'Run «flutter pub run webcontent_converter:install_web» or add script manually');
     }
@@ -137,10 +137,9 @@ class WebcontentConverter {
   }) async {
     var div = html.document.createElement('div') as html.DivElement;
     div.setInnerHtml(content, validator: AllowAll());
+    div.style.color = 'black';
+    div.style.background = 'white';
     html.document.body?.children.add(div);
-
-    var hasHtml2pdf = js.context.hasProperty("html2pdf.Worker");
-    print("hasHtml2pdf $hasHtml2pdf");
 
     var opt = {
       "margin": 0,

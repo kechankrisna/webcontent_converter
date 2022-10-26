@@ -70,8 +70,7 @@ class _ContentToPDFScreenState extends State<ContentToPDFScreen> {
     );
 
     WebcontentConverter.logger.info("completed");
-
-    setState(() => _file = io.File(savedPath));
+    if (!kIsWeb) setState(() => _file = io.File(savedPath));
 
     /// [printing]
     // await Printing.layoutPdf(
