@@ -169,10 +169,7 @@ class WebcontentConverter {
     ///     opt: {'filename': 'hellworld.pdf'}); //div, {'filename': 'hellworld.pdf'}
     /// allowInteropCaptureThis(html2pdf);
     var result = html2pdf(div, {'filename': 'hellworld.pdf'});
-
-    print(result.callMethod('opt', [
-      {'filename': 'hellworld.pdf'}
-    ]));
+    
     html.document.body?.children.remove(div);
     return null;
   }
