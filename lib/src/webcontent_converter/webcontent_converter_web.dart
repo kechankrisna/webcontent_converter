@@ -19,6 +19,10 @@ pp.Page? windowBrowserPage;
 @JS('html2pdf')
 external js.JsFunction html2pdf(html.Element element, dynamic opt);
 
+@anonymous
+@JS('html2canvas')
+external js.JsObject html2canvas(html.Element element, dynamic opt);
+
 bool checkHtml2PdfInstallation() => js.context['html2pdf'] != null;
 
 /// [WebcontentConverter] will convert html, html file, web uri, into raw bytes image or pdf file
@@ -98,8 +102,27 @@ class WebcontentConverter {
     String? executablePath,
     bool autoClosePage = true,
   }) async {
-    UnimplementedError('contentToImage');
-    return Future.value(Uint8List.fromList([]));
+    var div = html.document.createElement('div') as html.DivElement;
+    div.setInnerHtml(content, validator: AllowAll());
+    div.style.color = 'black';
+    div.style.background = 'white';
+    html.document.body?.children.add(div);
+
+    var opt = {
+      "margin": 0,
+      "image": {"type": 'jpeg', "quality": 0.98},
+      "html2canvas": {"scale": 5},
+      "jsPDF": {"unit": 'in', "format": 'a4', "orientation": 'portrait'},
+      "pagebreak": {
+        "mode": ['avoid-all', 'css', 'legacy']
+      }
+    };
+
+    var result = await promiseToFuture(html2canvas(div, jsify(opt)));
+    print(result);
+
+    html.document.body?.children.remove(div);
+    return Uint8List.fromList(result is List<int> ? result : []);
   }
 
   static Future<String?> filePathToPdf({
@@ -153,6 +176,9 @@ class WebcontentConverter {
     };
 
     html2pdf(div, jsify(opt));
+
+    /// var result = await promiseToFuture(html2canvas(div, jsify(opt)));
+    /// print(result);
 
     html.document.body?.children.remove(div);
     return null;

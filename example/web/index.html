@@ -58,6 +58,12 @@
         return appRunner.runApp();
       });
     });
+    window.addEventListener('beforeprint', function(ev) {
+      console.log("beforeprint");
+    });
+    window.addEventListener('html2pdf', function(ev) {
+      console.log("html2pdf");
+    });
   </script>
 </body>
 </html>
