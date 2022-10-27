@@ -80,7 +80,7 @@ class _ContentToImageScreenState extends State<ContentToImageScreen> {
         .info("completed executed in ${stopwatch.elapsed}");
     setState(() => _counter += 1);
     if (bytes.isNotEmpty) {
-      _saveFile(bytes);
+      if (!kIsWeb) _saveFile(bytes);
       WebcontentConverter.logger.info("bytes.length ${bytes.length}");
     }
   }

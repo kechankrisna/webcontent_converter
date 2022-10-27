@@ -21,7 +21,7 @@ external js.JsFunction html2pdf(html.Element element, dynamic opt);
 
 @anonymous
 @JS('html2canvas')
-external js.JsObject html2canvas(html.Element element, dynamic opt);
+external js.JsFunction html2canvas(html.Element element, dynamic opt);
 
 bool checkHtml2PdfInstallation() => js.context['html2pdf'] != null;
 
@@ -108,21 +108,21 @@ class WebcontentConverter {
     div.style.background = 'white';
     html.document.body?.children.add(div);
 
-    var opt = {
-      "margin": 0,
-      "image": {"type": 'jpeg', "quality": 0.98},
-      "html2canvas": {"scale": 5},
-      "jsPDF": {"unit": 'in', "format": 'a4', "orientation": 'portrait'},
-      "pagebreak": {
-        "mode": ['avoid-all', 'css', 'legacy']
-      }
-    };
+    var opt = {"scale": 1};
 
-    var result = await promiseToFuture(html2canvas(div, jsify(opt)));
-    print(result);
+    List<int> result = [];
+    html.CanvasElement? canvas =
+        await promiseToFuture(html2canvas(div, jsify(opt)));
+    if (canvas != null) {
+      await Future.delayed(const Duration(seconds: 1));
+      final base64Image = canvas.toDataUrl();
+      final sub = base64Image.replaceAll("data:image/png;base64,", "");
+      result = base64Decode(sub);
+    }
 
     html.document.body?.children.remove(div);
-    return Uint8List.fromList(result is List<int> ? result : []);
+
+    return Uint8List.fromList(result);
   }
 
   static Future<String?> filePathToPdf({
@@ -175,10 +175,7 @@ class WebcontentConverter {
       }
     };
 
-    html2pdf(div, jsify(opt));
-
-    /// var result = await promiseToFuture(html2canvas(div, jsify(opt)));
-    /// print(result);
+    await promiseToFuture(html2pdf(div, jsify(opt)));
 
     html.document.body?.children.remove(div);
     return null;

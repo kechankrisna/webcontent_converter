@@ -175,16 +175,6 @@ class WebcontentConverter {
     Uint8List results = Uint8List.fromList([]);
 
     try {
-      if (kIsWeb) {
-        // TODO: web
-        // var blob = await WebSupport.toBlob();
-        var blob = "";
-        blob = blob.replaceAll(RegExp(r"data:image/png;base64,"), "");
-
-        //   results = base64.decode(blob);
-
-        return results;
-      }
 
       if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
         if (WebViewHelper.isChromeAvailable) {
