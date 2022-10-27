@@ -158,8 +158,22 @@ class WebcontentConverter {
     PaperFormat format: PaperFormat.a4,
     String? executablePath,
   }) async {
-    UnimplementedError('filePathToPdf');
-    return null;
+    var result;
+    try {
+      String content = await rootBundle.loadString(path);
+      result = await contentToPDF(
+        content: content,
+        duration: duration,
+        savedPath: savedPath,
+        margins: margins,
+        format: format,
+        executablePath: executablePath,
+      );
+    } on Exception catch (e) {
+      WebcontentConverter.logger.error("[method:filePathToPdf]: $e");
+      throw Exception("Error: $e");
+    }
+    return result;
   }
 
   static Future<String?> webUriToPdf({
@@ -170,8 +184,23 @@ class WebcontentConverter {
     PaperFormat format: PaperFormat.a4,
     String? executablePath,
   }) async {
-    UnimplementedError('webUriToPdf');
-    return null;
+    var result;
+    try {
+      var response = await Dio().get(uri);
+      final String content = response.data.toString();
+      result = await contentToPDF(
+        content: content,
+        duration: duration,
+        savedPath: savedPath,
+        margins: margins,
+        format: format,
+        executablePath: executablePath,
+      );
+    } on Exception catch (e) {
+      WebcontentConverter.logger.error("[method:webUriToImage]: $e");
+      throw Exception("Error: $e");
+    }
+    return result;
   }
 
   static Future<String?> contentToPDF({

@@ -175,7 +175,6 @@ class WebcontentConverter {
     Uint8List results = Uint8List.fromList([]);
 
     try {
-
       if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
         if (WebViewHelper.isChromeAvailable) {
           pp.Page? windowBrowserPage;
