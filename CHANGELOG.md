@@ -1,3 +1,9 @@
+## 0.0.8
+
+* puppeteer 2.17
+* web initialize
+* linux chrome path
+
 ## 0.0.7+2
 
 * puppeteer 2.11

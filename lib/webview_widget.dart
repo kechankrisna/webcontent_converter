@@ -67,7 +67,6 @@ class WebViewWidget extends StatelessWidget {
           creationParams: creationParams,
           creationParamsCodec: const StandardMessageCodec(),
         );
-
       default:
         throw UnsupportedError("Unsupported platform view");
     }
