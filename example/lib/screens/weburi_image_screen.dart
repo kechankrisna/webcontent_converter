@@ -1,5 +1,6 @@
 import 'dart:io' as io;
 import 'dart:typed_data' show Uint8List;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
@@ -82,6 +83,9 @@ class _WebUriToImageScreenState extends State<WebUriToImageScreen> {
   ///[save bytes] into file
   _saveFile(Uint8List bytes) async {
     setState(() => _bytes = bytes);
+    if (kIsWeb) {
+      return;
+    }
     var dir = await getTemporaryDirectory();
     var path = join(dir.path, "receipt.jpg");
     io.File file = io.File(path);

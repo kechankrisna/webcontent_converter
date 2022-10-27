@@ -3,8 +3,9 @@ import 'dart:convert';
 import 'dart:js' as js;
 import 'dart:html' as html;
 import 'dart:typed_data';
+import 'package:dio/dio.dart';
 import 'package:easy_logger/easy_logger.dart';
-import 'package:flutter/services.dart' show MethodChannel;
+import 'package:flutter/services.dart' show MethodChannel, rootBundle;
 import 'package:flutter/widgets.dart';
 import 'package:js/js.dart';
 import 'package:js/js_util.dart';
@@ -82,8 +83,20 @@ class WebcontentConverter {
     String? executablePath,
     bool autoClosePage = true,
   }) async {
-    UnimplementedError('filePathToImage');
-    return Future.value(Uint8List.fromList([]));
+    Uint8List result = Uint8List.fromList([]);
+    try {
+      String content = await rootBundle.loadString(path);
+
+      result = await contentToImage(
+        content: content,
+        duration: duration,
+        executablePath: executablePath,
+      );
+    } on Exception catch (e) {
+      WebcontentConverter.logger.error("[method:filePathToImage]: $e");
+      throw Exception("Error: $e");
+    }
+    return result;
   }
 
   static Future<Uint8List> webUriToImage({
@@ -92,8 +105,20 @@ class WebcontentConverter {
     String? executablePath,
     bool autoClosePage = true,
   }) async {
-    UnimplementedError('webUriToImage');
-    return Future.value(Uint8List.fromList([]));
+    Uint8List result = Uint8List.fromList([]);
+    try {
+      var response = await Dio().get(uri);
+      final String content = response.data.toString();
+      result = await contentToImage(
+        content: content,
+        duration: duration,
+        executablePath: executablePath,
+      );
+    } on Exception catch (e) {
+      WebcontentConverter.logger.error("[method:webUriToImage]: $e");
+      throw Exception("Error: $e");
+    }
+    return result;
   }
 
   static Future<Uint8List> contentToImage({
@@ -108,7 +133,7 @@ class WebcontentConverter {
     div.style.background = 'white';
     html.document.body?.children.add(div);
 
-    var opt = {"scale": 1};
+    var opt = {"scale": 3, "useCORS": true};
 
     List<int> result = [];
     html.CanvasElement? canvas =
