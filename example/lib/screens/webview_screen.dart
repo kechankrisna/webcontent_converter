@@ -14,14 +14,17 @@ class _WebViewScreenState extends State<WebViewScreen> {
       appBar: AppBar(
         title: Text("WebView Screen"),
       ),
-      body: Column(
-        children: [
-          SizedBox(
-            width: MediaQuery.of(context).size.width,
-            height: 400,
-            child: WebViewWidget(Demo.getInvoiceContent()),
-          )
-        ],
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            SizedBox(
+              width: MediaQuery.of(context).size.width,
+              height: 400,
+              child: WebcontentConverter.embedWebView(
+                  content: Demo.getInvoiceContent()),
+            )
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.replay_outlined),
