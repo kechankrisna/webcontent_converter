@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:webcontent_converter/webcontent_converter.dart';
+import 'package:webcontent_converter_example/services/demo.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -66,6 +68,18 @@ class _HomeScreenState extends State<HomeScreen> {
             trailing: Icon(Icons.open_in_browser_outlined),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          WebcontentConverter.printPreview(
+
+              /// url: "https://www.google.com",
+
+              content: Demo.getInvoiceContent(),
+              autoClose: false,
+              delay: const Duration(seconds: 1));
+        },
+        child: Icon(Icons.print),
       ),
     );
   }

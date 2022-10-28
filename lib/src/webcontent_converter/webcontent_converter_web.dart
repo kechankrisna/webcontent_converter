@@ -242,6 +242,48 @@ class WebcontentConverter {
         width: width,
         height: height,
       );
+
+  static Future<bool> printPreview(
+      {String? url,
+      String? content,
+      bool autoClose = true,
+      Duration? delay}) async {
+    try {
+      const windowFeatures =
+          "left=100,top=100,width=800,height=800,popup=yes,_self";
+      js.JsObject printWindow = js.context
+          .callMethod('open', [url ?? '', "mozillaWindow", windowFeatures]);
+      js.JsObject? document =
+          printWindow.hasProperty('document') ? printWindow['document'] : null;
+      // ref: https://developer.mozilla.org/en-US/docs/Web/API/Document
+
+      js.JsObject? window =
+          printWindow.hasProperty('window') ? printWindow['window'] : null;
+      // ref: https://developer.mozilla.org/en-US/docs/Web/API/Window
+
+      if (content != null) {
+        document?.callMethod('write', [content]);
+      }
+      window?.callMethod('print');
+
+      /// if (delay == null) {
+      ///   window?.callMethod('print');
+      /// } else {
+      ///   final milliseconds = delay.inMilliseconds;
+      ///   window?.callMethod(
+      ///       'setTimeout', ['fn() => { window.print(); }', milliseconds]);
+      /// }
+
+      if (autoClose) {
+        window?.callMethod('close');
+      }
+
+      return Future.value(true);
+    } on Exception catch (e) {
+      WebcontentConverter.logger.error("[method:webUriToImage]: $e");
+      return Future.value(false);
+    }
+  }
 }
 
 /// validator
