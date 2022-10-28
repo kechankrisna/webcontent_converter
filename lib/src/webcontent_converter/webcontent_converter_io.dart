@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:easy_logger/easy_logger.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart' show MethodChannel, rootBundle;
+import 'package:flutter/gestures.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:dio/dio.dart';
 import 'package:puppeteer/plugin.dart';
-import 'package:webcontent_converter/webview_widget.dart';
 import 'package:puppeteer/puppeteer.dart' as pp;
 import '../../demo.dart';
 import '../../page.dart';
@@ -412,12 +412,66 @@ class WebcontentConverter {
   }
 
   /// [WevView]
-  static Widget webivew(String content, {double? width, double? height}) =>
-      WebViewWidget(
-        content,
-        width: width,
-        height: height,
-      );
+  static Widget embedWebView(
+      {String? url, String? content, double? width, double? height}) {
+    return Builder(builder: (context) {
+      final String viewType = 'webview-view-type';
+      // Pass parameters to the platform side.
+      final Map<String, dynamic> creationParams = <String, dynamic>{};
+      creationParams['width'] = width;
+      creationParams['height'] = height;
+      creationParams['content'] = content;
+      creationParams['url'] = url;
+      switch (defaultTargetPlatform) {
+        case TargetPlatform.android:
+          return SafeArea(
+            child: SizedBox(
+              width: width ?? 100,
+              height: height ?? 100,
+              child: PlatformViewLink(
+                viewType: viewType,
+                surfaceFactory:
+                    (BuildContext context, PlatformViewController controller) {
+                  return AndroidViewSurface(
+                    controller: controller as AndroidViewController,
+                    gestureRecognizers: const <
+                        Factory<OneSequenceGestureRecognizer>>{},
+                    hitTestBehavior: PlatformViewHitTestBehavior.opaque,
+                  );
+                },
+                onCreatePlatformView: (PlatformViewCreationParams params) {
+                  return PlatformViewsService.initSurfaceAndroidView(
+                    id: params.id,
+                    viewType: viewType,
+                    layoutDirection: TextDirection.ltr,
+                    creationParams: creationParams,
+                    creationParamsCodec: StandardMessageCodec(),
+                  )
+                    ..addOnPlatformViewCreatedListener(
+                        params.onPlatformViewCreated)
+                    ..create();
+                },
+              ),
+            ),
+          );
+        case TargetPlatform.iOS:
+          return SafeArea(
+            child: SizedBox(
+              width: width ?? 100,
+              height: height ?? 100,
+              child: UiKitView(
+                viewType: viewType,
+                layoutDirection: TextDirection.ltr,
+                creationParams: creationParams,
+                creationParamsCodec: const StandardMessageCodec(),
+              ),
+            ),
+          );
+        default:
+          throw UnsupportedError("Unsupported platform view");
+      }
+    });
+  }
 
   static Future<bool> printPreview({
     String? url,

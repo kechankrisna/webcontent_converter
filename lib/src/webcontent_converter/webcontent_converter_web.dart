@@ -1,7 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
+// ignore: avoid_web_libraries_in_flutter
 import 'dart:js' as js;
+// ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
+import 'dart:math';
+import 'dart:ui' as ui;
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:easy_logger/easy_logger.dart';
@@ -10,7 +14,6 @@ import 'package:flutter/widgets.dart';
 import 'package:js/js.dart';
 import 'package:js/js_util.dart';
 import 'package:puppeteer/puppeteer.dart' as pp;
-import '../../webview_widget.dart';
 import '../../page.dart';
 
 pp.Browser? windowBrower;
@@ -240,13 +243,38 @@ class WebcontentConverter {
     return null;
   }
 
-  /// [WevView]
-  static Widget webivew(String content, {double? width, double? height}) =>
-      WebViewWidget(
-        content,
-        width: width,
-        height: height,
-      );
+  /// [embedWebView]
+  static Widget embedWebView(
+          {String? url, String? content, double? width, double? height}) =>
+      Builder(builder: (_) {
+        final uniqueKey = Random.secure().nextInt(10000);
+        final String viewType = 'webview-view-type-$uniqueKey';
+        // Pass parameters to the platform side.
+        final Map<String, dynamic> creationParams = <String, dynamic>{};
+        creationParams['width'] = width;
+        creationParams['height'] = height;
+        creationParams['content'] = content;
+
+        // ignore: undefined_prefixed_name
+        ui.platformViewRegistry.registerViewFactory(
+          viewType,
+          (int _) => html.IFrameElement()
+            ..src = url
+            ..srcdoc = content
+            ..style.width = '100%'
+            ..style.height = '100%'
+            ..style.border = 'none'
+            ..allowFullscreen = true,
+        );
+
+        return SafeArea(
+          child: SizedBox(
+            width: width ?? 100,
+            height: height ?? 100,
+            child: HtmlElementView(viewType: viewType),
+          ),
+        );
+      });
 
   static Future<bool> printPreview({
     String? url,

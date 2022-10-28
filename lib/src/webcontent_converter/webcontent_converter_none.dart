@@ -5,7 +5,6 @@ import 'package:flutter/services.dart' show MethodChannel;
 import 'package:flutter/widgets.dart';
 import 'package:puppeteer/puppeteer.dart' as pp;
 import '../../page.dart';
-import '../../webview_widget.dart';
 
 pp.Browser? windowBrower;
 pp.Page? windowBrowserPage;
@@ -127,15 +126,14 @@ class WebcontentConverter {
   }
 
   /// [WevView]
-  static Widget webivew(String content, {double? width, double? height}) =>
-      WebViewWidget(
-        content,
-        width: width,
-        height: height,
-      );
+  static Widget embedWebView({String? url, String? content, double? width, double? height}) {
+    UnimplementedError('webivew');
+    return Container();
+  }
 
-  static Future<bool> printPreview({String? url, String? content, bool autoClose = true, double? duration}){
-    UnimplementedError('contentToPDF');
+  static Future<bool> printPreview(
+      {String? url, String? content, bool autoClose = true, double? duration}) {
+    UnimplementedError('printPreview');
     return Future.value(false);
   }
 }
