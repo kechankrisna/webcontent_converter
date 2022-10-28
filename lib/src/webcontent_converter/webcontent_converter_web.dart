@@ -247,7 +247,7 @@ class WebcontentConverter {
       {String? url,
       String? content,
       bool autoClose = true,
-      Duration? delay}) async {
+      Duration? duration}) async {
     try {
       const windowFeatures =
           "left=100,top=100,width=800,height=800,popup=yes,_self";
@@ -280,7 +280,7 @@ class WebcontentConverter {
 
       return Future.value(true);
     } on Exception catch (e) {
-      WebcontentConverter.logger.error("[method:webUriToImage]: $e");
+      WebcontentConverter.logger.error("[method:printPreview]: $e");
       return Future.value(false);
     }
   }

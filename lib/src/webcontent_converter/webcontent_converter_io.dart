@@ -381,13 +381,9 @@ class WebcontentConverter {
           await windowBrowserPage!.close();
           windowBrowserPage = null;
         }
-      } else if (Platform.isAndroid || Platform.isIOS) {
-        WebcontentConverter.logger.info("Mobile support");
-        result = await _channel.invokeMethod('contentToPDF', arguments);
-      } else {
-        // todo web
-        result = null;
       }
+      WebcontentConverter.logger.info("Mobile support");
+      result = await _channel.invokeMethod('contentToPDF', arguments);
     } on Exception catch (e) {
       WebcontentConverter.logger.error("[method:contentToPDF]: $e");
       throw Exception("Error: $e");
@@ -403,4 +399,76 @@ class WebcontentConverter {
         width: width,
         height: height,
       );
+
+  static Future<bool> printPreview(
+      {String? url,
+      String? content,
+      bool autoClose = true,
+      Duration? duration}) async {
+    try {
+      final Map<String, dynamic> arguments = {
+        'url': url,
+        'content': content,
+        'duration': duration,
+        'autoClose': autoClose,
+      };
+      if ((Platform.isMacOS || Platform.isLinux || Platform.isWindows) &&
+          WebViewHelper.isChromeAvailable) {
+        var browser = await pp.puppeteer.launch(
+          executablePath: WebViewHelper.executablePath(),
+          headless: false,
+          devTools: false,
+          noSandboxFlag: false,
+          args: [
+            "--no-default-browser-check",
+            // "-disable-print-preview",
+          ],
+          ignoreDefaultArgs: ["--enable-automation"],
+        );
+        var page = (await browser.pages).first;
+
+        page.emulate(pp.puppeteer.devices.laptopWithMDPIScreen);
+        if (url != null) {
+          await page.goto(url,
+              wait: pp.Until.all([
+                pp.Until.load,
+                pp.Until.domContentLoaded,
+                pp.Until.networkAlmostIdle,
+                pp.Until.networkIdle,
+              ]));
+        }
+
+        if (content != null) {
+          await page.setContent(
+            content,
+            wait: pp.Until.all([
+              pp.Until.load,
+              pp.Until.domContentLoaded,
+              pp.Until.networkAlmostIdle,
+              pp.Until.networkIdle,
+            ]),
+          );
+        }
+
+        if (browser.isConnected && !page.isClosed) {
+          try {
+            await page.evaluate('''window.print()''');
+            if (autoClose) await page.close();
+          } on Exception catch (e) {
+            WebcontentConverter.logger.error("[method:printPreview]: $e");
+          }
+        }
+        page.onClose.then((value) {
+          browser.close();
+        });
+      }
+      WebcontentConverter.logger.info("Mobile support");
+      await _channel.invokeMethod('printPreview', arguments);
+
+      return Future.value(true);
+    } on Exception catch (e) {
+      WebcontentConverter.logger.error("[method:printPreview]: $e");
+      return Future.value(false);
+    }
+  }
 }

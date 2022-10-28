@@ -77,7 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
               content: Demo.getInvoiceContent(),
               autoClose: false,
-              delay: const Duration(seconds: 1));
+              duration: const Duration(seconds: 1));
         },
         child: Icon(Icons.print),
       ),

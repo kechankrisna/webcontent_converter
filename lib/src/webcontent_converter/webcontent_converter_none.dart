@@ -131,7 +131,7 @@ class WebcontentConverter {
         height: height,
       );
 
-  static Future<bool> printPreview({String? url, String? content, bool autoClose = true, Duration? delay}){
+  static Future<bool> printPreview({String? url, String? content, bool autoClose = true, Duration? duration}){
     UnimplementedError('contentToPDF');
     return Future.value(false);
   }
