@@ -1,3 +1,7 @@
+## 0.0.8+1
+
+* add printPreview method for web, desktop and mobile
+
 ## 0.0.8
 
 * puppeteer 2.17
