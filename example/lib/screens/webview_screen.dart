@@ -20,8 +20,12 @@ class _WebViewScreenState extends State<WebViewScreen> {
             SizedBox(
               width: MediaQuery.of(context).size.width,
               height: 400,
-              child: WebcontentConverter.embedWebView(
-                  content: Demo.getInvoiceContent()),
+              child: LayoutBuilder(builder: (ctn, constains) {
+                return WebcontentConverter.embedWebView(
+                    width: constains.maxWidth,
+                    height: constains.maxHeight,
+                    content: Demo.getInvoiceContent());
+              }),
             )
           ],
         ),

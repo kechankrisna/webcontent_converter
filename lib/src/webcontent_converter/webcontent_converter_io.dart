@@ -418,16 +418,18 @@ class WebcontentConverter {
       final String viewType = 'webview-view-type';
       // Pass parameters to the platform side.
       final Map<String, dynamic> creationParams = <String, dynamic>{};
-      creationParams['width'] = width;
-      creationParams['height'] = height;
+      final _width = width ?? 1;
+      final _height = height ?? 1;
+      creationParams['width'] = _width;
+      creationParams['height'] = _height;
       creationParams['content'] = content;
       creationParams['url'] = url;
       switch (defaultTargetPlatform) {
         case TargetPlatform.android:
           return SafeArea(
             child: SizedBox(
-              width: width ?? 100,
-              height: height ?? 100,
+              width: _width,
+              height: height,
               child: PlatformViewLink(
                 viewType: viewType,
                 surfaceFactory:
@@ -457,8 +459,8 @@ class WebcontentConverter {
         case TargetPlatform.iOS:
           return SafeArea(
             child: SizedBox(
-              width: width ?? 100,
-              height: height ?? 100,
+              width: _width,
+              height: _width,
               child: UiKitView(
                 viewType: viewType,
                 layoutDirection: TextDirection.ltr,

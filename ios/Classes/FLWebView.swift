@@ -49,13 +49,13 @@ class FLNativeView: NSObject, FlutterPlatformView {
         binaryMessenger messenger: FlutterBinaryMessenger?
     ) {
         _arguments = args as? Dictionary<String, Any>
-        let width = _arguments!["width"]! as! Double
-        let height = _arguments!["height"]! as! Double
+        let width = _arguments!["width"] as! Double? ?? 1
+        let height = _arguments!["height"] as! Double? ?? 1
         _frame = CGRect(x: 0, y: 0, width: width, height: height )
         _view = UIView(frame: _frame!)
         print("init view.width \(_view!.frame.width)")
         print("init view.height \(_view!.frame.height)")
-        print("init view.bounds \(_view?.bounds)")
+//        print("init view.bounds \(_view?.bounds)")
         _view!.clipsToBounds = true
         let configuration = WKWebViewConfiguration()
         _webView = WKWebView(frame: _view!.bounds, configuration: configuration)
@@ -71,8 +71,10 @@ class FLNativeView: NSObject, FlutterPlatformView {
     }
 
     func createNativeView(view _view: UIView){
-        let content = _arguments!["content"]! as! String
-        _webView!.loadHTMLString(content, baseURL: Bundle.main.resourceURL)
+        let content = _arguments!["content"]! as! String?
+        let url = _arguments!["url"]! as? String?
+        let baseURL = url != nil ? URL(string: url!!) : Bundle.main.resourceURL;
+        _webView!.loadHTMLString(content ?? "", baseURL: baseURL)
         _view.addSubview(_webView!)
     }
     
