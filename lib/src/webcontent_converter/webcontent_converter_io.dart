@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show MethodChannel, rootBundle;
 import 'package:flutter/widgets.dart';
 import 'package:dio/dio.dart';
+import 'package:puppeteer/plugin.dart';
 import 'package:webcontent_converter/webview_widget.dart';
 import 'package:puppeteer/puppeteer.dart' as pp;
 import '../../demo.dart';
@@ -96,10 +97,12 @@ class WebcontentConverter {
   ///   await file.writeAsBytes(bytes);
   /// }
   /// ```
-  static Future<Uint8List> filePathToImage(
-      {required String path,
-      double duration: 2000,
-      String? executablePath}) async {
+  static Future<Uint8List> filePathToImage({
+    required String path,
+    double duration: 2000,
+    String? executablePath,
+    int scale = 3,
+  }) async {
     Uint8List result = Uint8List.fromList([]);
     try {
       String content = await rootBundle.loadString(path);
@@ -108,6 +111,7 @@ class WebcontentConverter {
         content: content,
         duration: duration,
         executablePath: executablePath,
+        scale: scale,
       );
     } on Exception catch (e) {
       WebcontentConverter.logger.error("[method:filePathToImage]: $e");
@@ -132,6 +136,7 @@ class WebcontentConverter {
     required String uri,
     double duration: 2000,
     String? executablePath,
+    int scale = 3,
   }) async {
     Uint8List result = Uint8List.fromList([]);
     try {
@@ -141,6 +146,7 @@ class WebcontentConverter {
         content: content,
         duration: duration,
         executablePath: executablePath,
+        scale: scale,
       );
     } on Exception catch (e) {
       WebcontentConverter.logger.error("[method:webUriToImage]: $e");
@@ -167,10 +173,12 @@ class WebcontentConverter {
     required String content,
     double duration: 2000,
     String? executablePath,
+    int scale = 3,
   }) async {
     final Map<String, dynamic> arguments = {
       'content': content,
-      'duration': duration
+      'duration': duration,
+      'scale': scale,
     };
     Uint8List results = Uint8List.fromList([]);
 
@@ -192,6 +200,8 @@ class WebcontentConverter {
             /// if window browser page is null
             windowBrowserPage = await windowBrower!.newPage();
             await windowBrowserPage.setContent(content, wait: pp.Until.load);
+            windowBrowserPage
+                .setViewport(pp.DeviceViewport(deviceScaleFactor: scale));
             await windowBrowserPage.emulateMediaType(pp.MediaType.print);
             var offsetHeight =
                 await windowBrowserPage.evaluate('document.body.offsetHeight');
@@ -211,6 +221,7 @@ class WebcontentConverter {
           }
         }
       } else {
+        /// mobile method
         WebcontentConverter.logger.info("Mobile support");
         results = await (_channel.invokeMethod('contentToImage', arguments));
       }
@@ -353,6 +364,12 @@ class WebcontentConverter {
           /// if window browser page is null
           windowBrowserPage = await windowBrower!.newPage();
 
+          windowBrowserPage
+              .setViewport(pp.DeviceViewport(width: 800, height: 1000));
+
+          /// await windowBrowserPage.emulateMediaType(pp.MediaType.print);
+          /// await windowBrowserPage.emulate(pp.puppeteer.devices.laptopWithMDPIScreen);
+          ///
           await windowBrowserPage.setContent(content,
               wait: pp.Until.all([
                 pp.Until.load,
@@ -381,9 +398,11 @@ class WebcontentConverter {
           await windowBrowserPage!.close();
           windowBrowserPage = null;
         }
+      } else {
+        //mobile method
+        WebcontentConverter.logger.info("Mobile support");
+        result = await _channel.invokeMethod('contentToPDF', arguments);
       }
-      WebcontentConverter.logger.info("Mobile support");
-      result = await _channel.invokeMethod('contentToPDF', arguments);
     } on Exception catch (e) {
       WebcontentConverter.logger.error("[method:contentToPDF]: $e");
       throw Exception("Error: $e");
@@ -423,11 +442,14 @@ class WebcontentConverter {
             "--no-default-browser-check",
             // "-disable-print-preview",
           ],
+          defaultViewport: LaunchOptions.viewportNotSpecified,
           ignoreDefaultArgs: ["--enable-automation"],
         );
         var page = (await browser.pages).first;
+        page.setViewport(pp.DeviceViewport(width: 800, height: 1000));
 
-        page.emulate(pp.puppeteer.devices.laptopWithMDPIScreen);
+        /// await page.emulateMediaType(pp.MediaType.print);
+        /// await page.emulate(pp.puppeteer.devices.laptopWithMDPIScreen);
         if (url != null) {
           await page.goto(url,
               wait: pp.Until.all([
@@ -449,6 +471,7 @@ class WebcontentConverter {
             ]),
           );
         }
+        if (duration != null) await Future.delayed(duration);
 
         if (browser.isConnected && !page.isClosed) {
           try {
@@ -461,11 +484,13 @@ class WebcontentConverter {
         page.onClose.then((value) {
           browser.close();
         });
+        return Future.value(true);
+      } else {
+        //mobile method
+        WebcontentConverter.logger.info("Mobile support");
+        await _channel.invokeMethod('printPreview', arguments);
+        return Future.value(true);
       }
-      WebcontentConverter.logger.info("Mobile support");
-      await _channel.invokeMethod('printPreview', arguments);
-
-      return Future.value(true);
     } on Exception catch (e) {
       WebcontentConverter.logger.error("[method:printPreview]: $e");
       return Future.value(false);

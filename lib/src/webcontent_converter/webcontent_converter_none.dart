@@ -61,6 +61,7 @@ class WebcontentConverter {
     double duration: 2000,
     String? executablePath,
     bool autoClosePage = true,
+    int scale = 3,
   }) async {
     UnimplementedError('filePathToImage');
     return Future.value(Uint8List.fromList([]));
@@ -71,6 +72,7 @@ class WebcontentConverter {
     double duration: 2000,
     String? executablePath,
     bool autoClosePage = true,
+    int scale = 3,
   }) async {
     UnimplementedError('webUriToImage');
     return Future.value(Uint8List.fromList([]));
@@ -81,6 +83,7 @@ class WebcontentConverter {
     double duration: 2000,
     String? executablePath,
     bool autoClosePage = true,
+    int scale = 3,
   }) async {
     UnimplementedError('contentToImage');
     return Future.value(Uint8List.fromList([]));

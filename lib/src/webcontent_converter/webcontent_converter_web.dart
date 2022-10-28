@@ -82,6 +82,7 @@ class WebcontentConverter {
     double duration: 2000,
     String? executablePath,
     bool autoClosePage = true,
+    int scale = 3,
   }) async {
     Uint8List result = Uint8List.fromList([]);
     try {
@@ -91,6 +92,7 @@ class WebcontentConverter {
         content: content,
         duration: duration,
         executablePath: executablePath,
+        scale: scale,
       );
     } on Exception catch (e) {
       WebcontentConverter.logger.error("[method:filePathToImage]: $e");
@@ -104,6 +106,7 @@ class WebcontentConverter {
     double duration: 2000,
     String? executablePath,
     bool autoClosePage = true,
+    int scale = 3,
   }) async {
     Uint8List result = Uint8List.fromList([]);
     try {
@@ -113,6 +116,7 @@ class WebcontentConverter {
         content: content,
         duration: duration,
         executablePath: executablePath,
+        scale: scale,
       );
     } on Exception catch (e) {
       WebcontentConverter.logger.error("[method:webUriToImage]: $e");
@@ -126,6 +130,7 @@ class WebcontentConverter {
     double duration: 2000,
     String? executablePath,
     bool autoClosePage = true,
+    int scale = 3,
   }) async {
     var div = html.document.createElement('div') as html.DivElement;
     div.setInnerHtml(content, validator: AllowAll());
@@ -133,7 +138,7 @@ class WebcontentConverter {
     div.style.background = 'white';
     html.document.body?.children.add(div);
 
-    var opt = {"scale": 3, "useCORS": true};
+    var opt = {"scale": scale, "useCORS": true};
 
     List<int> result = [];
     html.CanvasElement? canvas =
