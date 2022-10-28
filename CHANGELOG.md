@@ -1,6 +1,7 @@
 ## 0.0.8+1
 
 * add printPreview method for web, desktop and mobile
+* add scale to convert content as image to make image screenshot clear
 
 ## 0.0.8
 
