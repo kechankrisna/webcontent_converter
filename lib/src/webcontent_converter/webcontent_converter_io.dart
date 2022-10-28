@@ -419,11 +419,12 @@ class WebcontentConverter {
         height: height,
       );
 
-  static Future<bool> printPreview(
-      {String? url,
-      String? content,
-      bool autoClose = true,
-      Duration? duration}) async {
+  static Future<bool> printPreview({
+    String? url,
+    String? content,
+    bool autoClose = true,
+    double? duration,
+  }) async {
     try {
       final Map<String, dynamic> arguments = {
         'url': url,
@@ -471,7 +472,8 @@ class WebcontentConverter {
             ]),
           );
         }
-        if (duration != null) await Future.delayed(duration);
+        if (duration != null)
+          await Future.delayed(Duration(milliseconds: duration.toInt()));
 
         if (browser.isConnected && !page.isClosed) {
           try {

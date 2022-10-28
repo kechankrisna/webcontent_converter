@@ -248,11 +248,12 @@ class WebcontentConverter {
         height: height,
       );
 
-  static Future<bool> printPreview(
-      {String? url,
-      String? content,
-      bool autoClose = true,
-      Duration? duration}) async {
+  static Future<bool> printPreview({
+    String? url,
+    String? content,
+    bool autoClose = true,
+    double? duration,
+  }) async {
     try {
       const windowFeatures =
           "left=100,top=100,width=800,height=800,popup=yes,_self";

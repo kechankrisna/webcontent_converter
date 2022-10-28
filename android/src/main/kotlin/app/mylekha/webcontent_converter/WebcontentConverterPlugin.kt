@@ -7,8 +7,10 @@ import android.graphics.Canvas
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.print.PrintAttributes
 import android.print.PdfPrinter
+import android.print.PrintAttributes
+import android.print.PrintManager
+import android.provider.Settings.Global.getString
 import android.view.View
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -160,6 +162,44 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
                 }
 
             }
+            "printPreview" -> {
+                print("\n activity $activity")
+                webView = WebView(this.context)
+                val dwidth = this.activity.window.windowManager.defaultDisplay.width
+                val dheight = this.activity.window.windowManager.defaultDisplay.height
+                print("\ndwidth : $dwidth")
+                print("\ndheight : $dheight")
+                webView.layout(0, 0, dwidth, dheight)
+                webView.loadDataWithBaseURL(null, content, "text/HTML", "UTF-8", null)
+                webView.setInitialScale(1)
+                webView.settings.javaScriptEnabled = true
+                webView.settings.useWideViewPort = true
+                webView.settings.javaScriptCanOpenWindowsAutomatically = true
+                webView.settings.loadWithOverviewMode = true
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+                    print("\n=======> enabled scrolled <=========")
+                    WebView.enableSlowWholeDocumentDraw()
+                }
+
+                print("\n ///////////////// webview setted /////////////////")
+
+                webView.webViewClient = object : WebViewClient() {
+                    override fun onPageFinished(view: WebView, url: String) {
+                        super.onPageFinished(view, url)
+
+                        Handler().postDelayed({
+                            print("\nOS Version: ${android.os.Build.VERSION.SDK_INT}")
+                            print("\n ================ webview completed ==============")
+                            print("\n scroll delayed ${webView.scrollBarFadeDuration}")
+
+                            createWebPrintJob(webView);
+
+                        }, duration!!.toLong())
+
+                    }
+                }
+
+            }
             else
             -> result.notImplemented()
         }
@@ -202,7 +242,28 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
         channel.setMethodCallHandler(null)
     }
 
+    private fun createWebPrintJob(webView: WebView) {
 
+        // Get a PrintManager instance
+        (activity?.getSystemService(Context.PRINT_SERVICE) as? PrintManager)?.let { printManager ->
+            val applicationName = activity.applicationContext.applicationInfo.name;
+            val jobName ="$applicationName print preview"
+
+            // Get a print adapter instance
+            val printAdapter = webView.createPrintDocumentAdapter(jobName)
+            var printAttributes = PrintAttributes.Builder().setMediaSize( PrintAttributes.MediaSize.ISO_A4).build();
+            // Create a print job with name and adapter instance
+            printManager.print(
+                jobName,
+                printAdapter,
+                printAttributes
+            ).also { printJob ->
+
+                // Save the job object for later status checking
+//                printJobs += printJob
+            }
+        }
+    }
 }
 
 fun WebView.exportAsPdfFromWebView(savedPath: String, format: Map<String, Double>, margins: Map<String, Double>, callback: PdfPrinter.Callback) {
