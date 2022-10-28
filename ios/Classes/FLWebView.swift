@@ -71,10 +71,18 @@ class FLNativeView: NSObject, FlutterPlatformView {
     }
 
     func createNativeView(view _view: UIView){
-        let content = _arguments!["content"]! as! String?
+        let content = _arguments!["content"]! as? String?
         let url = _arguments!["url"]! as? String?
         let baseURL = url != nil ? URL(string: url!!) : Bundle.main.resourceURL;
-        _webView!.loadHTMLString(content ?? "", baseURL: baseURL)
+        if(url != nil){
+            _webView!.load(URLRequest(url: baseURL!))
+        }else{
+            if(content != nil ){
+                _webView!.loadHTMLString(content!!, baseURL: baseURL)
+            }
+        }
+        
+        
         _view.addSubview(_webView!)
     }
     

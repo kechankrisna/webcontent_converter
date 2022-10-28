@@ -5,14 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="55a46a89-3e9e-4217-a0c4-735a820fe7c4" name="Default Changelist" comment="null safety">
-      <change beforePath="$PROJECT_DIR$/.idea/libraries/Dart_SDK.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/libraries/Dart_SDK.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/src/main/kotlin/app/mylekha/webcontent_converter/WebcontentConverterPlugin.kt" beforeDir="false" afterPath="$PROJECT_DIR$/android/src/main/kotlin/app/mylekha/webcontent_converter/WebcontentConverterPlugin.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/example/android/app/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/example/android/app/build.gradle" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/example/lib/screens/home_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/example/lib/screens/home_screen.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/src/webcontent_converter/webcontent_converter_io.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/webcontent_converter/webcontent_converter_io.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/src/webcontent_converter/webcontent_converter_none.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/webcontent_converter/webcontent_converter_none.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/src/webcontent_converter/webcontent_converter_web.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/src/webcontent_converter/webcontent_converter_web.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/android/src/main/kotlin/app/mylekha/webcontent_converter/FLNativeViewFactory.kt" beforeDir="false" afterPath="$PROJECT_DIR$/android/src/main/kotlin/app/mylekha/webcontent_converter/FLNativeViewFactory.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/example/lib/screens/webview_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/example/lib/screens/webview_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ios/Classes/FLWebView.swift" beforeDir="false" afterPath="$PROJECT_DIR$/ios/Classes/FLWebView.swift" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
