@@ -37,7 +37,10 @@ class WebcontentConverter {
     ],
   );
 
-  static Future<void> ensureInitialized() async {
+  static Future<void> ensureInitialized({
+    String? executablePath,
+    String? content,
+  }) async {
     UnimplementedError('ensureInitialized');
   }
 
@@ -126,7 +129,8 @@ class WebcontentConverter {
   }
 
   /// [WevView]
-  static Widget embedWebView({String? url, String? content, double? width, double? height}) {
+  static Widget embedWebView(
+      {String? url, String? content, double? width, double? height}) {
     UnimplementedError('webivew');
     return Container();
   }
