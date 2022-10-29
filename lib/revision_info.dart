@@ -28,11 +28,11 @@ class ChromiumInfoConfig {
     }
   }
 
+  static String localChromiumDirectory =
+      p.joinAll(["assets", ".local-chromium"]);
+
   static String getLocalChromeExecutablePath() {
-    return io.Directory(ChromiumInfoConfig.getExecutablePath(p.joinAll([
-      "assets",
-      '.local-chromium',
-      "${ChromiumInfoConfig.lastRevision}"
-    ]))).absolute.path;
+    return io.Directory(ChromiumInfoConfig.getExecutablePath(
+        p.joinAll([localChromiumDirectory, "$lastRevision"]))).absolute.path;
   }
 }

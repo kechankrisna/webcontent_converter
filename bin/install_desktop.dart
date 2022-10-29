@@ -7,7 +7,7 @@ import 'package:webcontent_converter/revision_info.dart';
 
 class ChromiumHelper {
   /// use in case when user just only want to download chromium version for their app
-  /// 
+  ///
   static Future<RevisionInfo> justDownloadChrome(
       {int? revision, String? cachePath}) async {
     revision ??= ChromiumInfoConfig.lastRevision;
@@ -36,7 +36,7 @@ class ChromiumHelper {
   }
 
   /// use in case when user just want to extract their downloaded chromium file
-  /// 
+  ///
   static Future<RevisionInfo> justExtractChrome(
       {int? revision, String? cachePath}) async {
     revision ??= ChromiumInfoConfig.lastRevision;
@@ -50,7 +50,7 @@ class ChromiumHelper {
     var exePath = ChromiumInfoConfig.getExecutablePath(revisionDirectory.path);
 
     var executableFile = File(exePath);
-    
+
     var url = downloadUrl(revision);
     var zipPath = p.join(cachePath, '${revision}_${p.url.basename(url)}');
 
@@ -78,9 +78,8 @@ class ChromiumHelper {
         revision: revision);
   }
 
-
   /// originally from pupeteer-dart in case download and extract chromium file when the download zip will be deleted
-  /// 
+  ///
   static Future<RevisionInfo> downloadChrome(
       {int? revision, String? cachePath}) async {
     revision ??= ChromiumInfoConfig.lastRevision;
@@ -182,25 +181,24 @@ class ChromiumHelper {
           "Can't download chrome for platform ${Platform.operatingSystem}");
     }
   }
-
 }
 
 void main(List<String> args) async {
-  var revision =
-      await ChromiumHelper.downloadChrome(cachePath: "assets/.local-chromium");
+  var revision = await ChromiumHelper.downloadChrome(
+      cachePath: ChromiumInfoConfig.localChromiumDirectory);
   print("path ${revision.executablePath}");
 }
 
 /// just download
 void download(List<String> args) async {
-  var revision =
-      await ChromiumHelper.justDownloadChrome(cachePath: "assets/.local-chromium");
+  var revision = await ChromiumHelper.justDownloadChrome(
+      cachePath: ChromiumInfoConfig.localChromiumDirectory);
   print("path ${revision.executablePath}");
 }
 
 /// just extract the chromium in asset directory which can be shipped with application
 void extract(List<String> args) async {
-  var revision =
-      await ChromiumHelper.justExtractChrome(cachePath: "assets/.local-chromium");
+  var revision = await ChromiumHelper.justExtractChrome(
+      cachePath: ChromiumInfoConfig.localChromiumDirectory);
   print("path ${revision.executablePath}");
 }
