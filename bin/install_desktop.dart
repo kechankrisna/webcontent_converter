@@ -211,7 +211,7 @@ class ChromiumHelper {
 
 void main(List<String> args) async {
   var revision =
-      await ChromiumHelper.justDownloadChrome(cachePath: "assets/.local-chromium");
+      await ChromiumHelper.downloadChrome(cachePath: "assets/.local-chromium");
   print("path ${revision.executablePath}");
 }
 
