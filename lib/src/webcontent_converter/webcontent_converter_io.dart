@@ -27,9 +27,13 @@ class WebcontentConverter {
     return version;
   }
 
-  static Future<void> ensureInitialized() async {
+  static Future<void> ensureInitialized({
+    String? executablePath,
+    String? content,
+  }) async {
     if (windowBrower == null || windowBrower?.isConnected != true) {
-      await WebcontentConverter.initWebcontentConverter();
+      await WebcontentConverter.initWebcontentConverter(
+          executablePath: executablePath, content: content);
     }
   }
 

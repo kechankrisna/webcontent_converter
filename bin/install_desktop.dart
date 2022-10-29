@@ -3,26 +3,14 @@ import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
-
-const int _lastRevision = 1056772;
-
-class RevisionInfo {
-  final String executablePath;
-  final String folderPath;
-  final int revision;
-
-  RevisionInfo(
-      {required this.executablePath,
-      required this.folderPath,
-      required this.revision});
-}
+import 'package:webcontent_converter/revision_info.dart';
 
 class ChromiumHelper {
   /// use in case when user just only want to download chromium version for their app
   /// 
   static Future<RevisionInfo> justDownloadChrome(
       {int? revision, String? cachePath}) async {
-    revision ??= _lastRevision;
+    revision ??= ChromiumInfoConfig.lastRevision;
     cachePath ??= '.local-chromium';
 
     var revisionDirectory = Directory(p.join(cachePath, '$revision'));
@@ -51,7 +39,7 @@ class ChromiumHelper {
   /// 
   static Future<RevisionInfo> justExtractChrome(
       {int? revision, String? cachePath}) async {
-    revision ??= _lastRevision;
+    revision ??= ChromiumInfoConfig.lastRevision;
     cachePath ??= '.local-chromium';
 
     var revisionDirectory = Directory(p.join(cachePath, '$revision'));
@@ -59,7 +47,7 @@ class ChromiumHelper {
       revisionDirectory.createSync(recursive: true);
     }
 
-    var exePath = getExecutablePath(revisionDirectory.path);
+    var exePath = ChromiumInfoConfig.getExecutablePath(revisionDirectory.path);
 
     var executableFile = File(exePath);
     
@@ -95,7 +83,7 @@ class ChromiumHelper {
   /// 
   static Future<RevisionInfo> downloadChrome(
       {int? revision, String? cachePath}) async {
-    revision ??= _lastRevision;
+    revision ??= ChromiumInfoConfig.lastRevision;
     cachePath ??= '.local-chromium';
 
     var revisionDirectory = Directory(p.join(cachePath, '$revision'));
@@ -103,7 +91,7 @@ class ChromiumHelper {
       revisionDirectory.createSync(recursive: true);
     }
 
-    var exePath = getExecutablePath(revisionDirectory.path);
+    var exePath = ChromiumInfoConfig.getExecutablePath(revisionDirectory.path);
 
     var executableFile = File(exePath);
 
@@ -195,18 +183,6 @@ class ChromiumHelper {
     }
   }
 
-  static String getExecutablePath(String revisionPath) {
-    if (Platform.isWindows) {
-      return p.join(revisionPath, 'chrome-win', 'chrome.exe');
-    } else if (Platform.isLinux) {
-      return p.join(revisionPath, 'chrome-linux', 'chrome');
-    } else if (Platform.isMacOS) {
-      return p.join(revisionPath, 'chrome-mac', 'Chromium.app', 'Contents',
-          'MacOS', 'Chromium');
-    } else {
-      throw UnsupportedError('Unknown platform ${Platform.operatingSystem}');
-    }
-  }
 }
 
 void main(List<String> args) async {

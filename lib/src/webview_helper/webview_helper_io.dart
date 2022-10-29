@@ -1,6 +1,7 @@
 import 'dart:io' as io;
 import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
+import 'package:webcontent_converter/revision_info.dart';
 
 class WebViewHelper {
   static List<String> get desktopBrowserAvailablePath {
@@ -15,6 +16,8 @@ class WebViewHelper {
   }
 
   static List<String> get windowBrowserAvailablePath => [
+        ChromiumInfoConfig.getLocalChromeExecutablePath(),
+        io.Directory(".local-chromium").absolute.path,
         "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
         "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
         "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
@@ -24,6 +27,8 @@ class WebViewHelper {
       ];
 
   static List<String> get macosBrowserAvailablePath => [
+        ChromiumInfoConfig.getLocalChromeExecutablePath(),
+        io.Directory(".local-chromium").absolute.path,
         "/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome",
         "/Applications/Google\ Chrome\ Canary.app/Contents/MacOS/Google\ Chrome\ Canary",
         "/Applications/Microsoft\ Edge\ Canary.app/Contents/MacOS/Microsoft\ Edge\ Canary",

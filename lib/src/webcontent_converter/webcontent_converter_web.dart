@@ -57,7 +57,10 @@ class WebcontentConverter {
     ],
   );
 
-  static Future<void> ensureInitialized() async {
+  static Future<void> ensureInitialized({
+    String? executablePath,
+    String? content,
+  }) async {
     if (!checkHtml2PdfInstallation()) {
       assert(
           checkHtml2PdfInstallation(),
@@ -70,14 +73,19 @@ class WebcontentConverter {
     String? executablePath,
     String? content,
   }) async {
-    UnimplementedError('initWebcontentConverter');
+    if (!checkHtml2PdfInstallation()) {
+      assert(
+          checkHtml2PdfInstallation(),
+          'html2pdf not added in web/index.html. '
+          'Run «flutter pub run webcontent_converter:install_web» or add script manually');
+    }
   }
 
   static Future<void> deinitWebcontentConverter({
     bool isClosePage = true,
     bool isCloseBrower = true,
   }) async {
-    UnimplementedError('deinitWebcontentConverter');
+    ///
   }
 
   static Future<Uint8List> filePathToImage({

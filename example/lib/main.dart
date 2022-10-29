@@ -13,7 +13,9 @@ void main() async {
     await windowManager.ensureInitialized();
 
     /// ensure brower is initialized
-    await WebcontentConverter.ensureInitialized();
+    var executablePath = ChromiumInfoConfig.getLocalChromeExecutablePath();
+    print("executablePath $executablePath");
+    await WebcontentConverter.ensureInitialized(executablePath: executablePath);
   }
   runApp(MyApp());
 }
