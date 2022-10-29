@@ -1,4 +1,6 @@
 class WebViewHelper {
+  static List<String> customBrowserPath = [];
+  
   static List<String> get desktopBrowserAvailablePath => [];
 
   static bool get isChromeAvailable => true;
