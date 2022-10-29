@@ -1,5 +1,5 @@
 import 'dart:developer';
-
+import 'dart:io' as io;
 import 'package:flutter/material.dart';
 import 'package:webcontent_converter/webcontent_converter.dart';
 import 'package:window_manager/window_manager.dart';
@@ -13,7 +13,9 @@ void main() async {
     await windowManager.ensureInitialized();
 
     /// ensure brower is initialized
-    var executablePath = ChromiumInfoConfig.getLocalChromeExecutablePath();
+    var executablePath =
+        await ChromeDesktopDirectoryHelper.saveChromeFromAssetToApp();
+    WebViewHelper.customBrowserPath = [executablePath];
     print("executablePath $executablePath");
     await WebcontentConverter.ensureInitialized(executablePath: executablePath);
   }

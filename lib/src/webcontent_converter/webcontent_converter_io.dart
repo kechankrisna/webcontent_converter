@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:io';
+import 'dart:io' as io;
 import 'package:easy_logger/easy_logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -9,6 +9,7 @@ import 'package:flutter/widgets.dart';
 import 'package:dio/dio.dart';
 import 'package:puppeteer/plugin.dart';
 import 'package:puppeteer/puppeteer.dart' as pp;
+
 import '../../demo.dart';
 import '../../page.dart';
 import '../../webview_helper.dart';
@@ -41,14 +42,14 @@ class WebcontentConverter {
     String? executablePath,
     String? content,
   }) async {
-    if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
+    if (io.Platform.isMacOS || io.Platform.isLinux || io.Platform.isWindows) {
       if (WebViewHelper.isChromeAvailable) {
         windowBrower ??= await pp.puppeteer.launch(
           headless: true,
           executablePath: executablePath ?? WebViewHelper.executablePath(),
         );
       }
-    } else if (Platform.isAndroid || Platform.isIOS) {
+    } else if (io.Platform.isAndroid || io.Platform.isIOS) {
       preloadBytes =
           await contentToImage(content: content ?? Demo.getReceiptContent());
     }
@@ -187,7 +188,7 @@ class WebcontentConverter {
     Uint8List results = Uint8List.fromList([]);
 
     try {
-      if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
+      if (io.Platform.isMacOS || io.Platform.isLinux || io.Platform.isWindows) {
         if (WebViewHelper.isChromeAvailable) {
           pp.Page? windowBrowserPage;
           try {
@@ -354,7 +355,9 @@ class WebcontentConverter {
     WebcontentConverter.logger.info(arguments['format']);
     var result;
     try {
-      if ((Platform.isMacOS || Platform.isLinux || Platform.isWindows) &&
+      if ((io.Platform.isMacOS ||
+              io.Platform.isLinux ||
+              io.Platform.isWindows) &&
           WebViewHelper.isChromeAvailable) {
         pp.Page? windowBrowserPage;
         try {
@@ -393,7 +396,7 @@ class WebcontentConverter {
               right: _margins.right,
             ),
             printBackground: true,
-            output: File(savedPath).openWrite(),
+            output: io.File(savedPath).openWrite(),
           );
 
           result = savedPath;
@@ -492,7 +495,9 @@ class WebcontentConverter {
         'duration': duration,
         'autoClose': autoClose,
       };
-      if ((Platform.isMacOS || Platform.isLinux || Platform.isWindows) &&
+      if ((io.Platform.isMacOS ||
+              io.Platform.isLinux ||
+              io.Platform.isWindows) &&
           WebViewHelper.isChromeAvailable) {
         var browser = await pp.puppeteer.launch(
           executablePath: WebViewHelper.executablePath(),

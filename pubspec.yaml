@@ -14,6 +14,8 @@ dependencies:
   dio: ^4.0.6  
   easy_logger: ^0.0.2
   js: ^0.6.4
+  path_provider: ^2.0.11
+  archive: ^3.3.2
 
 dev_dependencies:
   flutter_test:
