@@ -1,3 +1,7 @@
+## 0.0.8+2
+
+* add method justDownloadChrome, justExtractChrome, downloadChrome in bin/install_desktop
+
 ## 0.0.8+1
 
 * add printPreview method for web, desktop and mobile
