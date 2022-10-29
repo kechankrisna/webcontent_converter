@@ -16,6 +16,9 @@ dependencies:
   js: ^0.6.4
   path_provider: ^2.0.11
   archive: ^3.3.2
+  path: ^1.8.2
+  http: ^0.13.5
+  
 
 dev_dependencies:
   flutter_test:
