@@ -4,16 +4,14 @@ import 'package:flutter/foundation.dart'
 import 'package:webcontent_converter/revision_info.dart';
 
 class WebViewHelper {
-  static List<String> get desktopBrowserAvailablePath {
-    if (io.Platform.isWindows) {
-      return windowBrowserAvailablePath;
-    } else if (io.Platform.isMacOS) {
-      return macosBrowserAvailablePath;
-    } else if (io.Platform.isLinux) {
-      return linuxBrowserAvailablePath;
-    }
-    return [];
-  }
+  static List<String> customBrowserPath = [];
+
+  static List<String> get desktopBrowserAvailablePath => [
+    ...customBrowserPath,
+    if (io.Platform.isWindows)...windowBrowserAvailablePath,
+    if (io.Platform.isMacOS) ...macosBrowserAvailablePath,
+    if (io.Platform.isLinux) ...linuxBrowserAvailablePath,
+  ];
 
   static List<String> get windowBrowserAvailablePath => [
         ChromiumInfoConfig.getLocalChromeExecutablePath(),
