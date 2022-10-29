@@ -100,4 +100,24 @@ var result = await WebcontentConverter.contentToPDF(
 
 `*** Purpose: The three above functions will help developer to get pdf printed file of html content as. It will return a savedPath when saved successful otherwise null`
 
+
+### Desktop top
+```
+    flutter pub run webcontent_converter:install_desktop download
+```
+This cli will download the chrome version base on your current operating system and save into path assets/.local-chromium/ directory as a zip file
+
+```
+    flutter pub run webcontent_converter:install_desktop extract
+```
+This cli will extract the chrome zip file based on your current operating system and save into path assets/.local-chromium/ directory
+
+
+add this code into your flutter app will help you to ship chromium zip in asset directory into production build for desktop deployment
+```dart
+var executablePath = await ChromeDesktopDirectoryHelper.saveChromeFromAssetToApp();
+WebViewHelper.customBrowserPath = [executablePath];
+await WebcontentConverter.ensureInitialized(executablePath: executablePath);
+```
+
 ![Invoice screenshot](screenshots/invoice.pdf?raw=true "Invoice")

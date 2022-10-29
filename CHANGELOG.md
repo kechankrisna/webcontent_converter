@@ -1,3 +1,7 @@
+## 0.0.8+3
+
+* customBrowserPath and chrome directory helper
+
 ## 0.0.8+2
 
 * add method justDownloadChrome, justExtractChrome, downloadChrome in bin/install_desktop
