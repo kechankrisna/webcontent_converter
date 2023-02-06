@@ -34,9 +34,14 @@ class WebcontentConverter {
 
   static Future<void> ensureInitialized({String executablePath}) async {
     if (windowBrower == null || windowBrower?.isConnected != true) {
-      await WebcontentConverter.initWebcontentConverter(executablePath:executablePath);
+      await WebcontentConverter.initWebcontentConverter(
+          executablePath: executablePath);
     }
   }
+
+  static Future<pp.RevisionInfo> downloadChrome(
+          {int revision, String cachePath}) async =>
+      await pp.downloadChrome(revision: revision, cachePath: cachePath);
 
   static Future<void> initWebcontentConverter({
     String executablePath,
@@ -62,7 +67,8 @@ class WebcontentConverter {
     bool isClosePage = true,
     bool isCloseBrower = true,
   }) async {
-    WebcontentConverter.logger.debug('webcontent converter deinitWebcontentConverter');
+    WebcontentConverter.logger
+        .debug('webcontent converter deinitWebcontentConverter');
     if (isClosePage) await windowBrowserPage?.close();
     if (isCloseBrower) await windowBrower?.close();
   }
@@ -207,7 +213,8 @@ class WebcontentConverter {
           }
 
           /// if window browser page is null
-          if (windowBrowserPage == null || windowBrowserPage?.isClosed == true) {
+          if (windowBrowserPage == null ||
+              windowBrowserPage?.isClosed == true) {
             windowBrowserPage = await windowBrower.newPage();
           }
 
