@@ -94,7 +94,7 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
                             print("\n scroll delayed ${webView.scrollBarFadeDuration}")
 
                             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
-                                webView.evaluateJavascript("(function() { return [document.body.offsetWidth, document.body.offsetHeight]; })();"){it
+                                webView.evaluateJavascript("(function() { return [document.body.offsetWidth, document.body.lastElementChild.offsetHeight]; })();"){it
                                     var xy = JSONArray(it)
                                     var offsetWidth = xy[0].toString();
                                     var offsetHeight = xy[1].toString();
