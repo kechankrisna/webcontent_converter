@@ -209,7 +209,7 @@ class WebcontentConverter {
                 .setViewport(pp.DeviceViewport(deviceScaleFactor: scale));
             await windowBrowserPage.emulateMediaType(pp.MediaType.print);
             var offsetHeight =
-                await windowBrowserPage.evaluate('document.body.offsetHeight');
+                await windowBrowserPage.evaluate('document.body.lastElementChild.offsetHeight');
             var offsetWidth =
                 await windowBrowserPage.evaluate('document.body.offsetWidth');
             results = await windowBrowserPage.screenshot(
