@@ -31,8 +31,8 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
             var bytes = FlutterStandardTypedData.init(bytes: Data() )
             urlObservation = webView.observe(\.isLoading, changeHandler: { (webView, change) in
                 DispatchQueue.main.asyncAfter(deadline: .now() + (duration!/10000) ) {
-                        print("height = \(self.webView.scrollView.contentSize.height)")
-                        print("width = \(self.webView.scrollView.contentSize.width)")
+                    print("height = \(self.webView.scrollView.contentSize.height)")
+                    print("width = \(self.webView.scrollView.contentSize.width)")
                     if #available(iOS 11.0, *) {
                         let configuration = WKSnapshotConfiguration()
                         var size = self.webView.scrollView.contentSize
@@ -54,7 +54,7 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                             print("Got snapshot")
                         }
                     } else if #available(iOS 9.0, *) {
-                       
+                        
                         let image =  self.webView.snapshot()
                         guard let data = image!.jpegData(compressionQuality: 1) else {
                             result( bytes )
@@ -68,7 +68,7 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                         self.dispose()
                         print("Got snapshot")
                         
-                       
+                        
                     }else {
                         
                         result( bytes )
@@ -90,8 +90,8 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
             self.webView.loadHTMLString(content!, baseURL: Bundle.main.resourceURL)// load html into hidden webview
             urlObservation = webView.observe(\.isLoading, changeHandler: { (webView, change) in
                 DispatchQueue.main.asyncAfter(deadline: .now() + (duration!/10000) ) {
-                        print("height = \(self.webView.scrollView.contentSize.height)")
-                        print("width = \(self.webView.scrollView.contentSize.width)")
+                    print("height = \(self.webView.scrollView.contentSize.height)")
+                    print("width = \(self.webView.scrollView.contentSize.width)")
                     if #available(iOS 11.0, *) {
                         let configuration = WKSnapshotConfiguration()
                         configuration.rect = CGRect(x: 0, y: 0, width: CGFloat(format!["width"] ?? 8.27).toPixel(), height: CGFloat(format!["height"] ?? 11.27).toPixel() )
@@ -108,12 +108,49 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                 }
             })
             break
+            
+        case "printPreview":
+            let url = arguments!["url"] as? String?
+            let margins = arguments!["margins"] as? Dictionary<String, Double>
+            let baseURL = url != nil ? URL(string: url!!) : Bundle.main.resourceURL;
+            self.webView = WKWebView()
+            self.webView.isHidden = true
+            self.webView.tag = 100
+            self.webView.loadHTMLString(content!, baseURL: baseURL)// load html into hidden webview
+            urlObservation = webView.observe(\.isLoading, changeHandler: { (webView, change) in
+                DispatchQueue.main.asyncAfter(deadline: .now() + (duration!/10000) ) {
+                    print("height = \(self.webView.scrollView.contentSize.height)")
+                    print("width = \(self.webView.scrollView.contentSize.width)")
+                    self.createWebPrintJob(webView: webView)
+                    result(nil)
+                    //dispose
+                    self.dispose()
+                }
+            })
+            break
         default:
             result("iOS " + UIDevice.current.systemVersion)
         }
         
     }
     
+    private func createWebPrintJob(webView: WKWebView) {
+        
+        let printInfo = UIPrintInfo(dictionary: nil)
+        let appName = Bundle.main.infoDictionary!["CFBundleName"] as! String
+        printInfo.jobName = "\(appName) print preview"
+        printInfo.outputType = .general
+        let printController =  UIPrintInteractionController.shared
+        
+        printController.printInfo = printInfo
+        let printFormatter = webView.viewPrintFormatter();
+        let defaultBestPaper = UIPrintPaper.bestPaper(forPageSize: CGSize(width: 595, height: 842), withPapersFrom: [])
+        
+        printController.printFormatter = printFormatter
+        printController.present(animated: true, completionHandler: { (data, response, error) in
+            ///Ï
+        })
+    }
     
     func dispose() {
         //dispose

@@ -1,6 +1,7 @@
 package app.mylekha.webcontent_converter
 
 import android.content.Context
+import android.util.Log
 import android.view.View
 import android.webkit.WebView
 import io.flutter.plugin.common.StandardMessageCodec
@@ -29,15 +30,21 @@ internal class FLNativeView(context: Context, id: Int, creationParams: Map<Strin
     init {
         var width = (arguments!!["width"]!! as Number).toInt()
         var height = (arguments!!["height"]!! as Number).toInt()
-        var content = arguments!!["content"] as String
+        var content = arguments!!["content"] as String?
+        var url = arguments!!["url"] as String?
         webView.layout(0, 0, width, height)
-        webView.loadDataWithBaseURL(null, content, "text/HTML", "UTF-8", null)
+        print("\nurl : $url")
+        if(url !=null ){
+            webView.loadUrl(url)
+        }else{
+            webView.loadDataWithBaseURL(null, content.toString(), "text/HTML", "UTF-8", null)
+        }
+
         webView.setInitialScale(1)
         webView.settings.javaScriptEnabled = true
         webView.settings.useWideViewPort = true
         webView.settings.javaScriptCanOpenWindowsAutomatically = true
         webView.settings.loadWithOverviewMode = true
-
 
     }
 

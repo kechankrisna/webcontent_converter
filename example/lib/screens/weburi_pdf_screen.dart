@@ -1,4 +1,5 @@
 import 'dart:io' as io;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
@@ -51,8 +52,11 @@ class _WebUriToPDFScreenState extends State<WebUriToPDFScreen> {
 
   ///[convert html] content into pdf
   _convert() async {
-    var dir = await getApplicationDocumentsDirectory();
-    var savedPath = join(dir.path, "sample.pdf");
+    var savedPath = "sample.pdf";
+    if (!kIsWeb) {
+      var dir = await getApplicationDocumentsDirectory();
+      savedPath = join(dir.path, "sample.pdf");
+    }
     var result = await WebcontentConverter.webUriToPdf(
       uri: "http://127.0.0.1:5500/example/assets/invoice.html",
       savedPath: savedPath,
@@ -60,7 +64,7 @@ class _WebUriToPDFScreenState extends State<WebUriToPDFScreen> {
     );
     WebcontentConverter.logger.info("completed");
 
-    setState(() => _file = io.File(savedPath));
+    if (!kIsWeb) setState(() => _file = io.File(savedPath));
 
     /// [printing]
     // await Printing.layoutPdf(

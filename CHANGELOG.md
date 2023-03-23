@@ -1,3 +1,23 @@
+## 0.0.8+3
+
+* customBrowserPath and chrome directory helper
+* fixed cli
+
+## 0.0.8+2
+
+* add method justDownloadChrome, justExtractChrome, downloadChrome in bin/install_desktop
+
+## 0.0.8+1
+
+* add printPreview method for web, desktop and mobile
+* add scale to convert content as image to make image screenshot clear
+
+## 0.0.8
+
+* puppeteer 2.17
+* web initialize
+* linux chrome path
+
 ## 0.0.7+2
 
 * puppeteer 2.11
