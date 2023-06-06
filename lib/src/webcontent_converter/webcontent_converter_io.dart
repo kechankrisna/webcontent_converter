@@ -45,7 +45,6 @@ class WebcontentConverter {
     if (io.Platform.isMacOS || io.Platform.isLinux || io.Platform.isWindows) {
       if (WebViewHelper.isChromeAvailable) {
         windowBrower ??= await pp.puppeteer.launch(
-          headless: true,
           executablePath: executablePath ?? WebViewHelper.executablePath(),
         );
       }
