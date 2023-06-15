@@ -95,7 +95,6 @@ abstract class WebcontentConverterPlatform extends PlatformInterface {
     PdfMargins? margins,
     PaperFormat format = PaperFormat.a4,
     String? executablePath,
-    bool autoClosePage = true,
   }) async {
     throw UnimplementedError('contentToPDF() has not been implemented.');
   }
