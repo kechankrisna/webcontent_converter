@@ -103,7 +103,7 @@ class WebcontentConverter {
   /// ```
   static Future<Uint8List> filePathToImage({
     required String path,
-    double duration: 2000,
+    double duration = 2000,
     String? executablePath,
     int scale = 3,
   }) async {
@@ -138,7 +138,7 @@ class WebcontentConverter {
   /// ```
   static Future<Uint8List> webUriToImage({
     required String uri,
-    double duration: 2000,
+    double duration = 2000,
     String? executablePath,
     int scale = 3,
   }) async {
@@ -175,7 +175,7 @@ class WebcontentConverter {
 
   static Future<Uint8List> contentToImage({
     required String content,
-    double duration: 2000,
+    double duration = 2000,
     String? executablePath,
     int scale = 3,
   }) async {
@@ -258,10 +258,10 @@ class WebcontentConverter {
 
   static Future<String?> filePathToPdf({
     required String path,
-    double duration: 2000,
+    double duration = 2000,
     required String savedPath,
     PdfMargins? margins,
-    PaperFormat format: PaperFormat.a4,
+    PaperFormat format = PaperFormat.a4,
     String? executablePath,
   }) async {
     var result;
@@ -295,10 +295,10 @@ class WebcontentConverter {
   /// ```
   static Future<String?> webUriToPdf({
     required String uri,
-    double duration: 2000,
+    double duration = 2000,
     required String savedPath,
     PdfMargins? margins,
-    PaperFormat format: PaperFormat.a4,
+    PaperFormat format = PaperFormat.a4,
     String? executablePath,
   }) async {
     var result;
@@ -336,10 +336,10 @@ class WebcontentConverter {
   /// ```
   static Future<String?> contentToPDF(
       {required String content,
-      double duration: 2000,
+      double duration = 2000,
       required String savedPath,
       PdfMargins? margins,
-      PaperFormat format: PaperFormat.a4,
+      PaperFormat format = PaperFormat.a4,
       String? executablePath}) async {
     PdfMargins _margins = margins ?? PdfMargins.zero;
     final Map<String, dynamic> arguments = {
@@ -442,8 +442,8 @@ class WebcontentConverter {
                     (BuildContext context, PlatformViewController controller) {
                   return AndroidViewSurface(
                     controller: controller as AndroidViewController,
-                    gestureRecognizers: const <
-                        Factory<OneSequenceGestureRecognizer>>{},
+                    gestureRecognizers: const <Factory<
+                        OneSequenceGestureRecognizer>>{},
                     hitTestBehavior: PlatformViewHitTestBehavior.opaque,
                   );
                 },

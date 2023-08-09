@@ -90,7 +90,7 @@ class WebcontentConverter {
 
   static Future<Uint8List> filePathToImage({
     required String path,
-    double duration: 2000,
+    double duration = 2000,
     String? executablePath,
     bool autoClosePage = true,
     int scale = 3,
@@ -114,7 +114,7 @@ class WebcontentConverter {
 
   static Future<Uint8List> webUriToImage({
     required String uri,
-    double duration: 2000,
+    double duration = 2000,
     String? executablePath,
     bool autoClosePage = true,
     int scale = 3,
@@ -138,7 +138,7 @@ class WebcontentConverter {
 
   static Future<Uint8List> contentToImage({
     required String content,
-    double duration: 2000,
+    double duration = 2000,
     String? executablePath,
     bool autoClosePage = true,
     int scale = 3,
@@ -168,10 +168,10 @@ class WebcontentConverter {
 
   static Future<String?> filePathToPdf({
     required String path,
-    double duration: 2000,
+    double duration = 2000,
     required String savedPath,
     PdfMargins? margins,
-    PaperFormat format: PaperFormat.a4,
+    PaperFormat format = PaperFormat.a4,
     String? executablePath,
   }) async {
     var result;
@@ -194,10 +194,10 @@ class WebcontentConverter {
 
   static Future<String?> webUriToPdf({
     required String uri,
-    double duration: 2000,
+    double duration = 2000,
     required String savedPath,
     PdfMargins? margins,
-    PaperFormat format: PaperFormat.a4,
+    PaperFormat format = PaperFormat.a4,
     String? executablePath,
   }) async {
     var result;
@@ -221,10 +221,10 @@ class WebcontentConverter {
 
   static Future<String?> contentToPDF({
     required String content,
-    double duration: 2000,
+    double duration = 2000,
     required String savedPath,
     PdfMargins? margins,
-    PaperFormat format: PaperFormat.a4,
+    PaperFormat format = PaperFormat.a4,
     String? executablePath,
     bool autoClosePage = true,
   }) async {
