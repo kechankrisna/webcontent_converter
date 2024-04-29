@@ -2,11 +2,15 @@ import 'dart:async';
 
 class ChromeDesktopDirectoryHelper {
   
+  static const String appsDirPath = "apps";
+
   static String? assetChromeZipPath() => null;
 
   static FutureOr<String> zipFileName() => "";
 
-  static FutureOr<String> saveChromeFromAssetToApp() => "";
+  static FutureOr<String> saveChromeFromAssetToApp({
+    String? assetPath = null,
+  }) => "";
 
   static FutureOr<void> unzip(String path, String targetPath) {}
 

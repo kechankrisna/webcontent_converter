@@ -10,9 +10,18 @@ import 'dart:io' as io;
 class ChromeDesktopDirectoryHelper {
   static const revision = ChromiumInfoConfig.lastRevision;
 
+  static const String appsDirPath = "apps";
+
   static String? assetChromeZipPath() {
     String? filename = zipFileName();
-    return p.joinAll(['assets', '.local-chromium', '${revision}_$filename']);
+    return appsDirPath.isEmpty
+        ? p.joinAll(['assets', '.local-chromium', '${revision}_$filename'])
+        : p.joinAll([
+            'assets',
+            appsDirPath,
+            '.local-chromium',
+            '${revision}_$filename'
+          ]);
   }
 
   static String zipFileName() {
@@ -28,11 +37,15 @@ class ChromeDesktopDirectoryHelper {
 
   /// extract chrome to support dir
   /// and return the absolute path
-  static FutureOr<String> saveChromeFromAssetToApp() async {
+  static FutureOr<String> saveChromeFromAssetToApp({
+    String? assetPath = null,
+  }) async {
     final targetPath = await applicationSupportPath();
 
     final tagetDirectory = io.Directory(
         p.joinAll([targetPath, zipFileName().replaceAll(".zip", "")]));
+    print("targetPath ${targetPath}");
+    print("tagetDirectory ${tagetDirectory.path}");
 
     /// create tareget direcotry if not exist
     if (!tagetDirectory.existsSync()) {
@@ -48,7 +61,7 @@ class ChromeDesktopDirectoryHelper {
     final executableFile = io.File(executablePath);
 
     /// check zip from asset
-    final assetPath = assetChromeZipPath();
+    final _assetPath = assetPath ?? assetChromeZipPath();
     final zipPath = io.Directory(p.joinAll([
       (await path.getApplicationSupportDirectory()).path,
       zipFileName()
@@ -62,8 +75,9 @@ class ChromeDesktopDirectoryHelper {
       /// if zip never stored
       if (!zipFile.existsSync()) {
         print("zipFile not exist");
+        print("assetPath $_assetPath");
 
-        final value = await rootBundle.load(assetPath!);
+        final value = await rootBundle.load(_assetPath!);
         Uint8List wzzip =
             value.buffer.asUint8List(value.offsetInBytes, value.lengthInBytes);
         zipFile.writeAsBytesSync(wzzip);
@@ -122,11 +136,15 @@ class ChromeDesktopDirectoryHelper {
 
   static FutureOr<String> applicationSupportPath() async {
     var supportDir = await path.getApplicationSupportDirectory();
-    supportDir.path;
-    return io.Directory(
-            p.joinAll([supportDir.path, '.local-chromium', '$revision']))
-        .absolute
-        .path;
+    return appsDirPath.isEmpty
+        ? io.Directory(
+                p.joinAll([supportDir.path, '.local-chromium', '$revision']))
+            .absolute
+            .path
+        : io.Directory(p.joinAll(
+                [supportDir.path, appsDirPath, '.local-chromium', '$revision']))
+            .absolute
+            .path;
   }
 
   static FutureOr<String> getChromeExecutablePath() {

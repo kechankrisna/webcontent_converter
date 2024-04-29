@@ -6,7 +6,9 @@ class ChromeDesktopDirectoryHelper {
 
   static FutureOr<String> zipFileName() => "";
 
-  static FutureOr<String> saveChromeFromAssetToApp() => "";
+  static FutureOr<String> saveChromeFromAssetToApp({
+    String? assetPath = null,
+  }) => "";
 
   static FutureOr<void> unzip(String path, String targetPath) {}
 
