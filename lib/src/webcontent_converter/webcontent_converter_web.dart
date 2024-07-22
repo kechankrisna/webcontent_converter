@@ -171,7 +171,7 @@ class WebcontentConverter {
     double duration = 2000,
     required String savedPath,
     PdfMargins? margins,
-    PaperFormat format = PaperFormat.a4,
+    required PaperFormat format,
     String? executablePath,
   }) async {
     var result;
@@ -197,7 +197,7 @@ class WebcontentConverter {
     double duration = 2000,
     required String savedPath,
     PdfMargins? margins,
-    PaperFormat format = PaperFormat.a4,
+    required PaperFormat format,
     String? executablePath,
   }) async {
     var result;
@@ -224,7 +224,7 @@ class WebcontentConverter {
     double duration = 2000,
     required String savedPath,
     PdfMargins? margins,
-    PaperFormat format = PaperFormat.a4,
+    required PaperFormat format,
     String? executablePath,
     bool autoClosePage = true,
   }) async {
