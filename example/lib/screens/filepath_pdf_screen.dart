@@ -60,7 +60,7 @@ class _FilePathToPDFScreenState extends State<FilePathToPDFScreen> {
     var result = await WebcontentConverter.filePathToPdf(
       path: "assets/invoice.html",
       savedPath: savedPath,
-      format: PaperFormat.a4,
+      format: PaperFormat.a4(isPortrait: true),
       margins: PdfMargins.px(top: 35, bottom: 35, right: 35, left: 35),
       executablePath: WebViewHelper.executablePath(),
     );

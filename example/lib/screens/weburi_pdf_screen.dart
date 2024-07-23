@@ -61,6 +61,7 @@ class _WebUriToPDFScreenState extends State<WebUriToPDFScreen> {
       uri: "http://127.0.0.1:5500/example/assets/invoice.html",
       savedPath: savedPath,
       executablePath: WebViewHelper.executablePath(),
+      format: PaperFormat.a4(isPortrait: true),
     );
     WebcontentConverter.logger.info("completed");
 

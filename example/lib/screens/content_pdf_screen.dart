@@ -64,7 +64,7 @@ class _ContentToPDFScreenState extends State<ContentToPDFScreen> {
     var result = await WebcontentConverter.contentToPDF(
       content: content,
       savedPath: savedPath,
-      format: PaperFormat.a4,
+      format: PaperFormat.a4(isPortrait: true),
       margins: PdfMargins.px(top: 55, bottom: 55, right: 55, left: 55),
       executablePath: WebViewHelper.executablePath(),
     );

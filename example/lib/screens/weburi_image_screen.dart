@@ -1,5 +1,4 @@
 import 'dart:io' as io;
-import 'dart:typed_data' show Uint8List;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
