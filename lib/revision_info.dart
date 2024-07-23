@@ -2,14 +2,14 @@ import 'dart:io' as io;
 import 'package:path/path.dart' as p;
 
 class RevisionInfo {
-  final String executablePath;
-  final String folderPath;
-  final int revision;
 
   RevisionInfo(
       {required this.executablePath,
       required this.folderPath,
-      required this.revision});
+      required this.revision,});
+  final String executablePath;
+  final String folderPath;
+  final int revision;
 }
 
 class ChromiumInfoConfig {
@@ -22,17 +22,15 @@ class ChromiumInfoConfig {
       return p.join(revisionPath, 'chrome-linux', 'chrome');
     } else if (io.Platform.isMacOS) {
       return p.join(revisionPath, 'chrome-mac', 'Chromium.app', 'Contents',
-          'MacOS', 'Chromium');
+          'MacOS', 'Chromium',);
     } else {
       throw UnsupportedError('Unknown platform ${io.Platform.operatingSystem}');
     }
   }
 
   static String localChromiumDirectory =
-      p.joinAll(["assets", ".local-chromium"]);
+      p.joinAll(['assets', '.local-chromium']);
 
-  static String getLocalChromeExecutablePath() {
-    return io.Directory(ChromiumInfoConfig.getExecutablePath(
-        p.joinAll([localChromiumDirectory, "$lastRevision"]))).absolute.path;
-  }
+  static String getLocalChromeExecutablePath() => io.Directory(ChromiumInfoConfig.getExecutablePath(
+        p.joinAll([localChromiumDirectory, '$lastRevision']),),).absolute.path;
 }

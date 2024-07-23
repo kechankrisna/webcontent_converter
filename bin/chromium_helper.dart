@@ -9,18 +9,18 @@ class ChromiumHelper {
   /// use in case when user just only want to download chromium version for their app
   ///
   static Future<RevisionInfo> justDownloadChrome(
-      {int? revision, String? cachePath}) async {
+      {int? revision, String? cachePath,}) async {
     revision ??= ChromiumInfoConfig.lastRevision;
     cachePath ??= '.local-chromium';
 
-    var revisionDirectory = Directory(p.join(cachePath, '$revision'));
+    final revisionDirectory = Directory(p.join(cachePath, '$revision'));
     if (!revisionDirectory.existsSync()) {
       revisionDirectory.createSync(recursive: true);
     }
 
-    var url = downloadUrl(revision);
-    var zipPath = p.join(cachePath, '${revision}_${p.url.basename(url)}');
-    var zipFile = File(zipPath);
+    final url = downloadUrl(revision);
+    final zipPath = p.join(cachePath, '${revision}_${p.url.basename(url)}');
+    final zipFile = File(zipPath);
     if (!zipFile.existsSync()) {
       await downloadFile(url, zipPath);
     }
@@ -32,27 +32,27 @@ class ChromiumHelper {
     return RevisionInfo(
         folderPath: revisionDirectory.path,
         executablePath: zipFile.path,
-        revision: revision);
+        revision: revision,);
   }
 
   /// use in case when user just want to extract their downloaded chromium file
   ///
   static Future<RevisionInfo> justExtractChrome(
-      {int? revision, String? cachePath}) async {
+      {int? revision, String? cachePath,}) async {
     revision ??= ChromiumInfoConfig.lastRevision;
     cachePath ??= '.local-chromium';
 
-    var revisionDirectory = Directory(p.join(cachePath, '$revision'));
+    final revisionDirectory = Directory(p.join(cachePath, '$revision'));
     if (!revisionDirectory.existsSync()) {
       revisionDirectory.createSync(recursive: true);
     }
 
-    var exePath = ChromiumInfoConfig.getExecutablePath(revisionDirectory.path);
+    final exePath = ChromiumInfoConfig.getExecutablePath(revisionDirectory.path);
 
-    var executableFile = File(exePath);
+    final executableFile = File(exePath);
 
-    var url = downloadUrl(revision);
-    var zipPath = p.join(cachePath, '${revision}_${p.url.basename(url)}');
+    final url = downloadUrl(revision);
+    final zipPath = p.join(cachePath, '${revision}_${p.url.basename(url)}');
 
     if (!executableFile.existsSync()) {
       unzip(zipPath, revisionDirectory.path);
@@ -75,28 +75,28 @@ class ChromiumHelper {
     return RevisionInfo(
         folderPath: revisionDirectory.path,
         executablePath: executableFile.path,
-        revision: revision);
+        revision: revision,);
   }
 
   /// originally from pupeteer-dart in case download and extract chromium file when the download zip will be deleted
   ///
   static Future<RevisionInfo> downloadChrome(
-      {int? revision, String? cachePath}) async {
+      {int? revision, String? cachePath,}) async {
     revision ??= ChromiumInfoConfig.lastRevision;
     cachePath ??= '.local-chromium';
 
-    var revisionDirectory = Directory(p.join(cachePath, '$revision'));
+    final revisionDirectory = Directory(p.join(cachePath, '$revision'));
     if (!revisionDirectory.existsSync()) {
       revisionDirectory.createSync(recursive: true);
     }
 
-    var exePath = ChromiumInfoConfig.getExecutablePath(revisionDirectory.path);
+    final exePath = ChromiumInfoConfig.getExecutablePath(revisionDirectory.path);
 
-    var executableFile = File(exePath);
+    final executableFile = File(exePath);
 
     if (!executableFile.existsSync()) {
-      var url = downloadUrl(revision);
-      var zipPath = p.join(cachePath, '${revision}_${p.url.basename(url)}');
+      final url = downloadUrl(revision);
+      final zipPath = p.join(cachePath, '${revision}_${p.url.basename(url)}');
       await downloadFile(url, zipPath);
 
       unzip(zipPath, revisionDirectory.path);
@@ -120,13 +120,13 @@ class ChromiumHelper {
     return RevisionInfo(
         folderPath: revisionDirectory.path,
         executablePath: executableFile.path,
-        revision: revision);
+        revision: revision,);
   }
 
   static Future downloadFile(String url, String output) async {
-    var client = http.Client();
-    var response = await client.send(http.Request('get', Uri.parse(url)));
-    var ouputFile = File(output);
+    final client = http.Client();
+    final response = await client.send(http.Request('get', Uri.parse(url)));
+    final ouputFile = File(output);
     await response.stream.pipe(ouputFile.openWrite());
     client.close();
 
@@ -144,20 +144,20 @@ class ChromiumHelper {
     }
   }
 
-//TODO(xha): implement a more complete unzip
+// TODO(xha): implement a more complete unzip
 //https://github.com/maxogden/extract-zip/blob/master/index.js
   static void simpleUnzip(String path, String targetPath) {
-    var targetDirectory = Directory(targetPath);
+    final targetDirectory = Directory(targetPath);
     if (targetDirectory.existsSync()) {
       targetDirectory.deleteSync(recursive: true);
     }
 
-    var bytes = File(path).readAsBytesSync();
-    var archive = ZipDecoder().decodeBytes(bytes);
+    final bytes = File(path).readAsBytesSync();
+    final archive = ZipDecoder().decodeBytes(bytes);
 
-    for (var file in archive) {
-      var filename = file.name;
-      var data = file.content as List<int>;
+    for (final file in archive) {
+      final filename = file.name;
+      final data = file.content as List<int>;
       if (data.isNotEmpty) {
         File(p.join(targetPath, filename))
           ..createSync(recursive: true)
@@ -178,7 +178,7 @@ class ChromiumHelper {
       return '$_baseUrl/Mac/$revision/chrome-mac.zip';
     } else {
       throw UnsupportedError(
-          "Can't download chrome for platform ${Platform.operatingSystem}");
+          "Can't download chrome for platform ${Platform.operatingSystem}",);
     }
   }
 }

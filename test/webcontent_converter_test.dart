@@ -4,7 +4,7 @@ import 'package:webcontent_converter/webcontent_converter.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test("is isChromeAvailable", () {
+  test('is isChromeAvailable', () {
     expect(WebViewHelper.isChromeAvailable, true);
   });
 }

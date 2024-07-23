@@ -1,12 +1,13 @@
 import 'dart:async';
 import 'dart:io' as io;
+
+import 'package:dio/dio.dart';
 import 'package:easy_logger/easy_logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-import 'package:dio/dio.dart';
 import 'package:puppeteer/plugin.dart';
 import 'package:puppeteer/puppeteer.dart' as pp;
 
@@ -20,11 +21,10 @@ Uint8List preloadBytes = Uint8List.fromList([]);
 
 /// [WebcontentConverter] will convert html, html file, web uri, into raw bytes image or pdf file
 class WebcontentConverter {
-  static const MethodChannel _channel =
-      const MethodChannel('webcontent_converter');
+  static const MethodChannel _channel = MethodChannel('webcontent_converter');
 
   static Future<String?> get platformVersion async {
-    final String? version = await _channel.invokeMethod('getPlatformVersion');
+    final version = await _channel.invokeMethod('getPlatformVersion');
     return version;
   }
 
@@ -34,7 +34,9 @@ class WebcontentConverter {
   }) async {
     if (windowBrower == null || windowBrower?.isConnected != true) {
       await WebcontentConverter.initWebcontentConverter(
-          executablePath: executablePath, content: content);
+        executablePath: executablePath,
+        content: content,
+      );
     }
   }
 
@@ -62,7 +64,9 @@ class WebcontentConverter {
   }) async {
     WebcontentConverter.logger
         .debug('webcontent converter deinitWebcontentConverter');
-    if (isCloseBrower) await windowBrower?.close();
+    if (isCloseBrower) {
+      await windowBrower?.close();
+    }
   }
 
   /// ## `WebcontentConverter.logger`
@@ -79,7 +83,7 @@ class WebcontentConverter {
       LevelMessages.debug,
       LevelMessages.info,
       LevelMessages.error,
-      LevelMessages.warning
+      LevelMessages.warning,
     ],
   );
 
@@ -107,9 +111,9 @@ class WebcontentConverter {
     String? executablePath,
     int scale = 3,
   }) async {
-    Uint8List result = Uint8List.fromList([]);
+    var result = Uint8List.fromList([]);
     try {
-      String content = await rootBundle.loadString(path);
+      final content = await rootBundle.loadString(path);
 
       result = await contentToImage(
         content: content,
@@ -118,8 +122,8 @@ class WebcontentConverter {
         scale: scale,
       );
     } on Exception catch (e) {
-      WebcontentConverter.logger.error("[method:filePathToImage]: $e");
-      throw Exception("Error: $e");
+      WebcontentConverter.logger.error('[method:filePathToImage]: $e');
+      throw Exception('Error: $e');
     }
     return result;
   }
@@ -142,10 +146,10 @@ class WebcontentConverter {
     String? executablePath,
     int scale = 3,
   }) async {
-    Uint8List result = Uint8List.fromList([]);
+    var result = Uint8List.fromList([]);
     try {
-      var response = await Dio().get(uri);
-      final String content = response.data.toString();
+      final response = await Dio().get(uri);
+      final content = response.data.toString();
       result = await contentToImage(
         content: content,
         duration: duration,
@@ -153,8 +157,8 @@ class WebcontentConverter {
         scale: scale,
       );
     } on Exception catch (e) {
-      WebcontentConverter.logger.error("[method:webUriToImage]: $e");
-      throw Exception("Error: $e");
+      WebcontentConverter.logger.error('[method:webUriToImage]: $e');
+      throw Exception('Error: $e');
     }
     return result;
   }
@@ -179,46 +183,48 @@ class WebcontentConverter {
     String? executablePath,
     int scale = 3,
   }) async {
-    final Map<String, dynamic> arguments = {
+    final arguments = <String, dynamic>{
       'content': content,
       'duration': duration,
       'scale': scale,
     };
-    Uint8List results = Uint8List.fromList([]);
+    var results = Uint8List.fromList([]);
 
     try {
       if (io.Platform.isMacOS || io.Platform.isLinux || io.Platform.isWindows) {
         if (WebViewHelper.isChromeAvailable) {
           pp.Page? windowBrowserPage;
           try {
-            WebcontentConverter.logger.info("Desktop support");
+            WebcontentConverter.logger.info('Desktop support');
 
             /// if window browser is null
             if (windowBrower == null || windowBrower?.isConnected != true) {
               windowBrower = await pp.puppeteer.launch(
-                  headless: true,
-                  executablePath:
-                      executablePath ?? WebViewHelper.executablePath());
+                headless: true,
+                executablePath:
+                    executablePath ?? WebViewHelper.executablePath(),
+              );
             }
 
             /// if window browser page is null
             windowBrowserPage = await windowBrower!.newPage();
             await windowBrowserPage.setContent(content, wait: pp.Until.load);
-            windowBrowserPage
+            await windowBrowserPage
                 .setViewport(pp.DeviceViewport(deviceScaleFactor: scale));
             await windowBrowserPage.emulateMediaType(pp.MediaType.print);
-            var offsetHeight =
+            final offsetHeight =
                 await windowBrowserPage.evaluate('document.body.offsetHeight');
-            var offsetWidth =
+            final offsetWidth =
                 await windowBrowserPage.evaluate('document.body.offsetWidth');
             results = await windowBrowserPage.screenshot(
               format: pp.ScreenshotFormat.png,
               clip: pp.Rectangle.fromPoints(
-                  pp.Point(0, 0), pp.Point(offsetWidth, offsetHeight)),
+                const pp.Point(0, 0),
+                pp.Point(offsetWidth, offsetHeight),
+              ),
               fullPage: false,
               omitBackground: true,
             );
-          } catch (e) {
           } finally {
             await windowBrowserPage!.close();
             windowBrowserPage = null;
@@ -226,12 +232,12 @@ class WebcontentConverter {
         }
       } else {
         /// mobile method
-        WebcontentConverter.logger.info("Mobile support");
-        results = await (_channel.invokeMethod('contentToImage', arguments));
+        WebcontentConverter.logger.info('Mobile support');
+        results = await _channel.invokeMethod('contentToImage', arguments);
       }
     } on Exception catch (e) {
-      WebcontentConverter.logger.error("[method:contentToImage]: $e");
-      throw Exception("Error: $e");
+      WebcontentConverter.logger.error('[method:contentToImage]: $e');
+      throw Exception('Error: $e');
     }
     return results;
   }
@@ -258,15 +264,15 @@ class WebcontentConverter {
 
   static Future<String?> filePathToPdf({
     required String path,
-    double duration = 2000,
     required String savedPath,
-    PdfMargins? margins,
     required PaperFormat format,
+    double duration = 2000,
+    PdfMargins? margins,
     String? executablePath,
   }) async {
-    var result;
+    String? result;
     try {
-      String content = await rootBundle.loadString(path);
+      final content = await rootBundle.loadString(path);
       result = await contentToPDF(
         content: content,
         duration: duration,
@@ -276,8 +282,8 @@ class WebcontentConverter {
         executablePath: executablePath,
       );
     } on Exception catch (e) {
-      WebcontentConverter.logger.error("[method:filePathToPdf]: $e");
-      throw Exception("Error: $e");
+      WebcontentConverter.logger.error('[method:filePathToPdf]: $e');
+      throw Exception('Error: $e');
     }
     return result;
   }
@@ -295,16 +301,16 @@ class WebcontentConverter {
   /// ```
   static Future<String?> webUriToPdf({
     required String uri,
-    double duration = 2000,
     required String savedPath,
-    PdfMargins? margins,
     required PaperFormat format,
+    double duration = 2000,
+    PdfMargins? margins,
     String? executablePath,
   }) async {
-    var result;
+    String? result;
     try {
-      var response = await Dio().get(uri);
-      final String content = response.data.toString();
+      final response = await Dio().get(uri);
+      final content = response.data.toString();
       result = await contentToPDF(
         content: content,
         duration: duration,
@@ -314,8 +320,8 @@ class WebcontentConverter {
         executablePath: executablePath,
       );
     } on Exception catch (e) {
-      WebcontentConverter.logger.error("[method:webUriToImage]: $e");
-      throw Exception("Error: $e");
+      WebcontentConverter.logger.error('[method:webUriToImage]: $e');
+      throw Exception('Error: $e');
     }
     return result;
   }
@@ -334,25 +340,26 @@ class WebcontentConverter {
   ///     margins: PdfMargins.px(top: 55, bottom: 55, right: 55, left: 55),
   /// );
   /// ```
-  static Future<String?> contentToPDF(
-      {required String content,
-      double duration = 2000,
-      required String savedPath,
-      PdfMargins? margins,
-      required PaperFormat format,
-      String? executablePath}) async {
-    PdfMargins _margins = margins ?? PdfMargins.zero;
-    final Map<String, dynamic> arguments = {
+  static Future<String?> contentToPDF({
+    required String content,
+    required String savedPath,
+    required PaperFormat format,
+    double duration = 2000,
+    PdfMargins? margins,
+    String? executablePath,
+  }) async {
+    final margins0 = margins ?? PdfMargins.zero;
+    final arguments = <String, dynamic>{
       'content': content,
       'duration': duration,
       'savedPath': savedPath,
-      'margins': _margins.toMap(),
+      'margins': margins0.toMap(),
       'format': format.toMap(),
     };
     WebcontentConverter.logger.info(arguments['savedPath']);
     WebcontentConverter.logger.info(arguments['margins']);
     WebcontentConverter.logger.info(arguments['format']);
-    var result;
+    String? result;
     try {
       if ((io.Platform.isMacOS ||
               io.Platform.isLinux ||
@@ -360,126 +367,130 @@ class WebcontentConverter {
           WebViewHelper.isChromeAvailable) {
         pp.Page? windowBrowserPage;
         try {
-          WebcontentConverter.logger.info("Desktop support");
+          WebcontentConverter.logger.info('Desktop support');
 
           /// if window browser is null
           windowBrower ??= await pp.puppeteer.launch(
-              headless: true,
-              executablePath: executablePath ?? WebViewHelper.executablePath());
+            headless: true,
+            executablePath: executablePath ?? WebViewHelper.executablePath(),
+          );
 
           /// if window browser page is null
           windowBrowserPage = await windowBrower!.newPage();
 
-          windowBrowserPage
-              .setViewport(pp.DeviceViewport(width: 800, height: 1000));
+          await windowBrowserPage
+              .setViewport(const pp.DeviceViewport(width: 800, height: 1000));
 
           /// await windowBrowserPage.emulateMediaType(pp.MediaType.print);
           /// await windowBrowserPage.emulate(pp.puppeteer.devices.laptopWithMDPIScreen);
           ///
-          await windowBrowserPage.setContent(content,
-              wait: pp.Until.all([
-                pp.Until.load,
-                pp.Until.domContentLoaded,
-                pp.Until.networkAlmostIdle,
-                pp.Until.networkIdle,
-              ]));
+          await windowBrowserPage.setContent(
+            content,
+            wait: pp.Until.all([
+              pp.Until.load,
+              pp.Until.domContentLoaded,
+              pp.Until.networkAlmostIdle,
+              pp.Until.networkIdle,
+            ]),
+          );
           await windowBrowserPage.pdf(
             format: pp.PaperFormat.inches(
               width: format.width,
               height: format.height,
             ),
             margins: pp.PdfMargins.inches(
-              top: _margins.top,
-              bottom: _margins.bottom,
-              left: _margins.left,
-              right: _margins.right,
+              top: margins0.top,
+              bottom: margins0.bottom,
+              left: margins0.left,
+              right: margins0.right,
             ),
             printBackground: true,
             output: io.File(savedPath).openWrite(),
           );
 
           result = savedPath;
-        } catch (e) {
         } finally {
           await windowBrowserPage!.close();
           windowBrowserPage = null;
         }
       } else {
         //mobile method
-        WebcontentConverter.logger.info("Mobile support");
+        WebcontentConverter.logger.info('Mobile support');
         result = await _channel.invokeMethod('contentToPDF', arguments);
       }
     } on Exception catch (e) {
-      WebcontentConverter.logger.error("[method:contentToPDF]: $e");
-      throw Exception("Error: $e");
+      WebcontentConverter.logger.error('[method:contentToPDF]: $e');
+      throw Exception('Error: $e');
     }
 
     return result;
   }
 
   /// [WevView]
-  static Widget embedWebView(
-      {String? url, String? content, double? width, double? height}) {
-    return Builder(builder: (context) {
-      final String viewType = 'webview-view-type';
-      // Pass parameters to the platform side.
-      final Map<String, dynamic> creationParams = <String, dynamic>{};
-      final _width = width ?? 1;
-      final _height = height ?? 1;
-      creationParams['width'] = _width;
-      creationParams['height'] = _height;
-      creationParams['content'] = content;
-      creationParams['url'] = url;
-      switch (defaultTargetPlatform) {
-        case TargetPlatform.android:
-          return SafeArea(
-            child: SizedBox(
-              width: _width,
-              height: height,
-              child: PlatformViewLink(
-                viewType: viewType,
-                surfaceFactory:
-                    (BuildContext context, PlatformViewController controller) {
-                  return AndroidViewSurface(
-                    controller: controller as AndroidViewController,
-                    gestureRecognizers: const <Factory<
-                        OneSequenceGestureRecognizer>>{},
-                    hitTestBehavior: PlatformViewHitTestBehavior.opaque,
-                  );
-                },
-                onCreatePlatformView: (PlatformViewCreationParams params) {
-                  return PlatformViewsService.initSurfaceAndroidView(
-                    id: params.id,
+  static Widget embedWebView({
+    String? url,
+    String? content,
+    double? width,
+    double? height,
+  }) =>
+      Builder(
+        builder: (context) {
+          const viewType = 'webview-view-type';
+          // Pass parameters to the platform side.
+          final creationParams = <String, dynamic>{};
+          final width0 = width ?? 1;
+          final height0 = height ?? 1;
+          creationParams['width'] = width0;
+          creationParams['height'] = height0;
+          creationParams['content'] = content;
+          creationParams['url'] = url;
+          switch (defaultTargetPlatform) {
+            case TargetPlatform.android:
+              return SafeArea(
+                child: SizedBox(
+                  width: width0,
+                  height: height,
+                  child: PlatformViewLink(
+                    viewType: viewType,
+                    surfaceFactory: (context, controller) => AndroidViewSurface(
+                      controller: controller as AndroidViewController,
+                      gestureRecognizers: const <Factory<
+                          OneSequenceGestureRecognizer>>{},
+                      hitTestBehavior: PlatformViewHitTestBehavior.opaque,
+                    ),
+                    onCreatePlatformView: (params) =>
+                        PlatformViewsService.initSurfaceAndroidView(
+                      id: params.id,
+                      viewType: viewType,
+                      layoutDirection: TextDirection.ltr,
+                      creationParams: creationParams,
+                      creationParamsCodec: const StandardMessageCodec(),
+                    )
+                          ..addOnPlatformViewCreatedListener(
+                            params.onPlatformViewCreated,
+                          )
+                          ..create(),
+                  ),
+                ),
+              );
+            case TargetPlatform.iOS:
+              return SafeArea(
+                child: SizedBox(
+                  width: width0,
+                  height: width0,
+                  child: UiKitView(
                     viewType: viewType,
                     layoutDirection: TextDirection.ltr,
                     creationParams: creationParams,
-                    creationParamsCodec: StandardMessageCodec(),
-                  )
-                    ..addOnPlatformViewCreatedListener(
-                        params.onPlatformViewCreated)
-                    ..create();
-                },
-              ),
-            ),
-          );
-        case TargetPlatform.iOS:
-          return SafeArea(
-            child: SizedBox(
-              width: _width,
-              height: _width,
-              child: UiKitView(
-                viewType: viewType,
-                layoutDirection: TextDirection.ltr,
-                creationParams: creationParams,
-                creationParamsCodec: const StandardMessageCodec(),
-              ),
-            ),
-          );
-        default:
-          throw UnsupportedError("Unsupported platform view");
-      }
-    });
-  }
+                    creationParamsCodec: const StandardMessageCodec(),
+                  ),
+                ),
+              );
+            default:
+              throw UnsupportedError('Unsupported platform view');
+          }
+        },
+      );
 
   static Future<bool> printPreview({
     String? url,
@@ -488,7 +499,7 @@ class WebcontentConverter {
     double? duration,
   }) async {
     try {
-      final Map<String, dynamic> arguments = {
+      final arguments = <String, dynamic>{
         'url': url,
         'content': content,
         'duration': duration,
@@ -498,31 +509,34 @@ class WebcontentConverter {
               io.Platform.isLinux ||
               io.Platform.isWindows) &&
           WebViewHelper.isChromeAvailable) {
-        var browser = await pp.puppeteer.launch(
+        final browser = await pp.puppeteer.launch(
           executablePath: WebViewHelper.executablePath(),
           headless: false,
           devTools: false,
           noSandboxFlag: false,
           args: [
-            "--no-default-browser-check",
+            '--no-default-browser-check',
             // "-disable-print-preview",
           ],
           defaultViewport: LaunchOptions.viewportNotSpecified,
-          ignoreDefaultArgs: ["--enable-automation"],
+          ignoreDefaultArgs: ['--enable-automation'],
         );
-        var page = (await browser.pages).first;
-        page.setViewport(pp.DeviceViewport(width: 800, height: 1000));
+        final page = (await browser.pages).first;
+        await page
+            .setViewport(const pp.DeviceViewport(width: 800, height: 1000));
 
         /// await page.emulateMediaType(pp.MediaType.print);
         /// await page.emulate(pp.puppeteer.devices.laptopWithMDPIScreen);
         if (url != null) {
-          await page.goto(url,
-              wait: pp.Until.all([
-                pp.Until.load,
-                pp.Until.domContentLoaded,
-                pp.Until.networkAlmostIdle,
-                pp.Until.networkIdle,
-              ]));
+          await page.goto(
+            url,
+            wait: pp.Until.all([
+              pp.Until.load,
+              pp.Until.domContentLoaded,
+              pp.Until.networkAlmostIdle,
+              pp.Until.networkIdle,
+            ]),
+          );
         }
 
         if (content != null) {
@@ -536,29 +550,32 @@ class WebcontentConverter {
             ]),
           );
         }
-        if (duration != null)
+        if (duration != null) {
           await Future.delayed(Duration(milliseconds: duration.toInt()));
+        }
 
         if (browser.isConnected && !page.isClosed) {
           try {
             await page.evaluate('''window.print()''');
-            if (autoClose) await page.close();
+            if (autoClose) {
+              await page.close();
+            }
           } on Exception catch (e) {
-            WebcontentConverter.logger.error("[method:printPreview]: $e");
+            WebcontentConverter.logger.error('[method:printPreview]: $e');
           }
         }
-        page.onClose.then((value) {
+        await page.onClose.then((value) {
           browser.close();
         });
         return Future.value(true);
       } else {
         //mobile method
-        WebcontentConverter.logger.info("Mobile support");
+        WebcontentConverter.logger.info('Mobile support');
         await _channel.invokeMethod('printPreview', arguments);
         return Future.value(true);
       }
     } on Exception catch (e) {
-      WebcontentConverter.logger.error("[method:printPreview]: $e");
+      WebcontentConverter.logger.error('[method:printPreview]: $e');
       return Future.value(false);
     }
   }

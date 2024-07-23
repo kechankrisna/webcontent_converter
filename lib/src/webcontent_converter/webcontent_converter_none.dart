@@ -12,10 +12,10 @@ pp.Page? windowBrowserPage;
 /// [WebcontentConverter] will convert html, html file, web uri, into raw bytes image or pdf file
 class WebcontentConverter {
   static const MethodChannel _channel =
-      const MethodChannel('webcontent_converter');
+      MethodChannel('webcontent_converter');
 
   static Future<String?> get platformVersion async {
-    final String? version = await _channel.invokeMethod('getPlatformVersion');
+    final version = await _channel.invokeMethod('getPlatformVersion');
     return version;
   }
 
@@ -33,7 +33,7 @@ class WebcontentConverter {
       LevelMessages.debug,
       LevelMessages.info,
       LevelMessages.error,
-      LevelMessages.warning
+      LevelMessages.warning,
     ],
   );
 
@@ -93,10 +93,8 @@ class WebcontentConverter {
 
   static Future<String?> filePathToPdf({
     required String path,
-    double duration = 2000,
-    required String savedPath,
+    required String savedPath, required PaperFormat format, double duration = 2000,
     PdfMargins? margins,
-    required PaperFormat format,
     String? executablePath,
   }) async {
     UnimplementedError('filePathToPdf');
@@ -105,10 +103,8 @@ class WebcontentConverter {
 
   static Future<String?> webUriToPdf({
     required String uri,
-    double duration = 2000,
-    required String savedPath,
+    required String savedPath, required PaperFormat format, double duration = 2000,
     PdfMargins? margins,
-    required PaperFormat format,
     String? executablePath,
   }) async {
     UnimplementedError('webUriToPdf');
@@ -117,10 +113,8 @@ class WebcontentConverter {
 
   static Future<String?> contentToPDF({
     required String content,
-    double duration = 2000,
-    required String savedPath,
+    required String savedPath, required PaperFormat format, double duration = 2000,
     PdfMargins? margins,
-    required PaperFormat format,
     String? executablePath,
     bool autoClosePage = true,
   }) async {
@@ -130,13 +124,13 @@ class WebcontentConverter {
 
   /// [WevView]
   static Widget embedWebView(
-      {String? url, String? content, double? width, double? height}) {
+      {String? url, String? content, double? width, double? height,}) {
     UnimplementedError('webivew');
     return Container();
   }
 
   static Future<bool> printPreview(
-      {String? url, String? content, bool autoClose = true, double? duration}) {
+      {String? url, String? content, bool autoClose = true, double? duration,}) {
     UnimplementedError('printPreview');
     return Future.value(false);
   }

@@ -1,6 +1,5 @@
 class Demo {
-  static String getInvoiceContent() {
-    return """
+  static String getInvoiceContent() => r"""
 <!DOCTYPE html>
 <html lang="en">
 
@@ -560,7 +559,7 @@ class Demo {
                 <tbody>
                     <tr>
                         <td colspan="5" align="right" class="capitalize">total price (US Dollar) </td>
-                        <td rowspan="1" align="center">\$ 385.00</td>
+                        <td rowspan="1" align="center">$ 385.00</td>
                     </tr>
                     <tr>
                         <td colspan="5" align="right" class="capitalize">total price (KHMER Riel) </td>
@@ -568,19 +567,19 @@ class Demo {
                     </tr>
                     <tr>
                         <td colspan="5" align="right" class="capitalize">discount ( 0% )</td>
-                        <td rowspan="1" align="center">\$ 0.00</td>
+                        <td rowspan="1" align="center">$ 0.00</td>
                     </tr>
                     <tr>
                         <td colspan="5" align="right" class="capitalize">vat ( 0% )</td>
-                        <td rowspan="1" align="center">\$ 0.00</td>
+                        <td rowspan="1" align="center">$ 0.00</td>
                     </tr>
                     <tr>
                         <td colspan="5" align="right" class="capitalize">paid</td>
-                        <td rowspan="1" align="center">\$ 385.00</td>
+                        <td rowspan="1" align="center">$ 385.00</td>
                     </tr>
                     <tr>
                         <td colspan="5" align="right" class="capitalize">due</td>
-                        <td rowspan="1" align="center">\$ 0.00</td>
+                        <td rowspan="1" align="center">$ 0.00</td>
                     </tr>
                 </tbody>
 
@@ -601,10 +600,8 @@ class Demo {
 
 </html>
    """;
-  }
 
-  static String getReceiptContent() {
-    return """
+  static String getReceiptContent() => '''
 
 <!DOCTYPE html>
 <html lang="en">
@@ -1012,11 +1009,9 @@ class Demo {
         <p>@2020 <a href="https://mylekha.app">MYLEKHA</a>. All right reserved.</p>
     </div>
 </html> 
-  """;
-  }
+  ''';
 
-  static String getShortReceiptContent() {
-    return """
+  static String getShortReceiptContent() => '''
 <!DOCTYPE html>
 <html lang="en">
 
@@ -1164,6 +1159,5 @@ class Demo {
 </body>
 
 </html>  
-  """;
-  }
+  ''';
 }

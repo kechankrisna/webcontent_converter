@@ -1,26 +1,27 @@
 import 'dart:async';
-
-import 'package:flutter/services.dart';
-import 'package:webcontent_converter/revision_info.dart';
-import 'package:archive/archive.dart';
-import 'package:path_provider/path_provider.dart' as path;
-import 'package:path/path.dart' as p;
 import 'dart:io' as io;
+
+import 'package:archive/archive.dart';
+import 'package:flutter/services.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart' as path;
+
+import '../../revision_info.dart';
 
 class ChromeDesktopDirectoryHelper {
   static const revision = ChromiumInfoConfig.lastRevision;
 
-  static const String appsDirPath = "apps";
+  static const String appsDirPath = 'apps';
 
   static String? assetChromeZipPath() {
-    String? filename = zipFileName();
+    final filename = zipFileName();
     return appsDirPath.isEmpty
         ? p.joinAll(['assets', '.local-chromium', '${revision}_$filename'])
         : p.joinAll([
             'assets',
             appsDirPath,
             '.local-chromium',
-            '${revision}_$filename'
+            '${revision}_$filename',
           ]);
   }
 
@@ -32,20 +33,20 @@ class ChromeDesktopDirectoryHelper {
     } else if (io.Platform.isLinux) {
       return 'chrome-linux.zip';
     }
-    return "";
+    return '';
   }
 
   /// extract chrome to support dir
   /// and return the absolute path
   static FutureOr<String> saveChromeFromAssetToApp({
-    String? assetPath = null,
+    String? assetPath,
   }) async {
     final targetPath = await applicationSupportPath();
 
     final tagetDirectory = io.Directory(
-        p.joinAll([targetPath, zipFileName().replaceAll(".zip", "")]));
-    print("targetPath ${targetPath}");
-    print("tagetDirectory ${tagetDirectory.path}");
+        p.joinAll([targetPath, zipFileName().replaceAll('.zip', '')]),);
+    print('targetPath $targetPath');
+    print('tagetDirectory ${tagetDirectory.path}');
 
     /// create tareget direcotry if not exist
     if (!tagetDirectory.existsSync()) {
@@ -61,24 +62,24 @@ class ChromeDesktopDirectoryHelper {
     final executableFile = io.File(executablePath);
 
     /// check zip from asset
-    final _assetPath = assetPath ?? assetChromeZipPath();
+    final assetPath0 = assetPath ?? assetChromeZipPath();
     final zipPath = io.Directory(p.joinAll([
       (await path.getApplicationSupportDirectory()).path,
-      zipFileName()
-    ])).path;
+      zipFileName(),
+    ]),).path;
     final zipFile = io.File(zipPath);
 
     /// if locale chrome not exist
     if (!executableFile.existsSync()) {
-      print("executableFile not exist");
+      print('executableFile not exist');
 
       /// if zip never stored
       if (!zipFile.existsSync()) {
-        print("zipFile not exist");
-        print("assetPath $_assetPath");
+        print('zipFile not exist');
+        print('assetPath $assetPath0');
 
-        final value = await rootBundle.load(_assetPath!);
-        Uint8List wzzip =
+        final value = await rootBundle.load(assetPath0!);
+        final wzzip =
             value.buffer.asUint8List(value.offsetInBytes, value.lengthInBytes);
         zipFile.writeAsBytesSync(wzzip);
       }
@@ -98,7 +99,7 @@ class ChromeDesktopDirectoryHelper {
       final chromeAppPath = executableFile.absolute.parent.parent.parent.path;
 
       await io.Process.run(
-          'xattr', ['-d', 'com.apple.quarantine', chromeAppPath]);
+          'xattr', ['-d', 'com.apple.quarantine', chromeAppPath],);
     }
 
     return executableFile.absolute.path;
@@ -115,17 +116,17 @@ class ChromeDesktopDirectoryHelper {
 
 //https://github.com/maxogden/extract-zip/blob/master/index.js
   static FutureOr<void> simpleUnzip(String path, String targetPath) {
-    var targetDirectory = io.Directory(targetPath);
+    final targetDirectory = io.Directory(targetPath);
     if (targetDirectory.existsSync()) {
       targetDirectory.deleteSync(recursive: true);
     }
 
-    var bytes = io.File(path).readAsBytesSync();
-    var archive = ZipDecoder().decodeBytes(bytes);
+    final bytes = io.File(path).readAsBytesSync();
+    final archive = ZipDecoder().decodeBytes(bytes);
 
-    for (var file in archive) {
-      var filename = file.name;
-      var data = file.content as List<int>;
+    for (final file in archive) {
+      final filename = file.name;
+      final data = file.content as List<int>;
       if (data.isNotEmpty) {
         io.File(p.join(targetPath, filename))
           ..createSync(recursive: true)
@@ -135,14 +136,14 @@ class ChromeDesktopDirectoryHelper {
   }
 
   static FutureOr<String> applicationSupportPath() async {
-    var supportDir = await path.getApplicationSupportDirectory();
+    final supportDir = await path.getApplicationSupportDirectory();
     return appsDirPath.isEmpty
         ? io.Directory(
-                p.joinAll([supportDir.path, '.local-chromium', '$revision']))
+                p.joinAll([supportDir.path, '.local-chromium', '$revision']),)
             .absolute
             .path
         : io.Directory(p.joinAll(
-                [supportDir.path, appsDirPath, '.local-chromium', '$revision']))
+                [supportDir.path, appsDirPath, '.local-chromium', '$revision'],),)
             .absolute
             .path;
   }
@@ -154,7 +155,7 @@ class ChromeDesktopDirectoryHelper {
       return p.join('chrome-linux', 'chrome');
     } else if (io.Platform.isMacOS) {
       return p.join(
-          'chrome-mac', 'Chromium.app', 'Contents', 'MacOS', 'Chromium');
+          'chrome-mac', 'Chromium.app', 'Contents', 'MacOS', 'Chromium',);
     } else {
       throw UnsupportedError('Unknown platform ${io.Platform.operatingSystem}');
     }
