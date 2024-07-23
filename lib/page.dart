@@ -1,6 +1,6 @@
 num _pxToInches(num px) => px / 96;
 
-num _cmToInches(num cm) => _pxToInches(cm / 37.8);
+num _cmToInches(num cm) => cm / 2.54;
 
 num _mmToInches(num mm) => _cmToInches(mm / 10);
 
