@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
+import 'package:webcontent_converter/logger.dart';
 import 'package:webcontent_converter/webcontent_converter.dart';
 import 'package:window_manager/window_manager.dart';
 import 'route.dart';
@@ -12,30 +13,31 @@ void main() async {
     await windowManager.ensureInitialized();
 
     /// ensure brower is initialized
-    var executablePath =
+    final executablePath =
         await ChromeDesktopDirectoryHelper.saveChromeFromAssetToApp();
     WebViewHelper.customBrowserPath = [executablePath];
-    print("executablePath $executablePath");
+    println('executablePath $executablePath');
     await WebcontentConverter.ensureInitialized(executablePath: executablePath);
   }
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatefulWidget {
+  const MyApp({super.key});
+
   @override
-  _MyAppState createState() => _MyAppState();
+  MyAppState createState() => MyAppState();
 }
 
-class _MyAppState extends State<MyApp> with WindowListener {
+// ignore: prefer_mixin
+class MyAppState extends State<MyApp> with WindowListener {
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: "webcontent converter",
-      initialRoute: "/",
-      routes: routes,
-      onGenerateRoute: onGenerateRoute,
-    );
-  }
+  Widget build(BuildContext context) => MaterialApp(
+        title: 'webcontent converter',
+        initialRoute: '/',
+        routes: routes,
+        onGenerateRoute: onGenerateRoute,
+      );
 
   @override
   void initState() {
@@ -46,12 +48,12 @@ class _MyAppState extends State<MyApp> with WindowListener {
   }
 
   @override
-  void onWindowClose() {
-    log("onWindowClose");
+  Future<void> onWindowClose() async {
+    log('onWindowClose');
 
     /// auto close browser
     if (WebViewHelper.isDesktop && windowBrower != null) {
-      WebcontentConverter.deinitWebcontentConverter();
+      await WebcontentConverter.deinitWebcontentConverter();
     }
     super.onWindowClose();
   }

@@ -1,6 +1,7 @@
 import 'dart:io' as io;
 import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform, kIsWeb;
+import '../../logger.dart';
 import '../../revision_info.dart';
 
 class WebViewHelper {
@@ -57,12 +58,12 @@ class WebViewHelper {
     if (paths.isNotEmpty) {
       for (final path in paths) {
         if (io.File(path).existsSync()) {
-          print('====== exist ====== $path');
+          println('====== exist ====== $path');
           return path;
         }
       }
     }
-    print('====== not exist ====== ');
+    println('====== not exist ====== ');
     return null;
   }
 

@@ -4,20 +4,22 @@ version: 1.0.0+1
 
 # The following line prevents the package from being accidentally published to
 # pub.dev using `pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
 environment:
   sdk: ">=2.17.2 <3.0.0"
   # flutter: ">=3.0.0"
 
 dependencies:
+  cupertino_icons: ^1.0.2
+  esc_pos_utils_plus: ^2.0.1+2
   flutter:
     sdk: flutter
+  go_router: ^4.1.0
   path: ^1.8.0
   path_provider: ^2.0.6
-  esc_pos_utils_plus: ^2.0.1+2
   printing: ^5.9.3
-  # esc_pos_printer: 
+  # esc_pos_printer:
   #   path: ../../esc_pos_printer
 
   webcontent_converter:
@@ -30,11 +32,10 @@ dependencies:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.2
-  go_router: ^4.1.0
   window_manager: ^0.2.5
 
 dev_dependencies:
+  flutter_lints: ^3.0.0
   flutter_test:
     sdk: flutter
 
@@ -43,7 +44,6 @@ dev_dependencies:
 
 # The following section is specific to Flutter.
 flutter:
-
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

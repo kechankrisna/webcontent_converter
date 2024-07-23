@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart' as path;
 
+import '../../logger.dart';
 import '../../revision_info.dart';
 
 class ChromeDesktopDirectoryHelper {
@@ -44,9 +45,10 @@ class ChromeDesktopDirectoryHelper {
     final targetPath = await applicationSupportPath();
 
     final tagetDirectory = io.Directory(
-        p.joinAll([targetPath, zipFileName().replaceAll('.zip', '')]),);
-    print('targetPath $targetPath');
-    print('tagetDirectory ${tagetDirectory.path}');
+      p.joinAll([targetPath, zipFileName().replaceAll('.zip', '')]),
+    );
+    println('targetPath $targetPath');
+    println('tagetDirectory ${tagetDirectory.path}');
 
     /// create tareget direcotry if not exist
     if (!tagetDirectory.existsSync()) {
@@ -63,20 +65,22 @@ class ChromeDesktopDirectoryHelper {
 
     /// check zip from asset
     final assetPath0 = assetPath ?? assetChromeZipPath();
-    final zipPath = io.Directory(p.joinAll([
-      (await path.getApplicationSupportDirectory()).path,
-      zipFileName(),
-    ]),).path;
+    final zipPath = io.Directory(
+      p.joinAll([
+        (await path.getApplicationSupportDirectory()).path,
+        zipFileName(),
+      ]),
+    ).path;
     final zipFile = io.File(zipPath);
 
     /// if locale chrome not exist
     if (!executableFile.existsSync()) {
-      print('executableFile not exist');
+      println('executableFile not exist');
 
       /// if zip never stored
       if (!zipFile.existsSync()) {
-        print('zipFile not exist');
-        print('assetPath $assetPath0');
+        println('zipFile not exist');
+        println('assetPath $assetPath0');
 
         final value = await rootBundle.load(assetPath0!);
         final wzzip =
@@ -99,7 +103,9 @@ class ChromeDesktopDirectoryHelper {
       final chromeAppPath = executableFile.absolute.parent.parent.parent.path;
 
       await io.Process.run(
-          'xattr', ['-d', 'com.apple.quarantine', chromeAppPath],);
+        'xattr',
+        ['-d', 'com.apple.quarantine', chromeAppPath],
+      );
     }
 
     return executableFile.absolute.path;
@@ -139,13 +145,13 @@ class ChromeDesktopDirectoryHelper {
     final supportDir = await path.getApplicationSupportDirectory();
     return appsDirPath.isEmpty
         ? io.Directory(
-                p.joinAll([supportDir.path, '.local-chromium', '$revision']),)
-            .absolute
-            .path
-        : io.Directory(p.joinAll(
-                [supportDir.path, appsDirPath, '.local-chromium', '$revision'],),)
-            .absolute
-            .path;
+            p.joinAll([supportDir.path, '.local-chromium', '$revision']),
+          ).absolute.path
+        : io.Directory(
+            p.joinAll(
+              [supportDir.path, appsDirPath, '.local-chromium', '$revision'],
+            ),
+          ).absolute.path;
   }
 
   static FutureOr<String> getChromeExecutablePath() {
@@ -155,7 +161,12 @@ class ChromeDesktopDirectoryHelper {
       return p.join('chrome-linux', 'chrome');
     } else if (io.Platform.isMacOS) {
       return p.join(
-          'chrome-mac', 'Chromium.app', 'Contents', 'MacOS', 'Chromium',);
+        'chrome-mac',
+        'Chromium.app',
+        'Contents',
+        'MacOS',
+        'Chromium',
+      );
     } else {
       throw UnsupportedError('Unknown platform ${io.Platform.operatingSystem}');
     }

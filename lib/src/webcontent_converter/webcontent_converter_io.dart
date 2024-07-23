@@ -469,6 +469,7 @@ class WebcontentConverter {
                           ..addOnPlatformViewCreatedListener(
                             params.onPlatformViewCreated,
                           )
+                          // ignore: discarded_futures
                           ..create(),
                   ),
                 ),
@@ -486,6 +487,7 @@ class WebcontentConverter {
                   ),
                 ),
               );
+            // ignore: no_default_cases
             default:
               throw UnsupportedError('Unsupported platform view');
           }

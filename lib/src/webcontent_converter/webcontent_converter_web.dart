@@ -144,8 +144,8 @@ class WebcontentConverter {
     bool autoClosePage = true,
     int scale = 3,
   }) async {
-    final div = html.document.createElement('div') as html.DivElement;
-    div.setInnerHtml(content, validator: AllowAll());
+    final div = html.document.createElement('div') as html.DivElement
+      ..setInnerHtml(content, validator: AllowAll());
     div.style.color = 'black';
     div.style.background = 'white';
     html.document.body?.children.add(div);
@@ -228,8 +228,8 @@ class WebcontentConverter {
     String? executablePath,
     bool autoClosePage = true,
   }) async {
-    final div = html.document.createElement('div') as html.DivElement;
-    div.setInnerHtml(content, validator: AllowAll());
+    final div = html.document.createElement('div') as html.DivElement
+      ..setInnerHtml(content, validator: AllowAll());
     div.style.color = 'black';
     div.style.background = 'white';
     html.document.body?.children.add(div);

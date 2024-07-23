@@ -31,23 +31,23 @@ class PaperFormat {
     required this.isPortrait,
   })  : width = _mmToInches(width),
         height = _mmToInches(height);
-  PaperFormat a3({required bool isPortrait}) =>
+  factory PaperFormat.a3({required bool isPortrait}) =>
       PaperFormat.inches(width: 11.69, height: 16.54, isPortrait: isPortrait);
-  PaperFormat a4({required bool isPortrait}) =>
+  factory PaperFormat.a4({required bool isPortrait}) =>
       PaperFormat.inches(width: 8.27, height: 11.69, isPortrait: isPortrait);
-  PaperFormat a5({required bool isPortrait}) =>
+  factory PaperFormat.a5({required bool isPortrait}) =>
       PaperFormat.inches(width: 5.83, height: 8.27, isPortrait: isPortrait);
-  PaperFormat b4({required bool isPortrait}) =>
+  factory PaperFormat.b4({required bool isPortrait}) =>
       PaperFormat.inches(width: 9.84, height: 13.90, isPortrait: isPortrait);
-  PaperFormat b5({required bool isPortrait}) =>
+  factory PaperFormat.b5({required bool isPortrait}) =>
       PaperFormat.inches(width: 6.93, height: 9.84, isPortrait: isPortrait);
-  PaperFormat executive({required bool isPortrait}) =>
+  factory PaperFormat.executive({required bool isPortrait}) =>
       PaperFormat.inches(width: 7.25, height: 10.5, isPortrait: isPortrait);
-  PaperFormat legal({required bool isPortrait}) =>
+  factory PaperFormat.legal({required bool isPortrait}) =>
       PaperFormat.inches(width: 8.5, height: 14, isPortrait: isPortrait);
-  PaperFormat letter({required bool isPortrait}) =>
+  factory PaperFormat.letter({required bool isPortrait}) =>
       PaperFormat.inches(width: 8.5, height: 11, isPortrait: isPortrait);
-  PaperFormat tabloid({required bool isPortrait}) =>
+  factory PaperFormat.tabloid({required bool isPortrait}) =>
       PaperFormat.inches(width: 11, height: 17, isPortrait: isPortrait);
 
   final num width;
