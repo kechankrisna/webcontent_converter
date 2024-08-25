@@ -18,15 +18,28 @@ class _ContentToImageScreenState extends State<ContentToImageScreen> {
   Uint8List? _bytes;
   io.File? _file;
 
+  final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: scaffoldKey,
       appBar: AppBar(
         title: Text("Content to Image"),
         actions: [
           IconButton(
             icon: Icon(Icons.image),
-            onPressed: _convert,
+            onPressed: () {
+              Future.forEach(List.generate(_counter, (index) => null).toList(),
+                  (i) async {
+                try {
+                  await _convert();
+                  await Future.delayed(Duration(seconds: 5));
+                } catch (e) {
+                  ///
+                }
+              });
+            },
           ),
           IconButton(
             icon: Icon(Icons.wifi_rounded),
@@ -36,7 +49,47 @@ class _ContentToImageScreenState extends State<ContentToImageScreen> {
             icon: Icon(Icons.bluetooth),
             onPressed: _startPrintBluetooth,
           ),
+          IconButton(
+              onPressed: () {
+                if (scaffoldKey.currentState == null) return;
+                scaffoldKey.currentState!.openEndDrawer();
+              },
+              icon: Icon(Icons.menu))
         ],
+      ),
+      endDrawer: Drawer(
+        child: ListView(
+          children: [
+            ListTile(
+              title: Text("counter is $_counter"),
+              subtitle: Row(
+                children: [
+                  IconButton(
+                      onPressed: () {
+                        setState(() {
+                          _counter = 1;
+                        });
+                      },
+                      icon: Icon(Icons.refresh)),
+                  IconButton(
+                      onPressed: () {
+                        setState(() {
+                          _counter -= 1;
+                        });
+                      },
+                      icon: Icon(Icons.remove)),
+                  IconButton(
+                      onPressed: () {
+                        setState(() {
+                          _counter += 1;
+                        });
+                      },
+                      icon: Icon(Icons.add)),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
       body: Container(
         color: Colors.white,
@@ -71,11 +124,14 @@ class _ContentToImageScreenState extends State<ContentToImageScreen> {
   _convert() async {
     var stopwatch = Stopwatch()..start();
     var bytes = await WebcontentConverter.contentToImage(
-      content: _counter.isEven
-          ? Demo.getShortReceiptContent()
-          : Demo.getReceiptContent(),
-      executablePath: WebViewHelper.executablePath(),
-    );
+        content: _counter.isEven
+            ? Demo.getShortReceiptContent()
+            : Demo.getReceiptContent(),
+        executablePath: WebViewHelper.executablePath(),
+        args: {
+          "is_html2bitmap": true,
+          "bitmap_width": 300.0,
+        });
     WebcontentConverter.logger
         .info("completed executed in ${stopwatch.elapsed}");
     setState(() => _counter += 1);
