@@ -4,18 +4,24 @@ import android.app.Activity
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.os.AsyncTask
 import android.os.Build
+import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.print.PdfPrinter
 import android.print.PrintAttributes
 import android.print.PrintManager
 import android.provider.Settings.Global.getString
+import android.util.Log
 import android.view.View
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.annotation.NonNull
 import androidx.annotation.RequiresApi
+import com.izettle.html2bitmap.Html2Bitmap
+import com.izettle.html2bitmap.Html2BitmapConfigurator
+import com.izettle.html2bitmap.content.WebViewContent
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -23,11 +29,15 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.json.JSONArray
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import kotlin.math.absoluteValue
+
 
 /** WebcontentConverterPlugin */
 class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
@@ -57,16 +67,63 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
         var savedPath = arguments["savedPath"] as? String
         var margins = arguments["margins"] as Map<String, Double>?
         var format = arguments["format"] as Map<String, Double>?
+        var is_html2bitmap = arguments["is_html2bitmap"] as? Boolean ?: false
         if (duration == null) duration = 2000.00
+        val tag = "webcontent_converter";
 
         when (method) {
             "contentToImage" -> {
-                print("\n activity $activity")
+                if(is_html2bitmap) {
+                    var bitmap_width = arguments["bitmap_width"] as Double?
+                    val task = object : AsyncTask<Void, Void, Bitmap>() {
+
+                        @Deprecated("Deprecated in Java")
+                        override fun doInBackground(vararg params: Void?): Bitmap? {
+                            Log.e("webview", "is_html2bitmap.doInBackground")
+                            return try {
+                                val html2BitmapBuilder = Html2Bitmap.Builder();
+                                html2BitmapBuilder.setContext(context);
+                                html2BitmapBuilder.setContent(WebViewContent.html(content));
+                                html2BitmapBuilder.setConfigurator(Html2BitmapConfigurator());
+                                if(bitmap_width != null && bitmap_width > 0 ) {
+                                    html2BitmapBuilder.setBitmapWidth(bitmap_width!!.toInt());
+                                }
+
+                                html2BitmapBuilder.setStrictMode(true)
+                                val html2Bitmap = html2BitmapBuilder.build()
+
+                                var data = html2Bitmap.bitmap
+
+                                return data
+                            } catch (e: Exception) {
+                                result.error("webview.build",  e.toString(),  e.stackTraceToString())
+                                Log.e("webview", e.stackTraceToString())
+                                null
+                            }
+                        }
+
+                        override fun onPostExecute(data: Bitmap?) {
+                            super.onPostExecute(data)
+                            Log.w("webview", "onPostExecute")
+                            if (data != null) {
+                                val bytes = data.toByteArray()
+                                result.success(bytes)
+                                // Use the generated bitmap here
+//                                result.success(bitmap)
+                            } else {
+                                // Handle the error case
+                                Log.e("HtmlToBitmapTask", "Failed to generate bitmap")
+                            }
+                        }
+                    }.execute()
+                    return
+                }
+                Log.w(tag, "\n activity $activity")
                 webView = WebView(this.context)
                 val dwidth = this.activity.window.windowManager.defaultDisplay.width
                 val dheight = this.activity.window.windowManager.defaultDisplay.height
-                print("\ndwidth : $dwidth")
-                print("\ndheight : $dheight")
+                Log.w(tag, "\ndwidth : $dwidth")
+                Log.w(tag, "\ndheight : $dheight")
                 webView.layout(0, 0, dwidth, dheight)
                 webView.loadDataWithBaseURL(null, content, "text/HTML", "UTF-8", null)
                 webView.setInitialScale(1)
@@ -75,44 +132,52 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
                 webView.settings.javaScriptCanOpenWindowsAutomatically = true
                 webView.settings.loadWithOverviewMode = true
                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-                    print("\n=======> enabled scrolled <=========")
+                    Log.w(tag, "\n=======> enabled scrolled <=========")
                     WebView.enableSlowWholeDocumentDraw()
                 }
 
-                print("\n ///////////////// webview setted /////////////////")
+                Log.w("webcontent_converter", "\n ///////////////// webview setted /////////////////")
 
                 webView.webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView, url: String) {
                         super.onPageFinished(view, url)
+                        Log.e("webview", "scope.doInBackground")
 
-                        var _duration = (dheight / 1000 ).toInt() * 200 ; /// delay 300 ms for every dheight 2000
-                        print("\n _duration ${_duration}");
+                        val scope  = CoroutineScope(Dispatchers.IO)
+                        scope.launch {
+                            Log.w(tag, " scope.launch")
+                            // Perform WebView-to-image conversion on a background thread
+                            var _duration = (dheight / 1000 ).toInt() * 200 ; /// delay 300 ms for every dheight 2000
+                            Log.w(tag, "\n _duration ${_duration}");
 
-                        Handler(Looper.getMainLooper()).postDelayed({
-                            print("\nOS Version: ${android.os.Build.VERSION.SDK_INT}")
-                            print("\n ================ webview completed ==============")
-                            print("\n scroll delayed ${webView.scrollBarFadeDuration}")
+                            Handler(Looper.getMainLooper()).postDelayed({
+                                Log.w(tag, "\nOS Version: ${android.os.Build.VERSION.SDK_INT}")
+                                Log.w(tag, "\n ================ webview completed ==============")
+                                Log.w(tag, "\n scroll delayed ${webView.scrollBarFadeDuration}")
 
-                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
-                                webView.evaluateJavascript("(function() { return [document.body.offsetWidth, document.body.offsetHeight]; })();"){it
-                                    var xy = JSONArray(it)
-                                    var offsetWidth = xy[0].toString();
-                                    var offsetHeight = xy[1].toString();
-                                    if( offsetHeight.toInt() < 1000 ){
-                                        offsetHeight = (xy[1].toString().toInt() + 20).toString();
-                                    }
-                                    print("\n width height $it ${it is String} ${xy[0]} ${xy[1]}");
-                                    var data = webView.toBitmap(offsetWidth!!.toDouble(), offsetHeight!!.toDouble())
-                                    if (data != null) {
-                                        val bytes = data.toByteArray()
+                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
+                                    webView.evaluateJavascript("(function() { return [document.body.offsetWidth, document.body.offsetHeight]; })();"){it
+                                        var xy = JSONArray(it)
+                                        var offsetWidth = xy[0].toString();
+                                        var offsetHeight = xy[1].toString();
+                                        if( offsetHeight.toInt() < 1000 ){
+                                            offsetHeight = (xy[1].toString().toInt() + 20).toString();
+                                        }
+                                        Log.w(tag, "\n width height $it ${it is String} ${xy[0]} ${xy[1]}");
+                                        var data = webView.toBitmap(offsetWidth!!.toDouble(), offsetHeight!!.toDouble())
+                                        if (data != null) {
+                                            val bytes = data.toByteArray()
 //                                      saveWebView(data)
-                                        //ByteArray(0)
-                                        result.success(bytes)
-                                        println("\n Got snapshot")
+                                            //ByteArray(0)
+                                            result.success(bytes)
+                                            println("\n Got snapshot")
+                                        }
                                     }
                                 }
-                            }
-                        }, _duration!!.toLong())
+                            }, _duration!!.toLong())
+                        }
+
+
                     }
                 }
             }
