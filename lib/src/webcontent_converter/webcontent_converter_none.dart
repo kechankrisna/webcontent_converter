@@ -64,6 +64,7 @@ class WebcontentConverter {
     String? executablePath,
     bool autoClosePage = true,
     int scale = 3,
+    Map<String, dynamic> args = const {},
   }) async {
     UnimplementedError('filePathToImage');
     return Future.value(Uint8List.fromList([]));
@@ -75,6 +76,7 @@ class WebcontentConverter {
     String? executablePath,
     bool autoClosePage = true,
     int scale = 3,
+    Map<String, dynamic> args = const {},
   }) async {
     UnimplementedError('webUriToImage');
     return Future.value(Uint8List.fromList([]));
@@ -86,6 +88,7 @@ class WebcontentConverter {
     String? executablePath,
     bool autoClosePage = true,
     int scale = 3,
+    Map<String, dynamic> args = const {},
   }) async {
     UnimplementedError('contentToImage');
     return Future.value(Uint8List.fromList([]));
@@ -98,6 +101,7 @@ class WebcontentConverter {
     PdfMargins? margins,
     PaperFormat format = PaperFormat.a4,
     String? executablePath,
+    Map<String, dynamic> args = const {},
   }) async {
     UnimplementedError('filePathToPdf');
     return null;
@@ -110,6 +114,7 @@ class WebcontentConverter {
     PdfMargins? margins,
     PaperFormat format = PaperFormat.a4,
     String? executablePath,
+    Map<String, dynamic> args = const {},
   }) async {
     UnimplementedError('webUriToPdf');
     return null;
@@ -123,20 +128,31 @@ class WebcontentConverter {
     PaperFormat format = PaperFormat.a4,
     String? executablePath,
     bool autoClosePage = true,
+    Map<String, dynamic> args = const {},
   }) async {
     UnimplementedError('contentToPDF');
     return null;
   }
 
   /// [WevView]
-  static Widget embedWebView(
-      {String? url, String? content, double? width, double? height}) {
+  static Widget embedWebView({
+    String? url,
+    String? content,
+    double? width,
+    double? height,
+    Map<String, dynamic> args = const {},
+  }) {
     UnimplementedError('webivew');
     return Container();
   }
 
-  static Future<bool> printPreview(
-      {String? url, String? content, bool autoClose = true, double? duration}) {
+  static Future<bool> printPreview({
+    String? url,
+    String? content,
+    bool autoClose = true,
+    double? duration,
+    Map<String, dynamic> args = const {},
+  }) {
     UnimplementedError('printPreview');
     return Future.value(false);
   }

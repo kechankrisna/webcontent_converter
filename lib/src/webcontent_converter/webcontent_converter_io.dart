@@ -106,6 +106,7 @@ class WebcontentConverter {
     double duration = 2000,
     String? executablePath,
     int scale = 3,
+    Map<String, dynamic> args = const {},
   }) async {
     Uint8List result = Uint8List.fromList([]);
     try {
@@ -116,6 +117,7 @@ class WebcontentConverter {
         duration: duration,
         executablePath: executablePath,
         scale: scale,
+        args: args,
       );
     } on Exception catch (e) {
       WebcontentConverter.logger.error("[method:filePathToImage]: $e");
@@ -141,6 +143,7 @@ class WebcontentConverter {
     double duration = 2000,
     String? executablePath,
     int scale = 3,
+    Map<String, dynamic> args = const {},
   }) async {
     Uint8List result = Uint8List.fromList([]);
     try {
@@ -151,6 +154,7 @@ class WebcontentConverter {
         duration: duration,
         executablePath: executablePath,
         scale: scale,
+        args: args,
       );
     } on Exception catch (e) {
       WebcontentConverter.logger.error("[method:webUriToImage]: $e");
@@ -178,12 +182,18 @@ class WebcontentConverter {
     double duration = 2000,
     String? executablePath,
     int scale = 3,
+    Map<String, dynamic> args = const {},
   }) async {
     final Map<String, dynamic> arguments = {
       'content': content,
       'duration': duration,
       'scale': scale,
     };
+
+    ///
+    if (args.isNotEmpty) {
+      arguments.addAll(args);
+    }
     Uint8List results = Uint8List.fromList([]);
 
     try {
@@ -263,6 +273,7 @@ class WebcontentConverter {
     PdfMargins? margins,
     PaperFormat format = PaperFormat.a4,
     String? executablePath,
+    Map<String, dynamic> args = const {},
   }) async {
     var result;
     try {
@@ -274,6 +285,7 @@ class WebcontentConverter {
         margins: margins,
         format: format,
         executablePath: executablePath,
+        args: args,
       );
     } on Exception catch (e) {
       WebcontentConverter.logger.error("[method:filePathToPdf]: $e");
@@ -300,6 +312,7 @@ class WebcontentConverter {
     PdfMargins? margins,
     PaperFormat format = PaperFormat.a4,
     String? executablePath,
+    Map<String, dynamic> args = const {},
   }) async {
     var result;
     try {
@@ -312,6 +325,7 @@ class WebcontentConverter {
         margins: margins,
         format: format,
         executablePath: executablePath,
+        args: args,
       );
     } on Exception catch (e) {
       WebcontentConverter.logger.error("[method:webUriToImage]: $e");
@@ -334,13 +348,15 @@ class WebcontentConverter {
   ///     margins: PdfMargins.px(top: 55, bottom: 55, right: 55, left: 55),
   /// );
   /// ```
-  static Future<String?> contentToPDF(
-      {required String content,
-      double duration = 2000,
-      required String savedPath,
-      PdfMargins? margins,
-      PaperFormat format = PaperFormat.a4,
-      String? executablePath}) async {
+  static Future<String?> contentToPDF({
+    required String content,
+    double duration = 2000,
+    required String savedPath,
+    PdfMargins? margins,
+    PaperFormat format = PaperFormat.a4,
+    String? executablePath,
+    Map<String, dynamic> args = const {},
+  }) async {
     PdfMargins _margins = margins ?? PdfMargins.zero;
     final Map<String, dynamic> arguments = {
       'content': content,
@@ -349,6 +365,11 @@ class WebcontentConverter {
       'margins': _margins.toMap(),
       'format': format.toMap(),
     };
+
+    ///
+    if (args.isNotEmpty) {
+      arguments.addAll(args);
+    }
     WebcontentConverter.logger.info(arguments['savedPath']);
     WebcontentConverter.logger.info(arguments['margins']);
     WebcontentConverter.logger.info(arguments['format']);
@@ -418,8 +439,13 @@ class WebcontentConverter {
   }
 
   /// [WevView]
-  static Widget embedWebView(
-      {String? url, String? content, double? width, double? height}) {
+  static Widget embedWebView({
+    String? url,
+    String? content,
+    double? width,
+    double? height,
+    Map<String, dynamic> args = const {},
+  }) {
     return Builder(builder: (context) {
       final String viewType = 'webview-view-type';
       // Pass parameters to the platform side.
@@ -486,6 +512,7 @@ class WebcontentConverter {
     String? content,
     bool autoClose = true,
     double? duration,
+    Map<String, dynamic> args = const {},
   }) async {
     try {
       final Map<String, dynamic> arguments = {
@@ -494,6 +521,11 @@ class WebcontentConverter {
         'duration': duration,
         'autoClose': autoClose,
       };
+
+      ///
+      if (args.isNotEmpty) {
+        arguments.addAll(args);
+      }
       if ((io.Platform.isMacOS ||
               io.Platform.isLinux ||
               io.Platform.isWindows) &&

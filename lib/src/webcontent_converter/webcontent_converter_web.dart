@@ -94,6 +94,7 @@ class WebcontentConverter {
     String? executablePath,
     bool autoClosePage = true,
     int scale = 3,
+    Map<String, dynamic> args = const {},
   }) async {
     Uint8List result = Uint8List.fromList([]);
     try {
@@ -104,6 +105,7 @@ class WebcontentConverter {
         duration: duration,
         executablePath: executablePath,
         scale: scale,
+        args: args,
       );
     } on Exception catch (e) {
       WebcontentConverter.logger.error("[method:filePathToImage]: $e");
@@ -118,6 +120,7 @@ class WebcontentConverter {
     String? executablePath,
     bool autoClosePage = true,
     int scale = 3,
+    Map<String, dynamic> args =  const {},
   }) async {
     Uint8List result = Uint8List.fromList([]);
     try {
@@ -128,6 +131,7 @@ class WebcontentConverter {
         duration: duration,
         executablePath: executablePath,
         scale: scale,
+        args: args,
       );
     } on Exception catch (e) {
       WebcontentConverter.logger.error("[method:webUriToImage]: $e");
@@ -142,6 +146,7 @@ class WebcontentConverter {
     String? executablePath,
     bool autoClosePage = true,
     int scale = 3,
+    Map<String, dynamic> args = const {},
   }) async {
     var div = html.document.createElement('div') as html.DivElement;
     div.setInnerHtml(content, validator: AllowAll());
@@ -173,6 +178,7 @@ class WebcontentConverter {
     PdfMargins? margins,
     PaperFormat format = PaperFormat.a4,
     String? executablePath,
+    Map<String, dynamic> args = const {},
   }) async {
     var result;
     try {
@@ -199,6 +205,7 @@ class WebcontentConverter {
     PdfMargins? margins,
     PaperFormat format = PaperFormat.a4,
     String? executablePath,
+    Map<String, dynamic> args = const {},
   }) async {
     var result;
     try {
@@ -211,6 +218,7 @@ class WebcontentConverter {
         margins: margins,
         format: format,
         executablePath: executablePath,
+        args: args,
       );
     } on Exception catch (e) {
       WebcontentConverter.logger.error("[method:webUriToImage]: $e");
@@ -227,6 +235,7 @@ class WebcontentConverter {
     PaperFormat format = PaperFormat.a4,
     String? executablePath,
     bool autoClosePage = true,
+    Map<String, dynamic> args = const {},
   }) async {
     var div = html.document.createElement('div') as html.DivElement;
     div.setInnerHtml(content, validator: AllowAll());
@@ -252,8 +261,13 @@ class WebcontentConverter {
   }
 
   /// [embedWebView]
-  static Widget embedWebView(
-          {String? url, String? content, double? width, double? height}) =>
+  static Widget embedWebView({
+    String? url,
+    String? content,
+    double? width,
+    double? height,
+    Map<String, dynamic> args = const {},
+  }) =>
       Builder(builder: (_) {
         final uniqueKey = Random.secure().nextInt(10000);
         final String viewType = 'webview-view-type-$uniqueKey';
@@ -292,6 +306,7 @@ class WebcontentConverter {
     String? content,
     bool autoClose = true,
     double? duration,
+    Map<String, dynamic> args =  const {},
   }) async {
     try {
       const windowFeatures =
