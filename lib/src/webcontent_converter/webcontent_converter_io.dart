@@ -373,7 +373,7 @@ class WebcontentConverter {
     WebcontentConverter.logger.info(arguments['savedPath']);
     WebcontentConverter.logger.info(arguments['margins']);
     WebcontentConverter.logger.info(arguments['format']);
-    var result;
+    String? result;
     try {
       if ((io.Platform.isMacOS ||
               io.Platform.isLinux ||
