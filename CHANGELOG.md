@@ -1,3 +1,6 @@
+## 0.0.9+3
+* add method to convert content to pdf image bytes
+
 ## 0.0.9+2
 * add #html2bitmap library to support android background
 * add args allow more arguments in invoke methods
