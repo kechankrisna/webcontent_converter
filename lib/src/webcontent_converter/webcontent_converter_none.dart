@@ -133,6 +133,19 @@ class WebcontentConverter {
     UnimplementedError('contentToPDF');
     return null;
   }
+  
+  static Future<Uint8List?> contentToPDFImage({
+    required String content,
+    double duration = 2000,
+    PdfMargins? margins,
+    PaperFormat format = PaperFormat.a4,
+    String? executablePath,
+    bool autoClosePage = true,
+    Map<String, dynamic> args = const {},
+  }) async {
+    UnimplementedError('contentToPDFImage');
+    return null;
+  }
 
   /// [WevView]
   static Widget embedWebView({

@@ -120,7 +120,7 @@ class WebcontentConverter {
     String? executablePath,
     bool autoClosePage = true,
     int scale = 3,
-    Map<String, dynamic> args =  const {},
+    Map<String, dynamic> args = const {},
   }) async {
     Uint8List result = Uint8List.fromList([]);
     try {
@@ -242,13 +242,19 @@ class WebcontentConverter {
     div.style.color = 'black';
     div.style.background = 'white';
     html.document.body?.children.add(div);
-
+    print("[${format.width}, ${format.height}]");
     var opt = {
       "margin": 0,
       "filename": savedPath,
       "image": {"type": 'jpeg', "quality": 0.98},
       "html2canvas": {"scale": 5},
-      "jsPDF": {"unit": 'in', "format": 'a4', "orientation": 'portrait'},
+      "jsPDF": {
+        "unit": 'in',
+        "format": [format.width, format.height],
+        "orientation": 'portrait',
+        "dpi": "300",
+        "useCORS": "true"
+      },
       "pagebreak": {
         "mode": ['avoid-all', 'css', 'legacy']
       }
@@ -258,6 +264,52 @@ class WebcontentConverter {
 
     html.document.body?.children.remove(div);
     return null;
+  }
+
+  static Future<Uint8List?> contentToPDFImage({
+    required String content,
+    double duration = 2000,
+    PdfMargins? margins,
+    PaperFormat format = PaperFormat.a4,
+    String? executablePath,
+    bool autoClosePage = true,
+    Map<String, dynamic> args = const {},
+  }) async {
+    var div = html.document.createElement('div') as html.DivElement;
+    div.setInnerHtml(content, validator: AllowAll());
+    div.style.color = 'black';
+    div.style.background = 'white';
+    html.document.body?.children.add(div);
+
+    var opt = {
+      "margin": 0,
+      "image": {"type": 'jpeg', "quality": 0.98},
+      "html2canvas": {"scale": 5},
+      "jsPDF": {
+        "unit": 'in',
+        "format": [format.width, format.height],
+        "orientation": 'portrait',
+        "dpi": "300",
+        "useCORS": "true"
+      },
+      "pagebreak": {
+        "mode": ['avoid-all', 'css', 'legacy']
+      }
+    };
+
+    List<int> result = [];
+    html.CanvasElement? canvas =
+        await promiseToFuture(html2canvas(div, jsify(opt)));
+    if (canvas != null) {
+      await Future.delayed(const Duration(seconds: 1));
+      final base64Image = canvas.toDataUrl();
+      final sub = base64Image.replaceAll("data:image/png;base64,", "");
+      result = base64Decode(sub);
+    }
+
+    html.document.body?.children.remove(div);
+    
+    return Uint8List.fromList(result);
   }
 
   /// [embedWebView]
@@ -306,7 +358,7 @@ class WebcontentConverter {
     String? content,
     bool autoClose = true,
     double? duration,
-    Map<String, dynamic> args =  const {},
+    Map<String, dynamic> args = const {},
   }) async {
     try {
       const windowFeatures =

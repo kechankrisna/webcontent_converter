@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:webcontent_converter/webcontent_converter.dart';
-import 'package:webcontent_converter_example/screens/content_image_screen.dart';
-import 'package:webcontent_converter_example/screens/content_pdf_screen.dart';
-import 'package:webcontent_converter_example/screens/error_screen.dart';
+import 'screens/content_image_screen.dart';
+import 'screens/content_pdf_screen.dart';
+import 'screens/content_pdf_image_screen.dart';
+import 'screens/error_screen.dart';
 
 import 'screens/filepath_image_screen.dart';
 import 'screens/filepath_pdf_screen.dart';
@@ -43,6 +44,13 @@ Route<dynamic> onGenerateRoute(RouteSettings settings) {
     case "/content_pdf_screen":
       return MaterialPageRoute(
         builder: (context) => ContentToPDFScreen(),
+        settings: settings,
+      );
+      
+    /// `PDF converter`
+    case "/content_pdf_image_screen":
+      return MaterialPageRoute(
+        builder: (context) => ContentToPDFImageScreen(),
         settings: settings,
       );
 

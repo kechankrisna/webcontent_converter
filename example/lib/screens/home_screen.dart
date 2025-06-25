@@ -47,6 +47,11 @@ class _HomeScreenState extends State<HomeScreen> {
             trailing: Icon(Icons.arrow_right),
           ),
           ListTile(
+            title: Text("content to pdf image"),
+            onTap: () => Navigator.of(context).pushNamed("/content_pdf_image_screen"),
+            trailing: Icon(Icons.arrow_right),
+          ),
+          ListTile(
             title: Text("weburi to pdf"),
             onTap: () => Navigator.of(context).pushNamed("/weburi_pdf_screen"),
             trailing: Icon(Icons.arrow_right),

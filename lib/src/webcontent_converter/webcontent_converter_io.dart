@@ -438,6 +438,105 @@ class WebcontentConverter {
     return result;
   }
 
+  /// ## `WebcontentConverter.contentToPDFImage`
+  /// `This method use html content directly to convert html to pdf then return path`
+  /// #### Example:
+  /// ```
+  /// final content = Demo.getInvoiceContent();
+  /// var dir = await getApplicationDocumentsDirectory();
+  /// var savedPath = join(dir.path, "sample.pdf");
+  /// var result = await WebcontentConverter.contentToPDFImage(
+  ///     content: content,
+  ///     savedPath: savedPath,
+  ///     format: PaperFormat.a4,
+  ///     margins: PdfMargins.px(top: 55, bottom: 55, right: 55, left: 55),
+  /// );
+  /// ```
+  static Future<Uint8List?> contentToPDFImage({
+    required String content,
+    double duration = 2000,
+    PdfMargins? margins,
+    PaperFormat format = PaperFormat.a4,
+    String? executablePath,
+    Map<String, dynamic> args = const {},
+  }) async {
+    PdfMargins _margins = margins ?? PdfMargins.zero;
+    final Map<String, dynamic> arguments = {
+      'content': content,
+      'duration': duration,
+      'margins': _margins.toMap(),
+      'format': format.toMap(),
+    };
+
+    ///
+    if (args.isNotEmpty) {
+      arguments.addAll(args);
+    }
+    // WebcontentConverter.logger.info(arguments['savedPath']);
+    WebcontentConverter.logger.info(arguments['margins']);
+    WebcontentConverter.logger.info(arguments['format']);
+    Uint8List? result;
+    try {
+      if ((io.Platform.isMacOS ||
+              io.Platform.isLinux ||
+              io.Platform.isWindows) &&
+          WebViewHelper.isChromeAvailable) {
+        pp.Page? windowBrowserPage;
+        try {
+          WebcontentConverter.logger.info("Desktop support");
+
+          /// if window browser is null
+          windowBrower ??= await pp.puppeteer.launch(
+              headless: true,
+              executablePath: executablePath ?? WebViewHelper.executablePath());
+
+          /// if window browser page is null
+          windowBrowserPage = await windowBrower!.newPage();
+
+          windowBrowserPage
+              .setViewport(pp.DeviceViewport(width: 800, height: 1000));
+
+          /// await windowBrowserPage.emulateMediaType(pp.MediaType.print);
+          /// await windowBrowserPage.emulate(pp.puppeteer.devices.laptopWithMDPIScreen);
+          ///
+          await windowBrowserPage.setContent(content,
+              wait: pp.Until.all([
+                pp.Until.load,
+                pp.Until.domContentLoaded,
+                pp.Until.networkAlmostIdle,
+                pp.Until.networkIdle,
+              ]));
+          result = await windowBrowserPage.pdf(
+            format: pp.PaperFormat.inches(
+              width: format.width,
+              height: format.height,
+            ),
+            margins: pp.PdfMargins.inches(
+              top: _margins.top,
+              bottom: _margins.bottom,
+              left: _margins.left,
+              right: _margins.right,
+            ),
+            printBackground: true,
+          );
+        } catch (e) {
+        } finally {
+          await windowBrowserPage!.close();
+          windowBrowserPage = null;
+        }
+      } else {
+        //mobile method
+        WebcontentConverter.logger.info("Mobile support");
+        result = await _channel.invokeMethod('contentToPDFImage', arguments);
+      }
+    } on Exception catch (e) {
+      WebcontentConverter.logger.error("[method:contentToPDFImage]: $e");
+      throw Exception("Error: $e");
+    }
+
+    return result;
+  }
+
   /// [WevView]
   static Widget embedWebView({
     String? url,
