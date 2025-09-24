@@ -13,3 +13,6 @@ example/pubspec.lock
 example/pubspec.yaml
 example/windows/flutter/generated_plugins.cmake
 pubspec.lock
+
+# FVM Version Cache
+.fvm/
