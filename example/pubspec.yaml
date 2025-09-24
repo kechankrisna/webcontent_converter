@@ -7,7 +7,7 @@ version: 1.0.0+1
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
 environment:
-  sdk: ">=2.17.2 <3.0.0"
+  sdk: ">=3.3.0 <4.0.0"
   # flutter: ">=3.0.0"
 
 dependencies:
@@ -54,9 +54,9 @@ flutter:
     - assets/receipt.html
     - assets/short_receipt.html
     - assets/invoice.html
-    - assets/.local-chromium/1056772_chrome-mac.zip
-    # - assets/.local-chromium/1056772_chrome-win.zip
-    # - assets/.local-chromium/1056772_chrome-linux.zip
+    - assets/apps/.local-chromium/1056772_chrome-mac.zip
+    # - assets/apps/.local-chromium/1056772_chrome-win.zip
+    # - assets/apps/.local-chromium/1056772_chrome-linux.zip
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.
