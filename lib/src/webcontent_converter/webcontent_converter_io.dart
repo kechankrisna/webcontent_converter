@@ -609,6 +609,7 @@ class WebcontentConverter {
                 layoutDirection: TextDirection.ltr,
                 creationParams: creationParams,
                 creationParamsCodec: const StandardMessageCodec(),
+                hitTestBehavior: PlatformViewHitTestBehavior.opaque, // ✅ Important for gestures
               ),
             ),
           );
