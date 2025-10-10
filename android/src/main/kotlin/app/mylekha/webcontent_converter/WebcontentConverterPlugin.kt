@@ -160,9 +160,6 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
                                         var xy = JSONArray(it)
                                         var offsetWidth = xy[0].toString();
                                         var offsetHeight = xy[1].toString();
-                                        if( offsetHeight.toInt() < 1000 ){
-                                            offsetHeight = (xy[1].toString().toInt() + 20).toString();
-                                        }
                                         Log.w(tag, "\n width height $it ${it is String} ${xy[0]} ${xy[1]}");
                                         var data = webView.toBitmap(offsetWidth!!.toDouble(), offsetHeight!!.toDouble())
                                         if (data != null) {
