@@ -50,6 +50,16 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                         code: "INVALID_ARGUMENT", message: "Content is required", details: nil))
                 return
             }
+            
+            var width = arguments!["width"] as? Double
+            var height = arguments!["height"] as? Double
+            let format = arguments!["format"] as? [String: Double]
+            let margins = arguments!["margins"] as? [String: Double]
+            
+            print("width \(String(describing: width))")
+            print("height \(String(describing: height))")
+            print("format \(String(describing: format))")
+            print("margins \(String(describing: margins))")
 
             #if os(iOS)
                 self.webView = WKWebView()
@@ -83,14 +93,65 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                     if !webView.isLoading {
                         #if os(iOS)
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                print("height = \(self.webView.scrollView.contentSize.height)")
-                                print("width = \(self.webView.scrollView.contentSize.width)")
-                                if #available(iOS 11.0, *) {
+                                print("scrollView.contentSiz.height = \(self.webView.scrollView.contentSize.height)")
+                                print("scrollView.contentSiz.width = \(self.webView.scrollView.contentSize.width)")
+                                if #available(iOS 11.0, *) {                                    
                                     let configuration = WKSnapshotConfiguration()
-                                    var size = self.webView.scrollView.contentSize
-                                    print("height = \(size.height)")
-                                    configuration.rect = CGRect(origin: .zero, size: size)
-                                    self.webView.snapshotView(afterScreenUpdates: false)
+                                    if(width != nil && height != nil) {
+                                        // ✅ SEAMLESS CONTENT: Use WebView scrollable content directly
+                                        let originalFrame = self.webView// ✅ CONTINUOUS CONTENT: Remove page breaks entirely
+                                        let printFormatter = self.webView.viewPrintFormatter()
+                                        let renderer = UIPrintPageRenderer()
+
+                                        let pageWidth = width != nil ? CGFloat(width!).toPixel() : 595.0
+                                        let pageHeight = height != nil ? CGFloat(height!).toPixel() : 842.0
+
+                                        let pageRect = CGRect(x: 0, y: 0, width: pageWidth, height: pageHeight)
+                                        let printableRect = pageRect
+
+                                        renderer.setValue(NSValue(cgRect: pageRect), forKey: "paperRect")
+                                        renderer.setValue(NSValue(cgRect: printableRect), forKey: "printableRect")
+                                        renderer.addPrintFormatter(printFormatter, startingAtPageAt: 0)
+
+                                        print("📄 Total pages: \(renderer.numberOfPages)")
+
+                                        // ✅ SINGLE CONTINUOUS IMAGE: Create one long continuous image
+                                        let renderer_image = UIGraphicsImageRenderer(size: CGSize(width: pageWidth, height: CGFloat(renderer.numberOfPages) * pageHeight))
+                                        let fullImage = renderer_image.image { context in
+                                            // Fill with white background
+                                            UIColor.white.setFill()
+                                            context.fill(CGRect(origin: .zero, size: CGSize(width: pageWidth, height: CGFloat(renderer.numberOfPages) * pageHeight)))
+                                            
+                                            // ✅ CONTINUOUS RENDERING: Draw all pages as one continuous flow
+                                            for pageIndex in 0..<renderer.numberOfPages {
+                                                context.cgContext.saveGState()
+                                                context.cgContext.translateBy(x: 0, y: CGFloat(pageIndex) * pageHeight)
+                                                
+                                                // Draw page content
+                                                renderer.drawPage(at: pageIndex, in: CGRect(origin: .zero, size: CGSize(width: pageWidth, height: pageHeight)))
+                                                
+                                                context.cgContext.restoreGState()
+                                            }
+                                        }
+
+                                        // Convert to JPEG and return
+                                        if let data = fullImage.jpegData(compressionQuality: 1.0) {
+                                            let bytes = FlutterStandardTypedData.init(bytes: data)
+                                            result(bytes)
+                                            self.dispose()
+                                            print("✅ Continuous content snapshot successful! Image bytes: \(data.count)")
+                                            return
+                                        }
+
+                                    }else{
+                                        var size = self.webView.scrollView.contentSize
+                                        print("width = \(size.width)")
+                                        print("height = \(size.height)")
+                                        configuration.rect = CGRect(origin: .zero, size: size)
+                                        self.webView.snapshotView(afterScreenUpdates: false)
+                                    }
+                                    
+//
                                     self.webView.takeSnapshot(with: configuration) {
                                         (image, error) in
                                         // Add error handling first
@@ -120,6 +181,7 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                                             self.dispose()
                                             return
                                         }
+                                        print("use self.webView.takeSnapshot")
 
                                         // Check if image is nil
                                         guard let image = image else {
