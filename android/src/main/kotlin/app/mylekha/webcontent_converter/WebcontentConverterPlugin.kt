@@ -6,13 +6,14 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.AsyncTask
 import android.os.Build
-import android.os.Environment
 import android.os.Handler
 import android.os.Looper
+import android.print.BitmapCallback
+import android.print.inchToPx
+import android.print.PaperFormat
 import android.print.PdfPrinter
 import android.print.PrintAttributes
 import android.print.PrintManager
-import android.provider.Settings.Global.getString
 import android.util.Log
 import android.view.View
 import android.webkit.WebView
@@ -65,15 +66,46 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
         val content = arguments["content"] as String
         var duration = arguments["duration"] as Double?
         var savedPath = arguments["savedPath"] as? String
-        var margins = arguments["margins"] as Map<String, Double>?
-        var format = arguments["format"] as Map<String, Double>?
+
+        // ✅ SAFE CASTING: Handle potential String to Map casting issues
+        var margins: Map<String, Double>? = null
+        var format: Map<String, *>? = null
+
+        try {
+            // Check if margins is actually a Map before casting
+            val marginsArg = arguments["margins"]
+            if (marginsArg is Map<*, *>) {
+                margins = marginsArg as? Map<String, Double>
+            } else if (marginsArg != null) {
+                Log.w(
+                    "webcontent_converter",
+                    "margins is not a Map, it's a ${marginsArg::class.java.simpleName}: $marginsArg"
+                )
+            }
+
+            // Check if format is actually a Map before casting
+            val formatArg = arguments["format"]
+            if (formatArg is Map<*, *>) {
+                format = formatArg as? Map<String, Double>
+            } else if (formatArg != null) {
+                Log.w(
+                    "webcontent_converter",
+                    "format is not a Map, it's a ${formatArg::class.java.simpleName}: $formatArg"
+                )
+            }
+        } catch (e: ClassCastException) {
+            Log.e("webcontent_converter", "Casting error: ${e.message}")
+            result.error("CAST_ERROR", "Invalid parameter types: ${e.message}", null)
+            return
+        }
+
         var is_html2bitmap = arguments["is_html2bitmap"] as? Boolean ?: false
         if (duration == null) duration = 2000.00
         val tag = "webcontent_converter";
 
         when (method) {
             "contentToImage" -> {
-                if(is_html2bitmap) {
+                if (is_html2bitmap) {
                     var bitmap_width = arguments["bitmap_width"] as Double?
                     val task = object : AsyncTask<Void, Void, Bitmap>() {
 
@@ -85,7 +117,7 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
                                 html2BitmapBuilder.setContext(context);
                                 html2BitmapBuilder.setContent(WebViewContent.html(content));
                                 html2BitmapBuilder.setConfigurator(Html2BitmapConfigurator());
-                                if(bitmap_width != null && bitmap_width > 0 ) {
+                                if (bitmap_width != null && bitmap_width > 0) {
                                     html2BitmapBuilder.setBitmapWidth(bitmap_width!!.toInt());
                                 }
 
@@ -96,7 +128,7 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
 
                                 return data
                             } catch (e: Exception) {
-                                result.error("webview.build",  e.toString(),  e.stackTraceToString())
+                                result.error("webview.build", e.toString(), e.stackTraceToString())
                                 Log.e("webview", e.stackTraceToString())
                                 null
                             }
@@ -136,14 +168,17 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
                     WebView.enableSlowWholeDocumentDraw()
                 }
 
-                Log.w("webcontent_converter", "\n ///////////////// webview setted /////////////////")
+                Log.w(
+                    "webcontent_converter",
+                    "\n ///////////////// webview setted /////////////////"
+                )
 
                 webView.webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView, url: String) {
                         super.onPageFinished(view, url)
                         Log.e("webview", "scope.doInBackground")
 
-                        val scope  = CoroutineScope(Dispatchers.IO)
+                        val scope = CoroutineScope(Dispatchers.IO)
                         scope.launch {
                             Log.w(tag, " scope.launch")
                             // Perform WebView-to-image conversion on a background thread
@@ -155,25 +190,60 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
                                 Log.w(tag, "\n ================ webview completed ==============")
                                 Log.w(tag, "\n scroll delayed ${webView.scrollBarFadeDuration}")
 
-                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
-                                    webView.evaluateJavascript("(function() { return [document.body.offsetWidth, document.body.offsetHeight]; })();"){it
-                                        var xy = JSONArray(it)
-                                        var offsetWidth = xy[0].toString();
-                                        var offsetHeight = xy[1].toString();
-                                        if( offsetHeight.toInt() < 1000 ){
-                                            offsetHeight = (xy[1].toString().toInt() + 20).toString();
-                                        }
-                                        Log.w(tag, "\n width height $it ${it is String} ${xy[0]} ${xy[1]}");
-                                        var data = webView.toBitmap(offsetWidth!!.toDouble(), offsetHeight!!.toDouble())
-                                        if (data != null) {
-                                            val bytes = data.toByteArray()
-//                                      saveWebView(data)
-                                            //ByteArray(0)
-                                            result.success(bytes)
-                                            println("\n Got snapshot")
+
+
+                                if (format != null && format["name"] != null) {
+                                    var pageFormat =
+                                        PaperFormat.fromString((format["name"] as String))
+
+                                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
+                                        webView.toPDFBitmap(
+                                            format,
+                                            margins,
+                                            object : BitmapCallback {
+                                                override fun onSuccess(bitmapBytes: ByteArray) {
+                                                    result.success(bitmapBytes)
+                                                    println("\n Got snapshot")
+                                                }
+
+                                                override fun onFailure() {
+                                                    result.error(
+                                                        "BITMAP_EXPORT_ERROR",
+                                                        "Failed to create bitmap from PDF",
+                                                        null
+                                                    )
+                                                }
+                                            })
+
+                                    }
+
+                                } else {
+                                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
+                                        webView.evaluateJavascript("(function() { return [document.body.offsetWidth, document.body.offsetHeight]; })();") {
+                                            it
+                                            var xy = JSONArray(it)
+                                            var offsetWidth = xy[0].toString();
+                                            var offsetHeight = xy[1].toString();
+                                            Log.w(
+                                                tag,
+                                                "\n width height $it ${it is String} ${xy[0]} ${xy[1]}"
+                                            );
+                                            var data = webView.toBitmap(
+                                                offsetWidth.toDouble(),
+                                                offsetHeight.toDouble()
+                                            )
+                                            if (data != null) {
+                                                val bytes = data.toByteArray()
+                                                //                                      saveWebView(data)
+                                                //ByteArray(0)
+                                                result.success(bytes)
+                                                println("\n Got snapshot")
+                                            }
                                         }
                                     }
                                 }
+
+
                             }, _duration!!.toLong())
                         }
 
@@ -181,6 +251,7 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
                     }
                 }
             }
+
             "contentToPDF" -> {
                 print("\n activity $activity")
                 webView = WebView(this.context)
@@ -211,15 +282,19 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
                             print("\n ================ webview completed ==============")
                             print("\n scroll delayed ${webView.scrollBarFadeDuration}")
 
-                            webView.exportAsPdfFromWebView(savedPath!!, format!!, margins!!, object : PdfPrinter.Callback {
-                                override fun onSuccess(filePath: String) {
-                                    result.success(filePath)
-                                }
+                            webView.exportAsPdfFromWebView(
+                                savedPath!!,
+                                format!!,
+                                margins!!,
+                                object : PdfPrinter.Callback {
+                                    override fun onSuccess(filePath: String) {
+                                        result.success(filePath)
+                                    }
 
-                                override fun onFailure() {
-                                    result.success(null)
-                                }
-                            })
+                                    override fun onFailure() {
+                                        result.success(null)
+                                    }
+                                })
 
                         }, duration!!.toLong())
 
@@ -265,8 +340,9 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
                 }
 
             }
+
             else
-            -> result.notImplemented()
+                -> result.notImplemented()
         }
     }
 
@@ -312,11 +388,12 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
         // Get a PrintManager instance
         (activity?.getSystemService(Context.PRINT_SERVICE) as? PrintManager)?.let { printManager ->
             val applicationName = activity.applicationContext.applicationInfo.name;
-            val jobName ="$applicationName print preview"
+            val jobName = "$applicationName print preview"
 
             // Get a print adapter instance
             val printAdapter = webView.createPrintDocumentAdapter(jobName)
-            var printAttributes = PrintAttributes.Builder().setMediaSize( PrintAttributes.MediaSize.ISO_A4).build();
+            var printAttributes =
+                PrintAttributes.Builder().setMediaSize(PrintAttributes.MediaSize.ISO_A4).build();
             // Create a print job with name and adapter instance
             printManager.print(
                 jobName,
@@ -331,14 +408,35 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
     }
 }
 
-fun WebView.exportAsPdfFromWebView(savedPath: String, format: Map<String, Double>, margins: Map<String, Double>, callback: PdfPrinter.Callback) {
+fun WebView.exportAsPdfFromWebView(
+    savedPath: String,
+    format: Map<String, *>,
+    margins: Map<String, Double>,
+    callback: PdfPrinter.Callback
+) {
     print("\nsavedPath ${savedPath}")
     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+        var width = format["width"] as Double;
+        var height = format["height"] as Double;
         var attributes = PrintAttributes.Builder()
-                .setMediaSize(PrintAttributes.MediaSize("${format!!["width"]}-${format!!["height"]}", "android", format!!["width"]!!.convertFromInchesToInt(), format!!["height"]!!.convertFromInchesToInt()))
-                .setResolution(PrintAttributes.Resolution("pdf", "pdf", 600, 600))
-                .setMinMargins(PrintAttributes.Margins(margins!!["left"]!!.convertFromInchesToInt(), margins!!["top"]!!.convertFromInchesToInt(), margins!!["right"]!!.convertFromInchesToInt(), margins!!["bottom"]!!.convertFromInchesToInt()))
-                .build()
+            .setMediaSize(
+                PrintAttributes.MediaSize(
+                    "${width}-${height}",
+                    "android",
+                    width.convertFromInchesToInt(),
+                    height.convertFromInchesToInt()
+                )
+            )
+            .setResolution(PrintAttributes.Resolution("pdf", "pdf", 600, 600))
+            .setMinMargins(
+                PrintAttributes.Margins(
+                    margins!!["left"]!!.convertFromInchesToInt(),
+                    margins!!["top"]!!.convertFromInchesToInt(),
+                    margins!!["right"]!!.convertFromInchesToInt(),
+                    margins!!["bottom"]!!.convertFromInchesToInt()
+                )
+            )
+            .build()
         var file = File(savedPath)
         val fileName = file.absoluteFile.name
         var pdfPrinter = PdfPrinter(attributes)
@@ -365,12 +463,56 @@ fun WebView.toBitmap(offsetWidth: Double, offsetHeight: Double): Bitmap? {
         val height = (offsetHeight * this.scale).absoluteValue.toInt()
         print("\nwidth $width")
         print("\nheight $height")
-        this.measure(View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+        this.measure(
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        );
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         this.draw(canvas)
         return bitmap
     }
+    return null
+}
+
+fun WebView.toPDFBitmap(
+    format: Map<String, *>,
+    margins: Map<String, Double>?,
+    callback: BitmapCallback
+): Bitmap? {
+
+    var pageFormat = PaperFormat.fromString((format["name"] as String))
+    // convert from inche into miles (96 DPI)
+    var widthInMile = pageFormat.widthPixels * 1000 / 96; // 1 inches = 1000 miles
+    var heightInMile = pageFormat.heightPixels * 1000 / 96;
+    var marginTop = inchToPx(margins?.get("top") ?: 0.5);
+    var marginBottom = inchToPx(margins?.get("bottom") ?: 0.5);
+    var marginLeft = inchToPx(margins?.get("left") ?: 0.5);
+    var marginRight = inchToPx(margins?.get("right") ?: 0.5);
+//    println("marginTop ${marginTop}")
+//    println("marginBottom ${marginBottom}")
+//    println("marginLeft ${marginLeft}")
+//    println("marginRight ${marginRight}")
+
+    var attributes = PrintAttributes.Builder()
+        .setMediaSize(PrintAttributes.MediaSize("${widthInMile}-${heightInMile}", "android", widthInMile, heightInMile))
+        .setResolution(PrintAttributes.Resolution("pdf", "pdf", 600, 600))
+        .setMinMargins(
+            PrintAttributes.Margins(
+                marginLeft.toInt(),
+                marginTop.toInt(),
+                marginRight.toInt(),
+                marginBottom.toInt()
+            )
+        )
+        .build()
+
+    // ✅ USE YOUR CORRECTED PDF PRINTER: For bitmap generation
+    val pdfPrinter = PdfPrinter(attributes)
+    val adapter = this.createPrintDocumentAdapter("bitmap_export")
+
+    // ✅ OPTION 1: PDF to bitmap conversion
+    pdfPrinter.printBitmap(adapter, callback)
     return null
 }
 

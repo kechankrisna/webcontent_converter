@@ -42,13 +42,13 @@ class WebcontentConverter {
     String? executablePath,
     String? content,
   }) async {
-    if (io.Platform.isMacOS || io.Platform.isLinux || io.Platform.isWindows) {
+    if ( io.Platform.isLinux || io.Platform.isWindows) {
       if (WebViewHelper.isChromeAvailable) {
         windowBrower ??= await pp.puppeteer.launch(
           executablePath: executablePath ?? WebViewHelper.executablePath(),
         );
       }
-    } else if (io.Platform.isAndroid || io.Platform.isIOS) {
+    } else if (io.Platform.isAndroid || io.Platform.isMacOS || io.Platform.isIOS) {
       preloadBytes =
           await contentToImage(content: content ?? Demo.getReceiptContent());
     }
@@ -197,7 +197,7 @@ class WebcontentConverter {
     Uint8List results = Uint8List.fromList([]);
 
     try {
-      if (io.Platform.isMacOS || io.Platform.isLinux || io.Platform.isWindows) {
+      if (io.Platform.isLinux || io.Platform.isWindows) {
         if (WebViewHelper.isChromeAvailable) {
           pp.Page? windowBrowserPage;
           try {
@@ -238,6 +238,7 @@ class WebcontentConverter {
         /// mobile method
         WebcontentConverter.logger.info("Mobile support");
         results = await (_channel.invokeMethod('contentToImage', arguments));
+        logger.info("results ${results.length}");
       }
     } on Exception catch (e) {
       WebcontentConverter.logger.error("[method:contentToImage]: $e");
@@ -375,8 +376,7 @@ class WebcontentConverter {
     WebcontentConverter.logger.info(arguments['format']);
     String? result;
     try {
-      if ((io.Platform.isMacOS ||
-              io.Platform.isLinux ||
+      if ((io.Platform.isLinux ||
               io.Platform.isWindows) &&
           WebViewHelper.isChromeAvailable) {
         pp.Page? windowBrowserPage;
@@ -477,8 +477,7 @@ class WebcontentConverter {
     WebcontentConverter.logger.info(arguments['format']);
     Uint8List? result;
     try {
-      if ((io.Platform.isMacOS ||
-              io.Platform.isLinux ||
+      if ((io.Platform.isLinux ||
               io.Platform.isWindows) &&
           WebViewHelper.isChromeAvailable) {
         pp.Page? windowBrowserPage;
@@ -600,6 +599,20 @@ class WebcontentConverter {
               ),
             ),
           );
+        case TargetPlatform.macOS:
+          return SafeArea(
+            child: SizedBox(
+              width: _width,
+              height: _width,
+              child: AppKitView(
+                viewType: viewType,
+                layoutDirection: TextDirection.ltr,
+                creationParams: creationParams,
+                creationParamsCodec: const StandardMessageCodec(),
+                hitTestBehavior: PlatformViewHitTestBehavior.opaque, // ✅ Important for gestures
+              ),
+            ),
+          );
         default:
           throw UnsupportedError("Unsupported platform view");
       }
@@ -625,8 +638,7 @@ class WebcontentConverter {
       if (args.isNotEmpty) {
         arguments.addAll(args);
       }
-      if ((io.Platform.isMacOS ||
-              io.Platform.isLinux ||
+      if ((io.Platform.isLinux ||
               io.Platform.isWindows) &&
           WebViewHelper.isChromeAvailable) {
         var browser = await pp.puppeteer.launch(

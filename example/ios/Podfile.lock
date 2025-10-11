@@ -7,12 +7,13 @@ PODS:
     - Flutter
   - webcontent_converter (0.0.1):
     - Flutter
+    - FlutterMacOS
 
 DEPENDENCIES:
   - Flutter (from `Flutter`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - printing (from `.symlinks/plugins/printing/ios`)
-  - webcontent_converter (from `.symlinks/plugins/webcontent_converter/ios`)
+  - webcontent_converter (from `.symlinks/plugins/webcontent_converter/darwin`)
 
 EXTERNAL SOURCES:
   Flutter:
@@ -22,14 +23,14 @@ EXTERNAL SOURCES:
   printing:
     :path: ".symlinks/plugins/printing/ios"
   webcontent_converter:
-    :path: ".symlinks/plugins/webcontent_converter/ios"
+    :path: ".symlinks/plugins/webcontent_converter/darwin"
 
 SPEC CHECKSUMS:
-  Flutter: f04841e97a9d0b0a8025694d0796dd46242b2854
-  path_provider_foundation: 3784922295ac71e43754bd15e0653ccfd36a147c
-  printing: 233e1b73bd1f4a05615548e9b5a324c98588640b
-  webcontent_converter: baa47c5fc5a9e8d703897a0b128f969c58fd2c7f
+  Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
+  path_provider_foundation: 608fcb11be570ce83519b076ab6a1fffe2474f05
+  printing: 54ff03f28fe9ba3aa93358afb80a8595a071dd07
+  webcontent_converter: 841d2e25e82b9c8767bb4d262f7c91df7d0f2cfa
 
-PODFILE CHECKSUM: 70d9d25280d0dd177a5f637cdb0f0b0b12c6a189
+PODFILE CHECKSUM: a57f30d18f102dd3ce366b1d62a55ecbef2158e5
 
 COCOAPODS: 1.16.2

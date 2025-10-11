@@ -65,7 +65,7 @@ class _ContentToPDFScreenState extends State<ContentToPDFScreen> {
       content: content,
       savedPath: savedPath,
       format: PaperFormat.a4,
-      margins: PdfMargins.px(top: 55, bottom: 55, right: 55, left: 55),
+      margins: PdfMargins.inches(top: 0.25, bottom: 0.25, right: 0.25, left: 0.25),
       executablePath: WebViewHelper.executablePath(),
     );
 

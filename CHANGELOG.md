@@ -1,3 +1,8 @@
+## 0.0.9+4
+- fix ios pdf content width issue with space
+- increase content width to 300 DPI for high-quality print resolution
+- remove zoom text for pdf convert in macos
+
 ## 0.0.9+3
 * add method to convert content to pdf image bytes
 
