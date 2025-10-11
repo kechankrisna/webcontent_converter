@@ -129,8 +129,9 @@ class _ContentToImageScreenState extends State<ContentToImageScreen> {
             : Demo.getReceiptContent(),
         executablePath: WebViewHelper.executablePath(),
         args: {
-          "is_html2bitmap": true,
+          "is_html2bitmap": false,
           "bitmap_width": 300.0,
+          // "format": {"width": 8.27, "height": 11.69, "name": "a4"},
         });
     WebcontentConverter.logger
         .info("completed executed in ${stopwatch.elapsed}");

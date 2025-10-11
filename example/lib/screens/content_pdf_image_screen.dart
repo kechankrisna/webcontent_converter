@@ -36,42 +36,68 @@ class _ContentToPDFImageScreenState extends State<ContentToPDFImageScreen> {
         ],
       ),
       body: Container(
-        alignment: Alignment.center,
         color: Colors.white,
-        child: _fileBytes != null
-            ? Container(
-                constraints: BoxConstraints(maxWidth: 600),
-                child: PdfPreview(
-                  build: (format) async {
-                    if (kIsWeb) {
-                      final doc = pw.Document();
-                      doc.addPage(
-                        pw.Page(
-                          build: (pw.Context context) {
-                            return [
-                              pw.Image(
-                                pw.MemoryImage(
-                                  _fileBytes!,
-                                ),
-                              )
-                            ].first;
-                          },
-                          
-                        ),
-                      );
-                      return doc.save();
-                    } else {
-                      // For other platforms, we can return the Uint8List directly
-                      return _fileBytes!;
-                    }
-                  },
-                  useActions: false,
-                  scrollViewDecoration:
-                      BoxDecoration(color: Colors.transparent),
-                ),
-              )
-            : null,
+        alignment: Alignment.topCenter,
+        child: SingleChildScrollView(
+          primary: false,
+          child: Column(
+            children: [
+              // if (_fileBytes != null)
+              //   Container(
+              //     width: 400,
+              //     alignment: Alignment.topCenter,
+              //     child: Image.memory(_fileBytes!.readAsBytesSync()),
+              //   ),
+              Divider(),
+              if (_fileBytes?.isNotEmpty == true)
+                Container(
+                  width: double.infinity,
+                  alignment: Alignment.topCenter,
+                  decoration:
+                      BoxDecoration(border: Border.all(color: Colors.blue)),
+                  child: Image.memory(_fileBytes!),
+                )
+            ],
+          ),
+        ),
       ),
+      // body: Container(
+      //   alignment: Alignment.center,
+      //   color: Colors.white,
+      //   child: _fileBytes != null
+      //       ? Container(
+      //           constraints: BoxConstraints(maxWidth: 600),
+      //           child: PdfPreview(
+      //             build: (format) async {
+      //               if (kIsWeb) {
+      //                 final doc = pw.Document();
+      //                 doc.addPage(
+      //                   pw.Page(
+      //                     build: (pw.Context context) {
+      //                       return [
+      //                         pw.Image(
+      //                           pw.MemoryImage(
+      //                             _fileBytes!,
+      //                           ),
+      //                         )
+      //                       ].first;
+      //                     },
+                          
+      //                   ),
+      //                 );
+      //                 return doc.save();
+      //               } else {
+      //                 // For other platforms, we can return the Uint8List directly
+      //                 return _fileBytes!;
+      //               }
+      //             },
+      //             useActions: false,
+      //             scrollViewDecoration:
+      //                 BoxDecoration(color: Colors.transparent),
+      //           ),
+      //         )
+      //       : null,
+      // ),
     );
   }
 
@@ -79,11 +105,29 @@ class _ContentToPDFImageScreenState extends State<ContentToPDFImageScreen> {
   _convert() async {
     final content = Demo.getInvoiceContent();
 
-    var result = await WebcontentConverter.contentToPDFImage(
+    var result = await WebcontentConverter.contentToImage(
       content: content,
-      format: PaperFormat.a4,
-      margins: PdfMargins.px(top: 55, bottom: 55, right: 55, left: 55),
+      // format: PaperFormat.a4,
+      // margins: PdfMargins.px(top: 55, bottom: 55, right: 55, left: 55),
       executablePath: WebViewHelper.executablePath(),
+      args: {
+        "format": {
+          "width": PaperFormat.a4.width,
+          "height": PaperFormat.a4.height,
+          "name": PaperFormat.a4.name,
+        },
+        "margins": {'top': 0.25, 'bottom': 0.25, 'right': 0.25, 'left': 0.25},
+        // "landscape": false,
+        // "printBackground": true,
+        // "scale": 1.0,
+        // "preferCSSPageSize": true,
+        // "pageRanges": '1-2',
+        // "displayHeaderFooter": true,
+        // "headerTemplate":
+        //     '<div style="font-size:10px !important; width:100%; text-align:center; margin-top:10px;"><span class="title"></span></div>',
+        // "footerTemplate":
+        //     '<div style="font-size:10px !important; width:100%; text-align:center; margin-bottom:10px;"><span class="pageNumber"></span> / <span class="totalPages"></span></div>',
+      }
     );
 
     WebcontentConverter.logger.info("completed");
