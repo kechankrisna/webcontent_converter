@@ -68,7 +68,7 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                 self.webView.loadHTMLString(content, baseURL: Bundle.main.resourceURL)
             #else
                 // For macOS, create a properly sized WebView to prevent GPU crashes
-                let frame = CGRect(x: 0, y: 0, width: 800, height: 600)
+                let frame = CGRect(x: 0, y: 0, width: 800, height: 300)
                 let configuration = WKWebViewConfiguration()
                 configuration.suppressesIncrementalRendering = false
                 configuration.preferences.javaScriptEnabled = true
@@ -284,10 +284,19 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                                     "Math.max(document.body.scrollWidth, document.body.offsetWidth)"
                                 ) { (width, error) in
 
-                                    let contentHeight = height as? Double ?? 600.0
-                                    let contentWidth = width as? Double ?? 800.0
-                                    print("height = \(contentHeight)")
-                                    print("width = \(width) \(contentWidth)")
+                                    // 🔧 AUTO HEIGHT & WIDTH - Get actual content dimensions
+                                    var contentWidth = width as? Double ?? CGFloat(PaperFormat.a4.widthPixels)  // Fallback to A4 width
+                                    var contentHeight = height as? Double ?? CGFloat(PaperFormat.a4.heightPixels)  // Fallback to A4 height
+                                    let marginTop = CGFloat(inchToPx(margins?["top"] ?? 0.0))
+                                    let marginBottom = CGFloat(inchToPx(margins?["bottom"] ?? 0.0))
+                                    let marginLeft = CGFloat(inchToPx(margins?["left"] ?? 0.0))
+                                    let marginRight = CGFloat(inchToPx(margins?["right"] ?? 0.0))
+                                    let formatName = format?["name"] as? String
+                                    if(format != nil && formatName != nil  && ((formatName?.isEmpty) != nil) ) {
+                                      let paperFormat =  PaperFormat.fromString(formatName!);
+                                        contentWidth = CGFloat(paperFormat.widthPixels) + marginLeft + marginRight + 300; // 300 DPI = high-quality print resolution
+    //                                    contentHeight = CGFloat(paperFormat.heightPixels);
+                                    }
 
                                     print("📏 WebView frame: \(self.webView.frame)")
 
@@ -428,7 +437,7 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                 // macOS PDF generation implementation
                 let path = arguments!["savedPath"] as? String
                 let savedPath = URL.init(string: path!)?.path
-                let format = arguments!["format"] as? [String: Double]
+                let format = arguments!["format"] as? [String: Any]
                 let margins = arguments!["margins"] as? [String: Double]
 
                 guard let content = content else {
@@ -456,12 +465,22 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                             self.webView.evaluateJavaScript(
                                 "Math.max(document.body.scrollWidth, document.body.offsetWidth, document.documentElement.clientWidth, document.documentElement.scrollWidth, document.documentElement.offsetWidth)"
                             ) { (width, error) in
-
                                 // 🔧 AUTO HEIGHT & WIDTH - Get actual content dimensions
-                                var contentHeight = height as? Double ?? 842.0  // Fallback to A4 height
-                                var contentWidth = width as? Double ?? 595.0  // Fallback to A4 width
-                                contentWidth = contentWidth * 1
+                                var contentWidth = width as? Double ?? CGFloat(PaperFormat.a4.widthPixels)  // Fallback to A4 width
+                                var contentHeight = height as? Double ?? CGFloat(PaperFormat.a4.heightPixels)  // Fallback to A4 height
+                                let marginTop = CGFloat(inchToPx(margins?["top"] ?? 0.0))
+                                let marginBottom = CGFloat(inchToPx(margins?["bottom"] ?? 0.0))
+                                let marginLeft = CGFloat(inchToPx(margins?["left"] ?? 0.0))
+                                let marginRight = CGFloat(inchToPx(margins?["right"] ?? 0.0))
+                                let formatName = format?["name"] as? String
+                                if(format != nil && formatName != nil  && ((formatName?.isEmpty) != nil) ) {
+                                  let paperFormat =  PaperFormat.fromString(formatName!);
+                                    contentWidth = CGFloat(paperFormat.widthPixels) + marginLeft + marginRight + 300; // 300 DPI = high-quality print resolution
+//                                    contentHeight = CGFloat(paperFormat.heightPixels);
+                                }
+                                
                                 print("📏 WebView frame: \(self.webView.frame)")
+                                print("📏 Content size: \(contentWidth) x \(contentHeight)")
 
                                 // Resize the WebView to match content size for full capture
                                 let originalFrame = self.webView.frame
@@ -470,7 +489,7 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
 
                                 self.webView.frame = fullContentFrame
                                 print("📏 WebView fullContentFrame: \(fullContentFrame)")
-                                self.webView.setTextZoom(zoom: 0.92) {
+                                self.webView.setTextZoom(zoom: 0.99) {
                                     DispatchQueue.main.asyncAfter(
                                         deadline: .now() + (duration! / 10000)
                                     ) {
