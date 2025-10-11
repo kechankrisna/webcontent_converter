@@ -51,13 +51,13 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                 return
             }
             
-            var width = arguments!["width"] as? Double
-            var height = arguments!["height"] as? Double
-            let format = arguments!["format"] as? [String: Double]
+//            var width = arguments!["width"] as? Double
+//            var height = arguments!["height"] as? Double
+            let format = arguments!["format"] as? [String: Any]
             let margins = arguments!["margins"] as? [String: Double]
             
-            print("width \(String(describing: width))")
-            print("height \(String(describing: height))")
+//            print("width \(String(describing: width))")
+//            print("height \(String(describing: height))")
             print("format \(String(describing: format))")
             print("margins \(String(describing: margins))")
 
@@ -97,14 +97,30 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                                 print("scrollView.contentSiz.width = \(self.webView.scrollView.contentSize.width)")
                                 if #available(iOS 11.0, *) {                                    
                                     let configuration = WKSnapshotConfiguration()
-                                    if(width != nil && height != nil) {
+                                    let formatName = format?["name"] as? String
+                                    if(format != nil && formatName != nil) {
+                                        guard let formatName = formatName else {
+                                            result(
+                                                FlutterError(
+                                                    code: "INVALID_ARGUMENT", message: "Name is invalided", details: nil))
+                                            return
+                                        }
+                                        let pageFormat = PaperFormat.fromString(formatName);
+                                        
+                                        print("pageFormat.width = \(pageFormat.width)")
+                                        print("pageFormat.height = \(pageFormat.height)")
+                                        print("pageFormat.widthPixels = \(pageFormat.widthPixels)")
+                                        print("pageFormat.heightPixels = \(pageFormat.heightPixels)")
+                                        let pageWidth = CGFloat(pageFormat.widthPixels)
+                                        let pageHeight = CGFloat(pageFormat.heightPixels)
+                                        
                                         // ✅ SEAMLESS CONTENT: Use WebView scrollable content directly
                                         let originalFrame = self.webView// ✅ CONTINUOUS CONTENT: Remove page breaks entirely
                                         let printFormatter = self.webView.viewPrintFormatter()
                                         let renderer = UIPrintPageRenderer()
 
-                                        let pageWidth = width != nil ? CGFloat(width!).toPixel() : 595.0
-                                        let pageHeight = height != nil ? CGFloat(height!).toPixel() : 842.0
+//                                        let pageWidth = width != nil ? CGFloat(width!).toPixel() : 595.0
+//                                        let pageHeight = height != nil ? CGFloat(height!).toPixel() : 842.0
 
                                         let pageRect = CGRect(x: 0, y: 0, width: pageWidth, height: pageHeight)
                                         let printableRect = pageRect
@@ -360,8 +376,15 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
             #if os(iOS)
                 let path = arguments!["savedPath"] as? String
                 let savedPath = URL.init(string: path!)?.path
-                let format = arguments!["format"] as? [String: Double]
+            //  var width = arguments!["width"] as? Double
+            //  var height = arguments!["height"] as? Double
+                let format = arguments!["format"] as? [String: Any]
                 let margins = arguments!["margins"] as? [String: Double]
+                        
+            //  print("width \(String(describing: width))")
+            //  print("height \(String(describing: height))")
+                print("format \(String(describing: format))")
+                print("margins \(String(describing: margins))")
                 self.webView = WKWebView()
                 self.webView.isHidden = false
                 self.webView.tag = 100
@@ -374,9 +397,18 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                             print("width = \(self.webView.scrollView.contentSize.width)")
                             if #available(iOS 11.0, *) {
                                 let configuration = WKSnapshotConfiguration()
-                                configuration.rect = CGRect(
-                                    x: 0, y: 0, width: CGFloat(format!["width"] ?? 8.27).toPixel(),
-                                    height: CGFloat(format!["height"] ?? 11.27).toPixel())
+                                let formatName = format?["name"] as? String
+                                if(format != nil && formatName != nil  && ((formatName?.isEmpty) != nil) ) {
+                                  let paperFormat =  PaperFormat.fromString(formatName!);
+                                    configuration.rect = CGRect(
+                                        x: 0, y: 0, width: CGFloat(paperFormat.widthPixels),
+                                        height: CGFloat(paperFormat.heightPixels))
+                                }else{
+                                    configuration.rect = CGRect(
+                                        x: 0, y: 0, width: CGFloat( inchToPx(format!["width"] as? Double ?? PaperFormat.a4.width) ),
+                                        height: CGFloat(inchToPx(format!["height"] as? Double ?? PaperFormat.a4.height) ))
+                                }
+                                
                                 guard
                                     let path = self.webView.exportAsPdfFromWebView(
                                         savedPath: savedPath!, format: format!, margins: margins!)
@@ -725,17 +757,32 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
 
         // Call this function when WKWebView finish loading
         func exportAsPdfFromWebView(
-            savedPath: String, format: [String: Double], margins: [String: Double]
+            savedPath: String, format: [String: Any], margins: [String: Double]
         ) -> String? {
+            
             let formatter = self.viewPrintFormatter()
-            formatter.perPageContentInsets = UIEdgeInsets(
-                top: CGFloat(margins["top"] ?? 0).toPixel(),
-                left: CGFloat(margins["left"] ?? 0).toPixel(),
-                bottom: CGFloat(margins["bottom"] ?? 0).toPixel(),
-                right: CGFloat(margins["right"] ?? 0).toPixel())
-            let page = CGRect(
-                x: 0, y: 0, width: CGFloat(format["width"] ?? 8.27).toPixel(),
-                height: CGFloat(format["height"] ?? 11.27).toPixel())
+            let marginTop = CGFloat(inchToPx(margins["top"] ?? 0))
+            let marginBottom = CGFloat(inchToPx(margins["bottom"] ?? 0))
+            let marginLeft = CGFloat(inchToPx(margins["left"] ?? 0))
+            let marginRight = CGFloat(inchToPx(margins["right"] ?? 0))
+            let widthInPixel = CGFloat(inchToPx(format["width"] as? Double ?? PaperFormat.a4.width))
+            let heightInPixel = CGFloat(inchToPx(format["height"] as? Double ?? PaperFormat.a4.height))
+            print("marginTop \(marginTop)")
+            print("marginBottom \(marginBottom)")
+            print("marginLeft \(marginLeft)")
+            print("marginRight \(marginRight)")
+            print("widthInPixel \(widthInPixel)")
+            print("heightInPixel \(heightInPixel)")
+            formatter.perPageContentInsets = UIEdgeInsets(top: marginTop, left: marginLeft, bottom: marginBottom, right: marginRight)
+            var page = CGRect(x: 0, y: 0, width: widthInPixel, height: heightInPixel)
+            let formatName = format["name"] as? String
+            if(formatName != nil  && ((formatName?.isEmpty) != nil) ) {
+              let paperFormat =  PaperFormat.fromString(formatName!);
+                page = CGRect(
+                    x: 0, y: 0, width: CGFloat(paperFormat.widthPixels),
+                    height: CGFloat(paperFormat.heightPixels))
+            }
+            
             let printable = page.insetBy(dx: 0, dy: 0)
             let render = UIPrintPageRenderer()
             render.addPrintFormatter(formatter, startingAtPageAt: 0)
