@@ -489,7 +489,7 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
 
                                 self.webView.frame = fullContentFrame
                                 print("📏 WebView fullContentFrame: \(fullContentFrame)")
-                                self.webView.setTextZoom(zoom: 0.99) {
+                                
                                     DispatchQueue.main.asyncAfter(
                                         deadline: .now() + (duration! / 10000)
                                     ) {
@@ -528,7 +528,7 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                                         } else {
                                             result(nil)
                                         }
-                                    }
+                                    
                                 }
                             }
                         }
