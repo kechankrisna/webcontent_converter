@@ -54,9 +54,9 @@ flutter:
     - assets/receipt.html
     - assets/short_receipt.html
     - assets/invoice.html
-    - assets/apps/.local-chromium/1056772_chrome-mac.zip
-    # - assets/apps/.local-chromium/1056772_chrome-win.zip
-    # - assets/apps/.local-chromium/1056772_chrome-linux.zip
+    # - assets/apps/.local-chrome/131.0.6778.204_chrome-mac.zip
+    - assets/apps/.local-chrome/131.0.6778.204_chrome-win64.zip
+    # - assets/apps/.local-chrome/131.0.6778.204_chrome-linux.zip
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.

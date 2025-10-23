@@ -7,6 +7,7 @@
 build/
 
 .local-chromium
+.local-chrome
 .chromium
 pubspec.lock
 example/pubspec.lock
