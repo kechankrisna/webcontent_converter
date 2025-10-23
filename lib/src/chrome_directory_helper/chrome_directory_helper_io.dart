@@ -8,29 +8,26 @@ import 'package:path/path.dart' as p;
 import 'dart:io' as io;
 
 class ChromeDesktopDirectoryHelper {
-  static const revision = ChromiumInfoConfig.lastRevision;
+  static const version = ChromiumInfoConfig.lastVersion;
 
   static const String appsDirPath = "apps";
 
   static String? assetChromeZipPath() {
     String? filename = zipFileName();
+    // Use path separator consistent with asset paths in pubspec.yaml (always forward slashes)
     return appsDirPath.isEmpty
-        ? p.joinAll(['assets', '.local-chromium', '${revision}_$filename'])
-        : p.joinAll([
-            'assets',
-            appsDirPath,
-            '.local-chromium',
-            '${revision}_$filename'
-          ]);
+        ? 'assets/.local-chrome/${version}_$filename'
+        : 'assets/$appsDirPath/.local-chrome/${version}_$filename';
   }
 
   static String zipFileName() {
-    if (io.Platform.isMacOS) {
-      return 'chrome-mac.zip';
-    } else if (io.Platform.isWindows) {
-      return 'chrome-win.zip';
-    } else if (io.Platform.isLinux) {
-      return 'chrome-linux.zip';
+    final platform = BrowserPlatform.current;
+    if (platform == BrowserPlatform.macArm64 || platform == BrowserPlatform.macX64) {
+      return 'chrome-${platform.folder}.zip';
+    } else if (platform == BrowserPlatform.windows32 || platform == BrowserPlatform.windows64) {
+      return 'chrome-${platform.folder}.zip';
+    } else if (platform == BrowserPlatform.linux64) {
+      return 'chrome-${platform.folder}.zip';
     }
     return "";
   }
@@ -41,23 +38,20 @@ class ChromeDesktopDirectoryHelper {
     String? assetPath = null,
   }) async {
     final targetPath = await applicationSupportPath();
-
-    final tagetDirectory = io.Directory(
-        p.joinAll([targetPath, zipFileName().replaceAll(".zip", "")]));
+    final platform = BrowserPlatform.current;
+    
+    final targetDirectory = io.Directory(
+        p.joinAll([targetPath, 'chrome-${platform.folder}']));
     print("targetPath ${targetPath}");
-    print("tagetDirectory ${tagetDirectory.path}");
+    print("targetDirectory ${targetDirectory.path}");
 
-    /// create tareget direcotry if not exist
-    if (!tagetDirectory.existsSync()) {
-      tagetDirectory.createSync(recursive: true);
+    /// create target directory if not exist
+    if (!targetDirectory.existsSync()) {
+      targetDirectory.createSync(recursive: true);
     }
 
-    final executablePath =
-        p.joinAll([targetPath, await getChromeExecutablePath()]);
-
-    /// print("targetPath $targetPath");
-    /// print("getExecutablePath $getExecutablePath");
-    /// print("executablePath $executablePath");
+    final executablePath = ChromiumInfoConfig.getExecutablePath(targetPath, platform);
+    
     final executableFile = io.File(executablePath);
 
     /// check zip from asset
@@ -68,7 +62,7 @@ class ChromeDesktopDirectoryHelper {
     ])).path;
     final zipFile = io.File(zipPath);
 
-    /// if locale chrome not exist
+    /// if local chrome not exist
     if (!executableFile.existsSync()) {
       print("executableFile not exist");
 
@@ -138,25 +132,17 @@ class ChromeDesktopDirectoryHelper {
     var supportDir = await path.getApplicationSupportDirectory();
     return appsDirPath.isEmpty
         ? io.Directory(
-                p.joinAll([supportDir.path, '.local-chromium', '$revision']))
+                p.joinAll([supportDir.path, '.local-chrome', version]))
             .absolute
             .path
         : io.Directory(p.joinAll(
-                [supportDir.path, appsDirPath, '.local-chromium', '$revision']))
+                [supportDir.path, appsDirPath, '.local-chrome', version]))
             .absolute
             .path;
   }
 
   static FutureOr<String> getChromeExecutablePath() {
-    if (io.Platform.isWindows) {
-      return p.join('chrome-win', 'chrome.exe');
-    } else if (io.Platform.isLinux) {
-      return p.join('chrome-linux', 'chrome');
-    } else if (io.Platform.isMacOS) {
-      return p.join(
-          'chrome-mac', 'Chromium.app', 'Contents', 'MacOS', 'Chromium');
-    } else {
-      throw UnsupportedError('Unknown platform ${io.Platform.operatingSystem}');
-    }
+    final platform = BrowserPlatform.current;
+    return ChromiumInfoConfig.getExecutableRelativePath(platform);
   }
 }
