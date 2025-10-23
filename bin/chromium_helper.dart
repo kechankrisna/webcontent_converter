@@ -6,20 +6,22 @@ import 'package:path/path.dart' as p;
 import 'package:webcontent_converter/revision_info.dart';
 
 class ChromiumHelper {
-  /// use in case when user just only want to download chromium version for their app
-  ///
+  /// Download Chrome without extracting for use in your app
   static Future<RevisionInfo> justDownloadChrome(
-      {int? revision, String? cachePath}) async {
-    revision ??= ChromiumInfoConfig.lastRevision;
-    cachePath ??= '.local-chromium';
+      {String? version, String? cachePath}) async {
+    version ??= ChromiumInfoConfig.lastVersion;
+    cachePath ??= '.local-chrome';
+    final platform = BrowserPlatform.current;
 
-    var revisionDirectory = Directory(p.join(cachePath, '$revision'));
-    if (!revisionDirectory.existsSync()) {
-      revisionDirectory.createSync(recursive: true);
+    var versionDirectory = Directory(p.join(cachePath, version));
+    if (!versionDirectory.existsSync()) {
+      versionDirectory.createSync(recursive: true);
     }
 
-    var url = downloadUrl(revision);
-    var zipPath = p.join(cachePath, '${revision}_${p.url.basename(url)}');
+    var url = _versionDownloadUrl(platform, version);
+    var zipPath = p.join(cachePath, '${version}_${p.url.basename(url)}');
+    print("url $url");
+    print("zipPath $zipPath");
     var zipFile = File(zipPath);
     if (!zipFile.existsSync()) {
       await downloadFile(url, zipPath);
@@ -30,32 +32,32 @@ class ChromiumHelper {
     }
 
     return RevisionInfo(
-        folderPath: revisionDirectory.path,
+        folderPath: versionDirectory.path,
         executablePath: zipFile.path,
-        revision: revision);
+        version: version);
   }
 
-  /// use in case when user just want to extract their downloaded chromium file
-  ///
+  /// Extract Chrome from a previously downloaded file
   static Future<RevisionInfo> justExtractChrome(
-      {int? revision, String? cachePath}) async {
-    revision ??= ChromiumInfoConfig.lastRevision;
-    cachePath ??= '.local-chromium';
+      {String? version, String? cachePath}) async {
+    version ??= ChromiumInfoConfig.lastVersion;
+    cachePath ??= '.local-chrome';
+    final platform = BrowserPlatform.current;
 
-    var revisionDirectory = Directory(p.join(cachePath, '$revision'));
-    if (!revisionDirectory.existsSync()) {
-      revisionDirectory.createSync(recursive: true);
+    var versionDirectory = Directory(p.join(cachePath, version));
+    if (!versionDirectory.existsSync()) {
+      versionDirectory.createSync(recursive: true);
     }
 
-    var exePath = ChromiumInfoConfig.getExecutablePath(revisionDirectory.path);
-
+    var executableRelativePath = ChromiumInfoConfig.getExecutableRelativePath(platform);
+    var exePath = p.join(versionDirectory.path, executableRelativePath);
     var executableFile = File(exePath);
 
-    var url = downloadUrl(revision);
-    var zipPath = p.join(cachePath, '${revision}_${p.url.basename(url)}');
+    var url = _versionDownloadUrl(platform, version);
+    var zipPath = p.join(cachePath, '${version}_${p.url.basename(url)}');
 
     if (!executableFile.existsSync()) {
-      unzip(zipPath, revisionDirectory.path);
+      unzip(zipPath, versionDirectory.path);
     }
 
     if (!executableFile.existsSync()) {
@@ -68,38 +70,39 @@ class ChromiumHelper {
 
     if (Platform.isMacOS) {
       final chromeAppPath = executableFile.absolute.parent.parent.parent.path;
-
       await Process.run('xattr', ['-d', 'com.apple.quarantine', chromeAppPath]);
     }
 
     return RevisionInfo(
-        folderPath: revisionDirectory.path,
+        folderPath: versionDirectory.path,
         executablePath: executableFile.path,
-        revision: revision);
+        version: version);
   }
 
-  /// originally from pupeteer-dart in case download and extract chromium file when the download zip will be deleted
-  ///
-  static Future<RevisionInfo> downloadChrome(
-      {int? revision, String? cachePath}) async {
-    revision ??= ChromiumInfoConfig.lastRevision;
-    cachePath ??= '.local-chromium';
+  /// Download and extract Chrome in one operation (will delete the zip file after extraction)
+  static Future<RevisionInfo> downloadChrome({
+    String? version,
+    String? cachePath,
+    void Function(int received, int total)? onDownloadProgress
+  }) async {
+    version ??= ChromiumInfoConfig.lastVersion;
+    cachePath ??= '.local-chrome';
+    final platform = BrowserPlatform.current;
 
-    var revisionDirectory = Directory(p.join(cachePath, '$revision'));
-    if (!revisionDirectory.existsSync()) {
-      revisionDirectory.createSync(recursive: true);
+    var versionDirectory = Directory(p.join(cachePath, version));
+    if (!versionDirectory.existsSync()) {
+      versionDirectory.createSync(recursive: true);
     }
 
-    var exePath = ChromiumInfoConfig.getExecutablePath(revisionDirectory.path);
-
+    var executableRelativePath = ChromiumInfoConfig.getExecutableRelativePath(platform);
+    var exePath = p.join(versionDirectory.path, executableRelativePath);
     var executableFile = File(exePath);
 
     if (!executableFile.existsSync()) {
-      var url = downloadUrl(revision);
-      var zipPath = p.join(cachePath, '${revision}_${p.url.basename(url)}');
-      await downloadFile(url, zipPath);
-
-      unzip(zipPath, revisionDirectory.path);
+      var url = _versionDownloadUrl(platform, version);
+      var zipPath = p.join(versionDirectory.path, p.url.basename(url));
+      await _downloadFileWithProgress(url, zipPath, onDownloadProgress);
+      unzip(zipPath, versionDirectory.path);
       File(zipPath).deleteSync();
     }
 
@@ -113,14 +116,13 @@ class ChromiumHelper {
 
     if (Platform.isMacOS) {
       final chromeAppPath = executableFile.absolute.parent.parent.parent.path;
-
       await Process.run('xattr', ['-d', 'com.apple.quarantine', chromeAppPath]);
     }
 
     return RevisionInfo(
-        folderPath: revisionDirectory.path,
+        folderPath: versionDirectory.path,
         executablePath: executableFile.path,
-        revision: revision);
+        version: version);
   }
 
   static Future downloadFile(String url, String output) async {
@@ -135,12 +137,44 @@ class ChromiumHelper {
     }
   }
 
+  static Future _downloadFileWithProgress(
+    String url,
+    String output,
+    void Function(int, int)? onReceiveProgress,
+  ) async {
+    final client = http.Client();
+    final response = await client.send(http.Request('get', Uri.parse(url)));
+    final totalBytes = response.contentLength ?? 0;
+    final outputFile = File(output);
+    var receivedBytes = 0;
+
+    await response.stream
+        .map((s) {
+          receivedBytes += s.length;
+          onReceiveProgress?.call(receivedBytes, totalBytes);
+          return s;
+        })
+        .pipe(outputFile.openWrite());
+
+    client.close();
+    if (!outputFile.existsSync() || outputFile.lengthSync() == 0) {
+      throw Exception('File was not downloaded from $url to $output');
+    }
+  }
+
   static void unzip(String path, String targetPath) {
     if (!Platform.isWindows) {
       // The _simpleUnzip doesn't support symlinks so we prefer a native command
       Process.runSync('unzip', [path, '-d', targetPath]);
     } else {
-      simpleUnzip(path, targetPath);
+      try {
+        var result = Process.runSync('tar', ['-xf', path, '-C', targetPath]);
+        if (result.exitCode != 0) {
+          throw Exception('Failed to unzip chrome binaries:\n${result.stderr}');
+        }
+      } on ProcessException {
+        simpleUnzip(path, targetPath);
+      }
     }
   }
 
@@ -166,19 +200,10 @@ class ChromiumHelper {
     }
   }
 
-  static const _baseUrl =
-      'https://storage.googleapis.com/chromium-browser-snapshots';
+  static const _versionBaseUrl = 
+      'https://storage.googleapis.com/chrome-for-testing-public';
 
-  static String downloadUrl(int revision) {
-    if (Platform.isWindows) {
-      return '$_baseUrl/Win_x64/$revision/chrome-win.zip';
-    } else if (Platform.isLinux) {
-      return '$_baseUrl/Linux_x64/$revision/chrome-linux.zip';
-    } else if (Platform.isMacOS) {
-      return '$_baseUrl/Mac/$revision/chrome-mac.zip';
-    } else {
-      throw UnsupportedError(
-          "Can't download chrome for platform ${Platform.operatingSystem}");
-    }
+  static String _versionDownloadUrl(BrowserPlatform platform, String version) {
+    return '$_versionBaseUrl/$version/${platform.folder}/chrome-${platform.folder}.zip';
   }
 }
