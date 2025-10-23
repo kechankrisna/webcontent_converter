@@ -1,3 +1,7 @@
+## 0.0.9+5
+- fixed chrome path
+- implement chrome builtin on windows/linux instead of chromium
+
 ## 0.0.9+4
 - fix ios pdf content width issue with space
 - increase content width to 300 DPI for high-quality print resolution
