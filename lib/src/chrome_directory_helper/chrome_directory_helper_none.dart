@@ -2,7 +2,7 @@ import 'dart:async';
 
 class ChromeDesktopDirectoryHelper {
   
-  static const String appsDirPath = "apps";
+  static const String appsDirPath = ".apps";
 
   static String? assetChromeZipPath() => null;
 

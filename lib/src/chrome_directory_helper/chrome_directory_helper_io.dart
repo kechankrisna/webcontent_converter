@@ -10,7 +10,7 @@ import 'dart:io' as io;
 class ChromeDesktopDirectoryHelper {
   static const version = ChromiumInfoConfig.lastVersion;
 
-  static const String appsDirPath = "apps";
+  static const String appsDirPath = ".apps";
 
   static String? assetChromeZipPath() {
     String? filename = zipFileName();
