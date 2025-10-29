@@ -1,3 +1,8 @@
+## 0.0.9+6
+
+- fix download desktop script to support platform argument
+- update chromium_helper to support platform argument in downloadChrome method
+
 ## 0.0.9+5
 - fixed chrome path
 - implement chrome builtin on windows/linux instead of chromium
