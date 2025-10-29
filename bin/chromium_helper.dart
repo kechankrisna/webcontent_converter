@@ -8,17 +8,17 @@ import 'package:webcontent_converter/revision_info.dart';
 class ChromiumHelper {
   /// Download Chrome without extracting for use in your app
   static Future<RevisionInfo> justDownloadChrome(
-      {String? version, String? cachePath}) async {
+      {String? version, String? cachePath, BrowserPlatform? platform}) async {
     version ??= ChromiumInfoConfig.lastVersion;
     cachePath ??= '.local-chrome';
-    final platform = BrowserPlatform.current;
+    final _platform = platform ?? BrowserPlatform.current;
 
     var versionDirectory = Directory(p.join(cachePath, version));
     if (!versionDirectory.existsSync()) {
       versionDirectory.createSync(recursive: true);
     }
 
-    var url = _versionDownloadUrl(platform, version);
+    var url = _versionDownloadUrl(_platform, version);
     var zipPath = p.join(cachePath, '${version}_${p.url.basename(url)}');
     print("url $url");
     print("zipPath $zipPath");
@@ -39,21 +39,21 @@ class ChromiumHelper {
 
   /// Extract Chrome from a previously downloaded file
   static Future<RevisionInfo> justExtractChrome(
-      {String? version, String? cachePath}) async {
+      {String? version, String? cachePath, BrowserPlatform? platform}) async {
     version ??= ChromiumInfoConfig.lastVersion;
     cachePath ??= '.local-chrome';
-    final platform = BrowserPlatform.current;
+    final _platform = platform ?? BrowserPlatform.current;
 
     var versionDirectory = Directory(p.join(cachePath, version));
     if (!versionDirectory.existsSync()) {
       versionDirectory.createSync(recursive: true);
     }
 
-    var executableRelativePath = ChromiumInfoConfig.getExecutableRelativePath(platform);
+    var executableRelativePath = ChromiumInfoConfig.getExecutableRelativePath(_platform);
     var exePath = p.join(versionDirectory.path, executableRelativePath);
     var executableFile = File(exePath);
 
-    var url = _versionDownloadUrl(platform, version);
+    var url = _versionDownloadUrl(_platform, version);
     var zipPath = p.join(cachePath, '${version}_${p.url.basename(url)}');
 
     if (!executableFile.existsSync()) {
@@ -83,23 +83,24 @@ class ChromiumHelper {
   static Future<RevisionInfo> downloadChrome({
     String? version,
     String? cachePath,
+    BrowserPlatform? platform,
     void Function(int received, int total)? onDownloadProgress
   }) async {
     version ??= ChromiumInfoConfig.lastVersion;
     cachePath ??= '.local-chrome';
-    final platform = BrowserPlatform.current;
+    final _platform = platform ?? BrowserPlatform.current;
 
     var versionDirectory = Directory(p.join(cachePath, version));
     if (!versionDirectory.existsSync()) {
       versionDirectory.createSync(recursive: true);
     }
 
-    var executableRelativePath = ChromiumInfoConfig.getExecutableRelativePath(platform);
+    var executableRelativePath = ChromiumInfoConfig.getExecutableRelativePath(_platform);
     var exePath = p.join(versionDirectory.path, executableRelativePath);
     var executableFile = File(exePath);
 
     if (!executableFile.existsSync()) {
-      var url = _versionDownloadUrl(platform, version);
+      var url = _versionDownloadUrl(_platform, version);
       var zipPath = p.join(versionDirectory.path, p.url.basename(url));
       await _downloadFileWithProgress(url, zipPath, onDownloadProgress);
       unzip(zipPath, versionDirectory.path);
