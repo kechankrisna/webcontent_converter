@@ -11,6 +11,19 @@ class ChromeDesktopDirectoryHelper {
   static FutureOr<String> saveChromeFromAssetToApp({
     String? assetPath = null,
   }) => "";
+  
+  static FutureOr<String> ensureChromeExecutable({
+    String? assetPath = null,
+  }) => "";
+  
+  static FutureOr<String> getChromeExecutableOrExtract({
+    String? assetPath,
+    bool forceReextract = false,
+  })  => "";
+
+  static FutureOr<String> getOrCreateChromeExecutable({
+    String? assetPath = null,
+  }) => "";
 
   static FutureOr<void> unzip(String path, String targetPath) {}
 
