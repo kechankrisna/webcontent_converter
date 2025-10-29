@@ -37,7 +37,7 @@ class ChromiumInfoConfig {
     };
   }
 
-  static String localChromeDirectory = p.joinAll(["assets", "apps", ".local-chrome"]);
+  static String localChromeDirectory = p.joinAll(["assets", ".apps", ".local-chrome"]);
 
   static String getLocalChromeExecutablePath() {
     final platform = BrowserPlatform.current;
