@@ -1,3 +1,7 @@
+## 0.0.10+2
+
+- fix: format.name = 'custom'
+
 ## 0.0.10+1
 - fix download desktop script to support platform argument
 - update chrome_helper to support platform argument in downloadChrome method
