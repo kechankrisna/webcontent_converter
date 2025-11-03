@@ -408,10 +408,23 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                                 let configuration = WKSnapshotConfiguration()
                                 let formatName = format?["name"] as? String
                                 if(format != nil && formatName != nil  && ((formatName?.isEmpty) != nil) ) {
-                                  let paperFormat =  PaperFormat.fromString(formatName!);
-                                    configuration.rect = CGRect(
-                                        x: 0, y: 0, width: CGFloat(paperFormat.widthPixels),
-                                        height: CGFloat(paperFormat.heightPixels))
+                                    if formatName == "custom" {
+                                        // ✅ CUSTOM: Use width and height from format dictionary
+                                        let customWidth = CGFloat(inchToPx(format!["width"] as? Double ?? 1.0))
+                                        let customHeight = CGFloat(inchToPx(format!["height"] as? Double ?? 1.0))
+                                        
+                                        print("📐 Using custom format - width: \(customWidth), height: \(customHeight)")
+                                        
+                                        configuration.rect = CGRect(x: 0, y: 0, width: customWidth, height: customHeight)
+                                        
+                                    } else {
+                                        // ✅ PREDEFINED: Use standard paper format
+                                        let paperFormat = PaperFormat.fromString(formatName!)
+                                        
+                                        print("📄 Using predefined format: \(formatName!) - \(paperFormat.widthPixels) x \(paperFormat.heightPixels)")
+                                        
+                                        configuration.rect = CGRect(x: 0, y: 0, width: CGFloat(paperFormat.widthPixels), height: CGFloat(paperFormat.heightPixels))
+                                    }
                                 }else{
                                     configuration.rect = CGRect(
                                         x: 0, y: 0, width: CGFloat( inchToPx(format!["width"] as? Double ?? PaperFormat.a4.width) ),
@@ -796,10 +809,13 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
             var page = CGRect(x: 0, y: 0, width: widthInPixel, height: heightInPixel)
             let formatName = format["name"] as? String
             if(formatName != nil  && ((formatName?.isEmpty) != nil) ) {
-              let paperFormat =  PaperFormat.fromString(formatName!);
-                page = CGRect(
-                    x: 0, y: 0, width: CGFloat(paperFormat.widthPixels),
-                    height: CGFloat(paperFormat.heightPixels))
+                if formatName == "custom" {
+                    page = CGRect(x: 0, y: 0, width: widthInPixel,height: heightInPixel)
+                }else{
+                    let paperFormat =  PaperFormat.fromString(formatName!);
+                    page = CGRect(x: 0, y: 0, width: CGFloat(paperFormat.widthPixels),height: CGFloat(paperFormat.heightPixels))
+                }
+              
             }
             
             let printable = page.insetBy(dx: 0, dy: 0)
