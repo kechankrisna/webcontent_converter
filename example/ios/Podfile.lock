@@ -26,8 +26,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/webcontent_converter/darwin"
 
 SPEC CHECKSUMS:
-  Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
-  path_provider_foundation: 608fcb11be570ce83519b076ab6a1fffe2474f05
+  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880
   printing: 54ff03f28fe9ba3aa93358afb80a8595a071dd07
   webcontent_converter: 841d2e25e82b9c8767bb4d262f7c91df7d0f2cfa
 
