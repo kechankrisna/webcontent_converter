@@ -14,18 +14,21 @@ class WebViewHelper {
   ];
 
   static List<String> get windowBrowserAvailablePath => [
-        ChromiumInfoConfig.getLocalChromeExecutablePath(),
+        ChromeInfoConfig.getLocalChromeExecutablePath(),
+        io.Directory(".local-chrome").absolute.path,
         io.Directory(".local-chromium").absolute.path,
         "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
         "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
         "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
         "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
         "C:\\Program Files\\Mozilla Firefox\\firefox.exe",
+        io.Directory("chrome").absolute.path,
         io.Directory("chromium").absolute.path,
       ];
 
   static List<String> get macosBrowserAvailablePath => [
-        ChromiumInfoConfig.getLocalChromeExecutablePath(),
+        ChromeInfoConfig.getLocalChromeExecutablePath(),
+        io.Directory(".local-chrome").absolute.path,
         io.Directory(".local-chromium").absolute.path,
         "/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome",
         "/Applications/Google\ Chrome\ Canary.app/Contents/MacOS/Google\ Chrome\ Canary",
@@ -33,6 +36,7 @@ class WebViewHelper {
         "/Applications/Chromium.app/Contents/MacOS/Chromium",
         "/Applications/Firefox.app/Contents/MacOS/firefox",
         "/Applications/Firefox.app/Contents/MacOS/firefox-bin",
+        io.Directory("chrome").absolute.path,
         io.Directory("chromium").absolute.path,
       ];
 

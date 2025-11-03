@@ -5,11 +5,11 @@ import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:webcontent_converter/revision_info.dart';
 
-class ChromiumHelper {
+class ChromeHelper {
   /// Download Chrome without extracting for use in your app
   static Future<RevisionInfo> justDownloadChrome(
       {String? version, String? cachePath, BrowserPlatform? platform}) async {
-    version ??= ChromiumInfoConfig.lastVersion;
+    version ??= ChromeInfoConfig.lastVersion;
     cachePath ??= '.local-chrome';
     final _platform = platform ?? BrowserPlatform.current;
 
@@ -40,7 +40,7 @@ class ChromiumHelper {
   /// Extract Chrome from a previously downloaded file
   static Future<RevisionInfo> justExtractChrome(
       {String? version, String? cachePath, BrowserPlatform? platform}) async {
-    version ??= ChromiumInfoConfig.lastVersion;
+    version ??= ChromeInfoConfig.lastVersion;
     cachePath ??= '.local-chrome';
     final _platform = platform ?? BrowserPlatform.current;
 
@@ -49,7 +49,7 @@ class ChromiumHelper {
       versionDirectory.createSync(recursive: true);
     }
 
-    var executableRelativePath = ChromiumInfoConfig.getExecutableRelativePath(_platform);
+    var executableRelativePath = ChromeInfoConfig.getExecutableRelativePath(_platform);
     var exePath = p.join(versionDirectory.path, executableRelativePath);
     var executableFile = File(exePath);
 
@@ -86,7 +86,7 @@ class ChromiumHelper {
     BrowserPlatform? platform,
     void Function(int received, int total)? onDownloadProgress
   }) async {
-    version ??= ChromiumInfoConfig.lastVersion;
+    version ??= ChromeInfoConfig.lastVersion;
     cachePath ??= '.local-chrome';
     final _platform = platform ?? BrowserPlatform.current;
 
@@ -95,7 +95,7 @@ class ChromiumHelper {
       versionDirectory.createSync(recursive: true);
     }
 
-    var executableRelativePath = ChromiumInfoConfig.getExecutableRelativePath(_platform);
+    var executableRelativePath = ChromeInfoConfig.getExecutableRelativePath(_platform);
     var exePath = p.join(versionDirectory.path, executableRelativePath);
     var executableFile = File(exePath);
 

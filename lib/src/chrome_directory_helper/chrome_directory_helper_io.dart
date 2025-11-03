@@ -8,7 +8,7 @@ import 'package:path/path.dart' as p;
 import 'dart:io' as io;
 
 class ChromeDesktopDirectoryHelper {
-  static const version = ChromiumInfoConfig.lastVersion;
+  static const version = ChromeInfoConfig.lastVersion;
 
   static const String appsDirPath = ".apps";
 
@@ -50,7 +50,7 @@ class ChromeDesktopDirectoryHelper {
       targetDirectory.createSync(recursive: true);
     }
 
-    final executablePath = ChromiumInfoConfig.getExecutablePath(targetPath, platform);
+    final executablePath = ChromeInfoConfig.getExecutablePath(targetPath, platform);
     
     final executableFile = io.File(executablePath);
 
@@ -143,7 +143,7 @@ class ChromeDesktopDirectoryHelper {
 
   static FutureOr<String> getChromeExecutablePath() {
     final platform = BrowserPlatform.current;
-    return ChromiumInfoConfig.getExecutableRelativePath(platform);
+    return ChromeInfoConfig.getExecutableRelativePath(platform);
   }
 
   /// Check if Chrome executable exists, if not then extract from assets
@@ -154,7 +154,7 @@ class ChromeDesktopDirectoryHelper {
     final targetPath = await applicationSupportPath();
     final platform = BrowserPlatform.current;
     
-    final executablePath = ChromiumInfoConfig.getExecutablePath(targetPath, platform);
+    final executablePath = ChromeInfoConfig.getExecutablePath(targetPath, platform);
     final executableFile = io.File(executablePath);
     
     print("Checking Chrome executable at: $executablePath");
@@ -211,7 +211,7 @@ class ChromeDesktopDirectoryHelper {
     final targetPath = await applicationSupportPath();
     final platform = BrowserPlatform.current;
     
-    final executablePath = ChromiumInfoConfig.getExecutablePath(targetPath, platform);
+    final executablePath = ChromeInfoConfig.getExecutablePath(targetPath, platform);
     final executableFile = io.File(executablePath);
     
     print("Chrome executable check: $executablePath");

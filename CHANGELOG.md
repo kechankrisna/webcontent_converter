@@ -1,3 +1,8 @@
+## 0.0.10+1
+- fix download desktop script to support platform argument
+- update chrome_helper to support platform argument in downloadChrome method
+- support flutter 3.35
+
 ## 0.0.9+6
 
 - fix download desktop script to support platform argument

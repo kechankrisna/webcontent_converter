@@ -13,8 +13,8 @@ class RevisionInfo {
   });
 }
 
-class ChromiumInfoConfig {
-  static const String lastVersion = '131.0.6778.204';
+class ChromeInfoConfig {
+  static const String lastVersion = '140.0.7339.82';
 
   static String getExecutablePath(
       String versionPath, BrowserPlatform platform) {
@@ -43,7 +43,7 @@ class ChromiumInfoConfig {
 
   static String getLocalChromeExecutablePath() {
     final platform = BrowserPlatform.current;
-    return io.Directory(ChromiumInfoConfig.getExecutablePath(
+    return io.Directory(ChromeInfoConfig.getExecutablePath(
             p.joinAll([localChromeDirectory, lastVersion]), platform))
         .absolute
         .path;
