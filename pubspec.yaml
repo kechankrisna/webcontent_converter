@@ -15,7 +15,7 @@ dependencies:
   easy_logger: ^0.0.2
   js: ^0.7.1
   path_provider: ^2.1.0
-  archive: ^3.3.7
+  archive: ^4.0.7
   path: ^1.8.3
   http: ^1.1.0
   args: ^2.7.0
