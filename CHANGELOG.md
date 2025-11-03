@@ -1,3 +1,7 @@
+## 0.0.10+3
+
+- fix: format.name = 'custom' on macos platform for pdf conversion
+
 ## 0.0.10+2
 
 - fix: format.name = 'custom'
