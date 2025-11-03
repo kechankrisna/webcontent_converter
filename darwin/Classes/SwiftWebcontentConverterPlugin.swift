@@ -450,8 +450,15 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                 // macOS PDF generation implementation
                 let path = arguments!["savedPath"] as? String
                 let savedPath = URL.init(string: path!)?.path
+                //  var width = arguments!["width"] as? Double
+                //  var height = arguments!["height"] as? Double
                 let format = arguments!["format"] as? [String: Any]
                 let margins = arguments!["margins"] as? [String: Double]
+                                    
+                //  print("width \(String(describing: width))")
+                //  print("height \(String(describing: height))")
+                print("format \(String(describing: format))")
+                print("margins \(String(describing: margins))")
 
                 guard let content = content else {
                     result(
@@ -487,9 +494,20 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                                 let marginRight = CGFloat(inchToPx(margins?["right"] ?? 0.0))
                                 let formatName = format?["name"] as? String
                                 if(format != nil && formatName != nil  && ((formatName?.isEmpty) != nil) ) {
-                                  let paperFormat =  PaperFormat.fromString(formatName!);
-                                    contentWidth = CGFloat(paperFormat.widthPixels) + marginLeft + marginRight + 300; // 300 DPI = high-quality print resolution
-//                                    contentHeight = CGFloat(paperFormat.heightPixels);
+                                    if formatName == "custom" {
+                                        // ✅ CUSTOM: Use width and height from format dictionary
+                                        let customWidth = CGFloat(inchToPx(format!["width"] as? Double ?? 1.0))
+                                        let customHeight = CGFloat(inchToPx(format!["height"] as? Double ?? 1.0))
+                                                                            
+                                        print("📐 Using custom format - width: \(customWidth), height: \(customHeight)")
+                                        
+                                        contentWidth = customWidth + marginLeft + marginRight; // 300 DPI = high-quality print
+                                        contentWidth = customHeight + marginTop + marginBottom;
+                                    } else {
+                                        let paperFormat =  PaperFormat.fromString(formatName!);
+                                        contentWidth = CGFloat(paperFormat.widthPixels) + marginLeft + marginRight + 300; // 300 DPI = high-quality print resolution
+                                        //                                    contentHeight = CGFloat(paperFormat.heightPixels);
+                                    }
                                 }
                                 
                                 print("📏 WebView frame: \(self.webView.frame)")
