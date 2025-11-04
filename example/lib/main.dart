@@ -51,18 +51,24 @@ class _MyAppState extends State<MyApp> with WindowListener {
   }
 
   @override
-  void onWindowClose() {
+  void onWindowEvent(String eventName) {
+    log(  "onWindowEvent: $eventName");
+    super.onWindowEvent(eventName);
+  }
+
+  @override
+  void onWindowClose() async {
     log("onWindowClose");
 
     /// auto close browser
-    if (WebViewHelper.isDesktop && windowBrower != null) {
-      WebcontentConverter.deinitWebcontentConverter();
-    }
+    await WebcontentConverter.deinitWebcontentConverter();
+    await Future.delayed( Duration(milliseconds: 500));
     super.onWindowClose();
   }
 
   @override
   void dispose() {
+    log("dispose");
     if (WebViewHelper.isDesktop) {
       windowManager.removeListener(this);
     }

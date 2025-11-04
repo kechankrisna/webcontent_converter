@@ -72,6 +72,11 @@ class _HomeScreenState extends State<HomeScreen> {
             onTap: () => Navigator.of(context).pushNamed("/webview_screen"),
             trailing: Icon(Icons.open_in_browser_outlined),
           ),
+          ListTile(
+            title: Text("webcontent screen"),
+            onTap: () => Navigator.of(context).pushNamed("/webcontent_screen"),
+            trailing: Icon(Icons.web),
+          ),
         ],
       ),
       floatingActionButton: FloatingActionButton(

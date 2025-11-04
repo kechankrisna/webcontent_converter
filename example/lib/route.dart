@@ -8,6 +8,7 @@ import 'screens/error_screen.dart';
 import 'screens/filepath_image_screen.dart';
 import 'screens/filepath_pdf_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/webcontent_screen.dart';
 import 'screens/weburi_image_screen.dart';
 import 'screens/weburi_pdf_screen.dart';
 import 'screens/webview_screen.dart';
@@ -68,6 +69,11 @@ Route<dynamic> onGenerateRoute(RouteSettings settings) {
     case "/webview_screen":
       return MaterialPageRoute(
         builder: (context) => WebViewScreen(),
+        settings: settings,
+      );
+    case "/webcontent_screen":
+      return MaterialPageRoute(
+        builder: (context) => WebcontentScreen(),
         settings: settings,
       );
     default:
