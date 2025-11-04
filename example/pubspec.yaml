@@ -13,7 +13,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  path: ^1.8.0
+  path: ^1.9.1
   path_provider: ^2.0.6
   esc_pos_utils_plus: ^2.0.1+2
   printing: ^5.12.0 
@@ -33,6 +33,7 @@ dependencies:
   cupertino_icons: ^1.0.2
   go_router: ^16.3.0
   window_manager: ^0.5.1
+  puppeteer: ^3.20.0
 
 dev_dependencies:
   flutter_test:
@@ -54,10 +55,10 @@ flutter:
     - assets/receipt.html
     - assets/short_receipt.html
     - assets/invoice.html
-    - assets/.apps/.local-chrome/140.0.7339.82_chrome-mac-arm64.zip
+    # - assets/.apps/.local-chrome/140.0.7339.82_chrome-mac-arm64.zip
     # - assets/.apps/.local-chrome/140.0.7339.82_chrome-mac-x64.zip
     # - assets/.apps/.local-chrome/140.0.7339.82_chrome-win32.zip
-    # - assets/.apps/.local-chrome/140.0.7339.82_chrome-win64.zip
+    - assets/.apps/.local-chrome/140.0.7339.82_chrome-win64.zip
     # - assets/.apps/.local-chrome/140.0.7339.82_chrome-linux64.zip
 
   # An image asset can refer to one or more resolution-specific "variants", see

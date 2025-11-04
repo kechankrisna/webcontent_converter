@@ -42,13 +42,19 @@ class WebcontentConverter {
     String? executablePath,
     String? content,
   }) async {
-    if ( io.Platform.isLinux || io.Platform.isWindows) {
+    if (io.Platform.isLinux || io.Platform.isWindows) {
       if (WebViewHelper.isChromeAvailable) {
         windowBrower ??= await pp.puppeteer.launch(
           executablePath: executablePath ?? WebViewHelper.executablePath(),
+          args: [
+            "--disable-dev-shm-usage",
+            "--no-sandbox",
+          ],
         );
       }
-    } else if (io.Platform.isAndroid || io.Platform.isMacOS || io.Platform.isIOS) {
+    } else if (io.Platform.isAndroid ||
+        io.Platform.isMacOS ||
+        io.Platform.isIOS) {
       preloadBytes =
           await contentToImage(content: content ?? Demo.getReceiptContent());
     }
@@ -206,9 +212,14 @@ class WebcontentConverter {
             /// if window browser is null
             if (windowBrower == null || windowBrower?.isConnected != true) {
               windowBrower = await pp.puppeteer.launch(
-                  headless: true,
-                  executablePath:
-                      executablePath ?? WebViewHelper.executablePath());
+                headless: true,
+                executablePath:
+                    executablePath ?? WebViewHelper.executablePath(),
+                args: [
+                  "--disable-dev-shm-usage",
+                  "--no-sandbox",
+                ],
+              );
             }
 
             /// if window browser page is null
@@ -376,8 +387,7 @@ class WebcontentConverter {
     WebcontentConverter.logger.info(arguments['format']);
     String? result;
     try {
-      if ((io.Platform.isLinux ||
-              io.Platform.isWindows) &&
+      if ((io.Platform.isLinux || io.Platform.isWindows) &&
           WebViewHelper.isChromeAvailable) {
         pp.Page? windowBrowserPage;
         try {
@@ -385,8 +395,13 @@ class WebcontentConverter {
 
           /// if window browser is null
           windowBrower ??= await pp.puppeteer.launch(
-              headless: true,
-              executablePath: executablePath ?? WebViewHelper.executablePath());
+            headless: true,
+            executablePath: executablePath ?? WebViewHelper.executablePath(),
+            args: [
+              "--disable-dev-shm-usage",
+              "--no-sandbox",
+            ],
+          );
 
           /// if window browser page is null
           windowBrowserPage = await windowBrower!.newPage();
@@ -477,8 +492,7 @@ class WebcontentConverter {
     WebcontentConverter.logger.info(arguments['format']);
     Uint8List? result;
     try {
-      if ((io.Platform.isLinux ||
-              io.Platform.isWindows) &&
+      if ((io.Platform.isLinux || io.Platform.isWindows) &&
           WebViewHelper.isChromeAvailable) {
         pp.Page? windowBrowserPage;
         try {
@@ -486,8 +500,13 @@ class WebcontentConverter {
 
           /// if window browser is null
           windowBrower ??= await pp.puppeteer.launch(
-              headless: true,
-              executablePath: executablePath ?? WebViewHelper.executablePath());
+            headless: true,
+            executablePath: executablePath ?? WebViewHelper.executablePath(),
+            args: [
+              "--disable-dev-shm-usage",
+              "--no-sandbox",
+            ],
+          );
 
           /// if window browser page is null
           windowBrowserPage = await windowBrower!.newPage();
@@ -638,8 +657,7 @@ class WebcontentConverter {
       if (args.isNotEmpty) {
         arguments.addAll(args);
       }
-      if ((io.Platform.isLinux ||
-              io.Platform.isWindows) &&
+      if ((io.Platform.isLinux || io.Platform.isWindows) &&
           WebViewHelper.isChromeAvailable) {
         var browser = await pp.puppeteer.launch(
           executablePath: WebViewHelper.executablePath(),
@@ -648,6 +666,8 @@ class WebcontentConverter {
           noSandboxFlag: false,
           args: [
             "--no-default-browser-check",
+            "--disable-dev-shm-usage",
+            "--no-sandbox",
             // "-disable-print-preview",
           ],
           defaultViewport: LaunchOptions.viewportNotSpecified,
