@@ -1,3 +1,7 @@
+## 0.0.10+4
+
+- fixed: custom chromium args on windows
+
 ## 0.0.10+3
 
 - fix: format.name = 'custom' on macos platform for pdf conversion
