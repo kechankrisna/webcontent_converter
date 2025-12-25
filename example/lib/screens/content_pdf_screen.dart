@@ -1,11 +1,8 @@
-import 'dart:io' as io;
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:path/path.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:printing/printing.dart';
-import 'package:webcontent_converter/webcontent_converter.dart';
-import 'package:webcontent_converter_example/services/demo.dart';
+import 'package:provider/provider.dart';
+
+import './controllers/content_pdf_screen_controller.dart';
 // import 'package:webcontent_converter_example/services/webview_helper.dart';
 
 class ContentToPDFScreen extends StatefulWidget {
@@ -14,11 +11,30 @@ class ContentToPDFScreen extends StatefulWidget {
 }
 
 class _ContentToPDFScreenState extends State<ContentToPDFScreen> {
-  int _counter = 1;
-  io.File? _file;
+  late ContentPDFScreenController controller = ContentPDFScreenController();
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    return ChangeNotifierProvider.value(
+      value: controller,
+      child: ContentPdfScreenScaffold(),
+    );
+  }
+}
+
+class ContentPdfScreenScaffold extends StatelessWidget {
+  const ContentPdfScreenScaffold({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final controller = Provider.of<ContentPDFScreenController>(context);
     return Scaffold(
       appBar: AppBar(
         title: Text("Content to PDF"),
@@ -26,69 +42,58 @@ class _ContentToPDFScreenState extends State<ContentToPDFScreen> {
           IconButton(
             icon: Icon(Icons.picture_as_pdf),
             onPressed: () async {
-              await _convert();
+              await controller.convert();
             },
           ),
           IconButton(
             icon: Icon(Icons.chrome_reader_mode),
-            onPressed: _previewPDF,
+            onPressed: controller.previewPDF,
           ),
         ],
       ),
       body: Container(
         alignment: Alignment.center,
         color: Colors.white,
-        child: _file != null
-            ? Container(
-                constraints: BoxConstraints(maxWidth: 600),
-                child: PdfPreview(
-                  build: (format) async {
-                    return await _file!.readAsBytes();
-                  },
-                  useActions: false,
-                  scrollViewDecoration:
-                      BoxDecoration(color: Colors.transparent),
+        child: Row(
+          children: [
+            if (size.width > 600)
+              Expanded(
+                child: Container(
+                  padding: EdgeInsets.all(8),
+                  constraints: BoxConstraints(
+                    maxWidth: size.width / 2,
+                    maxHeight: size.height,
+                  ),
+                  child: TextFormField(
+                    maxLines: null,
+                    controller: controller.textEditingController,
+                  ),
                 ),
-              )
-            : null,
+              ),
+            if (controller.file != null)
+              Expanded(
+                child: Container(
+                  constraints: BoxConstraints(
+                    maxWidth: size.width / 2,
+                    maxHeight: size.height,
+                  ),
+                  child: PdfPreview(
+                    build: (format) async {
+                      return await controller.file!.readAsBytes();
+                    },
+                    useActions: false,
+                    scrollViewDecoration:
+                        BoxDecoration(color: Colors.transparent),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: controller.pickContent,
+        child: Icon(Icons.file_open),
       ),
     );
   }
-
-  ///[convert html] content into pdf
-  _convert() async {
-    final content = _counter.isEven
-        ? Demo.getShortLabelContent()
-        : Demo.getInvoiceContent();
-    var savedPath = "sample.pdf";
-    if (!kIsWeb) {
-      var dir = await getApplicationDocumentsDirectory();
-      savedPath = join(dir.path, "sample.pdf");
-    }
-
-    var result = await WebcontentConverter.contentToPDF(
-      content: content,
-      savedPath: savedPath,
-      format: _counter.isEven
-          ? PaperFormat.inches(name: "custom", width: 1, height: 1)
-          : PaperFormat.a4,
-      margins: _counter.isEven
-          ? PdfMargins.inches(top: 0.01, bottom: 0.01, right: 0.01, left: 0.01)
-          : PdfMargins.inches(top: 0.25, bottom: 0.25, right: 0.25, left: 0.25),
-      executablePath: WebViewHelper.executablePath(),
-    );
-
-    setState(() => _counter += 1);
-
-    WebcontentConverter.logger.info("completed");
-    if (!kIsWeb) setState(() => _file = io.File(savedPath));
-
-    /// [printing]
-    // await Printing.layoutPdf(
-    //     onLayout: (PdfPageFormat format) => _file.readAsBytes());
-
-    WebcontentConverter.logger.info(result ?? '');
-  }
-
-  _previewPDF() async {}
 }
