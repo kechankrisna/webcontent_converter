@@ -1,3 +1,7 @@
+## 0.0.10+5
+
+- fixed: load on windows for pp
+
 ## 0.0.10+4
 
 - fixed: custom chromium args on windows
