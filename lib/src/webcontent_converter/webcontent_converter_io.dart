@@ -50,6 +50,8 @@ class WebcontentConverter {
             "--disable-dev-shm-usage",
             "--no-sandbox",
           ],
+          defaultViewport: LaunchOptions.viewportNotSpecified,
+          ignoreDefaultArgs: ["--enable-automation"],
         );
       }
     } else if (io.Platform.isAndroid ||
@@ -113,6 +115,7 @@ class WebcontentConverter {
     String? executablePath,
     int scale = 3,
     Map<String, dynamic> args = const {},
+    List<String> ppWaits = const ["load", "domContentLoaded"],
   }) async {
     Uint8List result = Uint8List.fromList([]);
     try {
@@ -124,10 +127,11 @@ class WebcontentConverter {
         executablePath: executablePath,
         scale: scale,
         args: args,
+        ppWaits: ppWaits,
       );
-    } on Exception catch (e) {
+    } on Exception catch (e, stackTrace) {
       WebcontentConverter.logger.error("[method:filePathToImage]: $e");
-      throw Exception("Error: $e");
+      rethrow;
     }
     return result;
   }
@@ -150,6 +154,7 @@ class WebcontentConverter {
     String? executablePath,
     int scale = 3,
     Map<String, dynamic> args = const {},
+    List<String> ppWaits = const ["load", "domContentLoaded"],
   }) async {
     Uint8List result = Uint8List.fromList([]);
     try {
@@ -161,6 +166,7 @@ class WebcontentConverter {
         executablePath: executablePath,
         scale: scale,
         args: args,
+        ppWaits: ppWaits,
       );
     } on Exception catch (e) {
       WebcontentConverter.logger.error("[method:webUriToImage]: $e");
@@ -189,6 +195,7 @@ class WebcontentConverter {
     String? executablePath,
     int scale = 3,
     Map<String, dynamic> args = const {},
+    List<String> ppWaits = const ["load", "domContentLoaded"],
   }) async {
     final Map<String, dynamic> arguments = {
       'content': content,
@@ -219,12 +226,16 @@ class WebcontentConverter {
                   "--disable-dev-shm-usage",
                   "--no-sandbox",
                 ],
+                defaultViewport: LaunchOptions.viewportNotSpecified,
+                ignoreDefaultArgs: ["--enable-automation"],
               );
             }
 
             /// if window browser page is null
             windowBrowserPage = await windowBrower!.newPage();
-            await windowBrowserPage.setContent(content, wait: pp.Until.load);
+            final _waits = ppWaits.map((e) => _waitsMap[e]!).toList();
+            await windowBrowserPage.setContent(content, wait: pp.Until.all(_waits));
+
             windowBrowserPage
                 .setViewport(pp.DeviceViewport(deviceScaleFactor: scale));
             await windowBrowserPage.emulateMediaType(pp.MediaType.print);
@@ -239,7 +250,11 @@ class WebcontentConverter {
               fullPage: false,
               omitBackground: true,
             );
-          } catch (e) {
+          } on Exception catch (e, stackTrace) {
+            WebcontentConverter.logger.error("Desktop support");
+            WebcontentConverter.logger.error("[method:contentToImage]:  $e");
+            WebcontentConverter.logger.error("$stackTrace");
+            rethrow;
           } finally {
             await windowBrowserPage!.close();
             windowBrowserPage = null;
@@ -251,9 +266,10 @@ class WebcontentConverter {
         results = await (_channel.invokeMethod('contentToImage', arguments));
         logger.info("results ${results.length}");
       }
-    } on Exception catch (e) {
+    } on Exception catch (e, stackTrace) {
       WebcontentConverter.logger.error("[method:contentToImage]: $e");
-      throw Exception("Error: $e");
+      WebcontentConverter.logger.error("$stackTrace");
+      rethrow;
     }
     return results;
   }
@@ -286,6 +302,7 @@ class WebcontentConverter {
     PaperFormat format = PaperFormat.a4,
     String? executablePath,
     Map<String, dynamic> args = const {},
+    List<String> ppWaits = const ["load", "domContentLoaded"],
   }) async {
     var result;
     try {
@@ -298,10 +315,12 @@ class WebcontentConverter {
         format: format,
         executablePath: executablePath,
         args: args,
+        ppWaits: ppWaits,
       );
-    } on Exception catch (e) {
+    } on Exception catch (e, stackTrace) {
       WebcontentConverter.logger.error("[method:filePathToPdf]: $e");
-      throw Exception("Error: $e");
+      WebcontentConverter.logger.error("$stackTrace");
+      rethrow;
     }
     return result;
   }
@@ -325,6 +344,7 @@ class WebcontentConverter {
     PaperFormat format = PaperFormat.a4,
     String? executablePath,
     Map<String, dynamic> args = const {},
+    List<String> ppWaits = const ["load", "domContentLoaded"],
   }) async {
     var result;
     try {
@@ -338,10 +358,12 @@ class WebcontentConverter {
         format: format,
         executablePath: executablePath,
         args: args,
+        ppWaits: ppWaits,
       );
-    } on Exception catch (e) {
+    } on Exception catch (e, stackTrace) {
       WebcontentConverter.logger.error("[method:webUriToImage]: $e");
-      throw Exception("Error: $e");
+      WebcontentConverter.logger.error("$stackTrace");
+      rethrow;
     }
     return result;
   }
@@ -368,6 +390,7 @@ class WebcontentConverter {
     PaperFormat format = PaperFormat.a4,
     String? executablePath,
     Map<String, dynamic> args = const {},
+    List<String> ppWaits = const ["load", "domContentLoaded"],
   }) async {
     PdfMargins _margins = margins ?? PdfMargins.zero;
     final Map<String, dynamic> arguments = {
@@ -401,6 +424,8 @@ class WebcontentConverter {
               "--disable-dev-shm-usage",
               "--no-sandbox",
             ],
+            defaultViewport: LaunchOptions.viewportNotSpecified,
+            ignoreDefaultArgs: ["--enable-automation"],
           );
 
           /// if window browser page is null
@@ -411,14 +436,10 @@ class WebcontentConverter {
 
           /// await windowBrowserPage.emulateMediaType(pp.MediaType.print);
           /// await windowBrowserPage.emulate(pp.puppeteer.devices.laptopWithMDPIScreen);
-          ///
+          pp.Until.domContentLoaded;
+          final _waits = ppWaits.map((e) => _waitsMap[e]!).toList();
           await windowBrowserPage.setContent(content,
-              wait: pp.Until.all([
-                pp.Until.load,
-                pp.Until.domContentLoaded,
-                pp.Until.networkAlmostIdle,
-                pp.Until.networkIdle,
-              ]));
+              wait: pp.Until.all(_waits));
           await windowBrowserPage.pdf(
             format: pp.PaperFormat.inches(
               width: format.width,
@@ -435,7 +456,11 @@ class WebcontentConverter {
           );
 
           result = savedPath;
-        } catch (e) {
+        } on Exception catch (e, stackTrace) {
+          WebcontentConverter.logger.error("Desktop support");
+          WebcontentConverter.logger.error("[method:contentToPDF]:  $e");
+          WebcontentConverter.logger.error("$stackTrace");
+          rethrow;
         } finally {
           await windowBrowserPage!.close();
           windowBrowserPage = null;
@@ -445,9 +470,10 @@ class WebcontentConverter {
         WebcontentConverter.logger.info("Mobile support");
         result = await _channel.invokeMethod('contentToPDF', arguments);
       }
-    } on Exception catch (e) {
+    } on Exception catch (e, stackTrace) {
       WebcontentConverter.logger.error("[method:contentToPDF]: $e");
-      throw Exception("Error: $e");
+      WebcontentConverter.logger.error("$stackTrace");
+      rethrow;
     }
 
     return result;
@@ -474,6 +500,7 @@ class WebcontentConverter {
     PaperFormat format = PaperFormat.a4,
     String? executablePath,
     Map<String, dynamic> args = const {},
+    List<String> ppWaits = const ["load", "domContentLoaded"],
   }) async {
     PdfMargins _margins = margins ?? PdfMargins.zero;
     final Map<String, dynamic> arguments = {
@@ -506,6 +533,8 @@ class WebcontentConverter {
               "--disable-dev-shm-usage",
               "--no-sandbox",
             ],
+            defaultViewport: LaunchOptions.viewportNotSpecified,
+            ignoreDefaultArgs: ["--enable-automation"],
           );
 
           /// if window browser page is null
@@ -516,14 +545,10 @@ class WebcontentConverter {
 
           /// await windowBrowserPage.emulateMediaType(pp.MediaType.print);
           /// await windowBrowserPage.emulate(pp.puppeteer.devices.laptopWithMDPIScreen);
-          ///
+          final _waits = ppWaits.map((e) => _waitsMap[e]!).toList();
           await windowBrowserPage.setContent(content,
-              wait: pp.Until.all([
-                pp.Until.load,
-                pp.Until.domContentLoaded,
-                pp.Until.networkAlmostIdle,
-                pp.Until.networkIdle,
-              ]));
+              wait: pp.Until.all(_waits));
+
           result = await windowBrowserPage.pdf(
             format: pp.PaperFormat.inches(
               width: format.width,
@@ -537,7 +562,11 @@ class WebcontentConverter {
             ),
             printBackground: true,
           );
-        } catch (e) {
+        } on Exception catch (e, stackTrace) {
+          WebcontentConverter.logger.error("Desktop support");
+          WebcontentConverter.logger.error("[method:contentToPDFImage]:  $e");
+          WebcontentConverter.logger.error("$stackTrace");
+          rethrow;
         } finally {
           await windowBrowserPage!.close();
           windowBrowserPage = null;
@@ -547,9 +576,10 @@ class WebcontentConverter {
         WebcontentConverter.logger.info("Mobile support");
         result = await _channel.invokeMethod('contentToPDFImage', arguments);
       }
-    } on Exception catch (e) {
+    } on Exception catch (e, stackTrace) {
       WebcontentConverter.logger.error("[method:contentToPDFImage]: $e");
-      throw Exception("Error: $e");
+      WebcontentConverter.logger.error("$stackTrace");
+      rethrow;
     }
 
     return result;
@@ -628,7 +658,8 @@ class WebcontentConverter {
                 layoutDirection: TextDirection.ltr,
                 creationParams: creationParams,
                 creationParamsCodec: const StandardMessageCodec(),
-                hitTestBehavior: PlatformViewHitTestBehavior.opaque, // ✅ Important for gestures
+                hitTestBehavior: PlatformViewHitTestBehavior
+                    .opaque, // ✅ Important for gestures
               ),
             ),
           );
@@ -643,24 +674,34 @@ class WebcontentConverter {
     String? content,
     bool autoClose = true,
     double? duration,
+    PdfMargins? margins,
+    PaperFormat format = PaperFormat.a4,
+    String? executablePath,
     Map<String, dynamic> args = const {},
+    List<String> ppWaits = const ["load", "domContentLoaded"],
   }) async {
     try {
+      PdfMargins _margins = margins ?? PdfMargins.zero;
       final Map<String, dynamic> arguments = {
         'url': url,
         'content': content,
         'duration': duration,
         'autoClose': autoClose,
+        'margins': _margins.toMap(),
+        'format': format.toMap(),
       };
 
       ///
       if (args.isNotEmpty) {
         arguments.addAll(args);
       }
+      // WebcontentConverter.logger.info(arguments['savedPath']);
+      WebcontentConverter.logger.info(arguments['margins']);
+      WebcontentConverter.logger.info(arguments['format']);
       if ((io.Platform.isLinux || io.Platform.isWindows) &&
           WebViewHelper.isChromeAvailable) {
         var browser = await pp.puppeteer.launch(
-          executablePath: WebViewHelper.executablePath(),
+          executablePath: executablePath ?? WebViewHelper.executablePath(),
           headless: false,
           devTools: false,
           noSandboxFlag: false,
@@ -679,25 +720,13 @@ class WebcontentConverter {
         /// await page.emulateMediaType(pp.MediaType.print);
         /// await page.emulate(pp.puppeteer.devices.laptopWithMDPIScreen);
         if (url != null) {
-          await page.goto(url,
-              wait: pp.Until.all([
-                pp.Until.load,
-                pp.Until.domContentLoaded,
-                pp.Until.networkAlmostIdle,
-                pp.Until.networkIdle,
-              ]));
+          final _waits = ppWaits.map((e) => _waitsMap[e]!).toList();
+          await page.goto(url, wait: pp.Until.all(_waits));
         }
 
         if (content != null) {
-          await page.setContent(
-            content,
-            wait: pp.Until.all([
-              pp.Until.load,
-              pp.Until.domContentLoaded,
-              pp.Until.networkAlmostIdle,
-              pp.Until.networkIdle,
-            ]),
-          );
+          final _waits = ppWaits.map((e) => _waitsMap[e]!).toList();
+          await page.setContent(content, wait: pp.Until.all(_waits));
         }
         if (duration != null)
           await Future.delayed(Duration(milliseconds: duration.toInt()));
@@ -706,8 +735,11 @@ class WebcontentConverter {
           try {
             await page.evaluate('''window.print()''');
             if (autoClose) await page.close();
-          } on Exception catch (e) {
-            WebcontentConverter.logger.error("[method:printPreview]: $e");
+          } on Exception catch (e, stackTrace) {
+            WebcontentConverter.logger.error("Desktop support");
+            WebcontentConverter.logger.error("[method:printPreview]:  $e");
+            WebcontentConverter.logger.error("$stackTrace");
+            rethrow;
           }
         }
         page.onClose.then((value) {
@@ -720,9 +752,17 @@ class WebcontentConverter {
         await _channel.invokeMethod('printPreview', arguments);
         return Future.value(true);
       }
-    } on Exception catch (e) {
+    } on Exception catch (e, stackTrace) {
       WebcontentConverter.logger.error("[method:printPreview]: $e");
-      return Future.value(false);
+      WebcontentConverter.logger.error("$stackTrace");
+      rethrow;
     }
   }
 }
+
+Map<String, pp.Until> _waitsMap = {
+  "load": pp.Until.load,
+  "domContentLoaded": pp.Until.domContentLoaded,
+  "networkAlmostIdle": pp.Until.networkAlmostIdle,
+  "networkIdle": pp.Until.networkIdle,
+};

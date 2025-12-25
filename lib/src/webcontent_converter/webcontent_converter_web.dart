@@ -157,14 +157,15 @@ class WebcontentConverter {
     var opt = {"scale": scale, "useCORS": true};
 
     List<int> result = [];
-    html.CanvasElement? canvas =
-        await promiseToFuture(html2canvas(div, jsify(opt)));
-    if (canvas != null) {
-      await Future.delayed(const Duration(seconds: 1));
-      final base64Image = canvas.toDataUrl();
-      final sub = base64Image.replaceAll("data:image/png;base64,", "");
-      result = base64Decode(sub);
-    }
+    // TODO: reehck html2canvas usage here
+    // html.CanvasElement? canvas =
+    //     await promiseToFuture(html2canvas(div, jsify(opt)));
+    // if (canvas != null) {
+    //   await Future.delayed(const Duration(seconds: 1));
+    //   final base64Image = canvas.toDataUrl();
+    //   final sub = base64Image.replaceAll("data:image/png;base64,", "");
+    //   result = base64Decode(sub);
+    // }
 
     html.document.body?.children.remove(div);
 
@@ -260,7 +261,8 @@ class WebcontentConverter {
       }
     };
 
-    await promiseToFuture(html2pdf(div, jsify(opt)));
+    // TODO: reehck html2canvas usage here
+    // await promiseToFuture(html2pdf(div, jsify(opt)));
 
     html.document.body?.children.remove(div);
     return null;
@@ -298,14 +300,15 @@ class WebcontentConverter {
     };
 
     List<int> result = [];
-    html.CanvasElement? canvas =
-        await promiseToFuture(html2canvas(div, jsify(opt)));
-    if (canvas != null) {
-      await Future.delayed(const Duration(seconds: 1));
-      final base64Image = canvas.toDataUrl();
-      final sub = base64Image.replaceAll("data:image/png;base64,", "");
-      result = base64Decode(sub);
-    }
+    // TODO: reehck html2canvas usage here
+    // html.CanvasElement? canvas =
+    //     await promiseToFuture(html2canvas(div, jsify(opt)));
+    // if (canvas != null) {
+    //   await Future.delayed(const Duration(seconds: 1));
+    //   final base64Image = canvas.toDataUrl();
+    //   final sub = base64Image.replaceAll("data:image/png;base64,", "");
+    //   result = base64Decode(sub);
+    // }
 
     html.document.body?.children.remove(div);
     
@@ -358,6 +361,9 @@ class WebcontentConverter {
     String? content,
     bool autoClose = true,
     double? duration,
+    PdfMargins? margins,
+    PaperFormat format = PaperFormat.a4,
+    String? executablePath,
     Map<String, dynamic> args = const {},
   }) async {
     try {

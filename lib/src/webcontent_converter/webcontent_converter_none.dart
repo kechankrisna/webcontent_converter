@@ -65,6 +65,7 @@ class WebcontentConverter {
     bool autoClosePage = true,
     int scale = 3,
     Map<String, dynamic> args = const {},
+    List<String> ppWaits = const ["load", "domContentLoaded"],
   }) async {
     UnimplementedError('filePathToImage');
     return Future.value(Uint8List.fromList([]));
@@ -77,6 +78,7 @@ class WebcontentConverter {
     bool autoClosePage = true,
     int scale = 3,
     Map<String, dynamic> args = const {},
+    List<String> ppWaits = const ["load", "domContentLoaded"],
   }) async {
     UnimplementedError('webUriToImage');
     return Future.value(Uint8List.fromList([]));
@@ -89,6 +91,7 @@ class WebcontentConverter {
     bool autoClosePage = true,
     int scale = 3,
     Map<String, dynamic> args = const {},
+    List<String> ppWaits = const ["load", "domContentLoaded"],
   }) async {
     UnimplementedError('contentToImage');
     return Future.value(Uint8List.fromList([]));
@@ -102,6 +105,7 @@ class WebcontentConverter {
     PaperFormat format = PaperFormat.a4,
     String? executablePath,
     Map<String, dynamic> args = const {},
+    List<String> ppWaits = const ["load", "domContentLoaded"],
   }) async {
     UnimplementedError('filePathToPdf');
     return null;
@@ -115,6 +119,7 @@ class WebcontentConverter {
     PaperFormat format = PaperFormat.a4,
     String? executablePath,
     Map<String, dynamic> args = const {},
+    List<String> ppWaits = const ["load", "domContentLoaded"],
   }) async {
     UnimplementedError('webUriToPdf');
     return null;
@@ -129,6 +134,7 @@ class WebcontentConverter {
     String? executablePath,
     bool autoClosePage = true,
     Map<String, dynamic> args = const {},
+    List<String> ppWaits = const ["load", "domContentLoaded"],
   }) async {
     UnimplementedError('contentToPDF');
     return null;
@@ -142,6 +148,7 @@ class WebcontentConverter {
     String? executablePath,
     bool autoClosePage = true,
     Map<String, dynamic> args = const {},
+    List<String> ppWaits = const ["load", "domContentLoaded"],
   }) async {
     UnimplementedError('contentToPDFImage');
     return null;
@@ -164,7 +171,11 @@ class WebcontentConverter {
     String? content,
     bool autoClose = true,
     double? duration,
+    PdfMargins? margins,
+    PaperFormat format = PaperFormat.a4,
+    String? executablePath,
     Map<String, dynamic> args = const {},
+    List<String> ppWaits = const ["load", "domContentLoaded"],
   }) {
     UnimplementedError('printPreview');
     return Future.value(false);
