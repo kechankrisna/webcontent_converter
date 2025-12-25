@@ -34,6 +34,8 @@ dependencies:
   go_router: ^16.3.0
   window_manager: ^0.5.1
   puppeteer: ^3.20.0
+  file_picker: ^10.3.8
+  provider: ^6.1.5+1
 
 dev_dependencies:
   flutter_test:
