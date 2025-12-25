@@ -134,7 +134,7 @@ class ContentToImageScreenScaffold extends StatelessWidget {
                           child:
                               Image.memory(controller.file!.readAsBytesSync()),
                         ),
-                      Divider(),
+                      if (controller.file != null) Divider(),
                       if (controller.bytes?.isNotEmpty == true)
                         Container(
                           width: 400,

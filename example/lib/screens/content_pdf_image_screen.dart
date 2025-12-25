@@ -56,33 +56,47 @@ class ContentToPDFImageScreenScaffold extends StatelessWidget {
         alignment: Alignment.topCenter,
         child: Row(
           children: [
-            Expanded(
-              child: TextFormField(
-                maxLines: 10,
-                controller: controller.textEditingController,
+            if (size.width > 600)
+              Expanded(
+                child: Container(
+                  padding: EdgeInsets.all(8),
+                  constraints: BoxConstraints(
+                    maxWidth: size.width / 2,
+                    maxHeight: size.height,
+                  ),
+                  child: TextFormField(
+                    maxLines: null,
+                    controller: controller.textEditingController,
+                  ),
+                ),
               ),
-            ),
             Expanded(
-              child: SingleChildScrollView(
-                primary: false,
-                child: Column(
-                  children: [
-                    // if (_fileBytes != null)
-                    //   Container(
-                    //     width: 400,
-                    //     alignment: Alignment.topCenter,
-                    //     child: Image.memory(_fileBytes!.readAsBytesSync()),
-                    //   ),
-                    Divider(),
-                    if (controller.bytes?.isNotEmpty == true)
-                      Container(
-                        width: double.infinity,
-                        alignment: Alignment.topCenter,
-                        decoration: BoxDecoration(
-                            border: Border.all(color: Colors.blue)),
-                        child: Image.memory(controller.bytes!),
-                      )
-                  ],
+              child: Container(
+                constraints: BoxConstraints(
+                  maxWidth: size.width / 2,
+                  maxHeight: size.height,
+                ),
+                child: SingleChildScrollView(
+                  primary: false,
+                  child: Column(
+                    children: [
+                      // if (_fileBytes != null)
+                      //   Container(
+                      //     width: 400,
+                      //     alignment: Alignment.topCenter,
+                      //     child: Image.memory(_fileBytes!.readAsBytesSync()),
+                      //   ),
+                      // Divider(),
+                      if (controller.bytes?.isNotEmpty == true)
+                        Container(
+                          width: double.infinity,
+                          alignment: Alignment.topCenter,
+                          decoration: BoxDecoration(
+                              border: Border.all(color: Colors.blue)),
+                          child: Image.memory(controller.bytes!),
+                        )
+                    ],
+                  ),
                 ),
               ),
             ),
