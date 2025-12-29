@@ -1,18 +1,22 @@
 import 'dart:async';
 import 'dart:convert';
 // ignore: avoid_web_libraries_in_flutter
-import 'dart:js' as js;
+// import 'dart:js' as js;
+// import 'package:js/js.dart';
+// import 'package:js/js_util.dart';
 // ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
+// import 'dart:html' as html;
+import 'package:web/web.dart' as web;
+import 'dart:js_interop_unsafe';
+// import 'dart:js_interop_unsafe';
 import 'dart:math';
-import 'dart:ui' as ui;
+import 'dart:ui_web' as ui;
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:easy_logger/easy_logger.dart';
 import 'package:flutter/services.dart' show MethodChannel, rootBundle;
 import 'package:flutter/widgets.dart';
-import 'package:js/js.dart';
-import 'package:js/js_util.dart';
+import 'dart:js_interop';
 import 'package:puppeteer/puppeteer.dart' as pp;
 import '../../page.dart';
 
@@ -21,13 +25,14 @@ pp.Page? windowBrowserPage;
 
 @anonymous
 @JS('html2pdf')
-external js.JsFunction html2pdf(html.Element element, dynamic opt);
+external JSPromise<JSObject> html2pdf(web.Element element, JSAny? opt);
 
 @anonymous
 @JS('html2canvas')
-external js.JsFunction html2canvas(html.Element element, dynamic opt);
+external JSPromise<JSObject> html2canvas(web.Element element, JSAny? opt);
 
-bool checkHtml2PdfInstallation() => js.context['html2pdf'] != null;
+bool checkHtml2PdfInstallation() =>
+    globalContext.has('html2pdf') && globalContext['html2pdf'] != null;
 
 /// [WebcontentConverter] will convert html, html file, web uri, into raw bytes image or pdf file
 class WebcontentConverter {
@@ -148,26 +153,38 @@ class WebcontentConverter {
     int scale = 3,
     Map<String, dynamic> args = const {},
   }) async {
-    var div = html.document.createElement('div') as html.DivElement;
-    div.setInnerHtml(content, validator: AllowAll());
+    var div = web.document.createElement('div') as web.HTMLDivElement;
+    // div.setInnerHtml(content, validator: AllowAll());
+    div.innerHTML = content.toJS;
+    // div.setAttribute('validator', 'AllowAll');
     div.style.color = 'black';
     div.style.background = 'white';
-    html.document.body?.children.add(div);
+    web.document.body?.children.add(div);
 
-    var opt = {"scale": scale, "useCORS": true};
+    var opt = {
+        "scale": scale,
+        "allowTaint": true,
+        "logging": true,
+        "useCORS": true,
+        "filename": "savedPath",
+        "image": {"type": 'png', "quality": 0.98},
+        "html2canvas": {"scale": 5},
+      };
 
+    logger.debug("[contentToImage]: opt: $opt");
     List<int> result = [];
-    // TODO: reehck html2canvas usage here
-    // html.CanvasElement? canvas =
-    //     await promiseToFuture(html2canvas(div, jsify(opt)));
-    // if (canvas != null) {
-    //   await Future.delayed(const Duration(seconds: 1));
-    //   final base64Image = canvas.toDataUrl();
-    //   final sub = base64Image.replaceAll("data:image/png;base64,", "");
-    //   result = base64Decode(sub);
-    // }
+    web.HTMLCanvasElement? canvas =
+        (await html2canvas(div, opt.jsify()).toDart) as web.HTMLCanvasElement?;
+    logger.debug("[contentToImage]: canvas: $canvas");
 
-    html.document.body?.children.remove(div);
+    if (canvas != null) {
+      await Future.delayed(const Duration(seconds: 1));
+      final base64Image = canvas.toDataUrl('image/png');
+      final sub = base64Image.replaceAll("data:image/png;base64,", "");
+      result = base64Decode(sub);
+    }
+
+    web.document.body?.children.delete(div);
 
     return Uint8List.fromList(result);
   }
@@ -238,12 +255,14 @@ class WebcontentConverter {
     bool autoClosePage = true,
     Map<String, dynamic> args = const {},
   }) async {
-    var div = html.document.createElement('div') as html.DivElement;
-    div.setInnerHtml(content, validator: AllowAll());
+    var div = web.document.createElement('div') as web.HTMLDivElement;
+    // div.setInnerHtml(content, validator: AllowAll());
+    div.innerHTML = content.toJS;
+    // div.setAttribute('validator', 'AllowAll');
     div.style.color = 'black';
     div.style.background = 'white';
-    html.document.body?.children.add(div);
-    print("[${format.width}, ${format.height}]");
+    web.document.body?.children.add(div);
+    
     var opt = {
       "margin": 0,
       "filename": savedPath,
@@ -261,10 +280,9 @@ class WebcontentConverter {
       }
     };
 
-    // TODO: reehck html2canvas usage here
-    // await promiseToFuture(html2pdf(div, jsify(opt)));
+    await (html2pdf(div, opt.jsify()).toDart);
 
-    html.document.body?.children.remove(div);
+    web.document.body?.children.delete(div);
     return null;
   }
 
@@ -277,11 +295,13 @@ class WebcontentConverter {
     bool autoClosePage = true,
     Map<String, dynamic> args = const {},
   }) async {
-    var div = html.document.createElement('div') as html.DivElement;
-    div.setInnerHtml(content, validator: AllowAll());
+    var div = web.document.createElement('div') as web.HTMLDivElement;
+    // div.setInnerHtml(content, validator: AllowAll());
+    div.innerHTML = content.toJS;
+    // div.setAttribute('validator', 'AllowAll');
     div.style.color = 'black';
     div.style.background = 'white';
-    html.document.body?.children.add(div);
+    web.document.body?.children.add(div);
 
     var opt = {
       "margin": 0,
@@ -301,17 +321,17 @@ class WebcontentConverter {
 
     List<int> result = [];
     // TODO: reehck html2canvas usage here
-    // html.CanvasElement? canvas =
-    //     await promiseToFuture(html2canvas(div, jsify(opt)));
-    // if (canvas != null) {
-    //   await Future.delayed(const Duration(seconds: 1));
-    //   final base64Image = canvas.toDataUrl();
-    //   final sub = base64Image.replaceAll("data:image/png;base64,", "");
-    //   result = base64Decode(sub);
-    // }
+    web.HTMLCanvasElement? canvas =
+        (await html2canvas(div, opt.jsify()).toDart) as web.HTMLCanvasElement?;
+    if (canvas != null) {
+      await Future.delayed(const Duration(seconds: 1));
+      final base64Image = canvas.toDataUrl('image/png');
+      final sub = base64Image.replaceAll("data:image/png;base64,", "");
+      result = base64Decode(sub);
+    }
 
-    html.document.body?.children.remove(div);
-    
+    web.document.body?.children.delete(div);
+
     return Uint8List.fromList(result);
   }
 
@@ -334,17 +354,25 @@ class WebcontentConverter {
         creationParams['height'] = _height;
         creationParams['content'] = content;
         creationParams['url'] = url;
+        logger.debug(
+            "[embedWebView]: width: $_width, height: $_height, url: $url content length: ${content?.length}");
 
-        // ignore: undefined_prefixed_name
+        final iframe = web.HTMLIFrameElement()
+          ..style.width = '100%'
+          ..style.height = '100%'
+          ..style.border = 'none'
+          ..allowFullscreen = true;
+
+        // Prefer inline content when available
+        if (content != null && content.isNotEmpty) {
+          iframe.srcdoc = content.toJS; // String expected; avoid toJS
+          iframe.src = 'about:blank';
+        } else {
+          iframe.src = url ?? 'about:blank';
+        }
         ui.platformViewRegistry.registerViewFactory(
           viewType,
-          (int _) => html.IFrameElement()
-            ..src = url
-            ..srcdoc = content
-            ..style.width = '100%'
-            ..style.height = '100%'
-            ..style.border = 'none'
-            ..allowFullscreen = true,
+          (int _) => iframe,
         );
 
         return SafeArea(
@@ -369,20 +397,22 @@ class WebcontentConverter {
     try {
       const windowFeatures =
           "left=100,top=100,width=800,height=800,popup=yes,_self";
-      js.JsObject printWindow = js.context
-          .callMethod('open', [url ?? '', "mozillaWindow", windowFeatures]);
-      js.JsObject? document =
-          printWindow.hasProperty('document') ? printWindow['document'] : null;
+      (globalContext['open'] as JSObject);
+      JSObject printWindow = globalContext.callMethod(
+          'open'.toJS, [url ?? '', "mozillaWindow", windowFeatures].toJSBox);
+      JSObject? document = printWindow.has("document")
+          ? printWindow['document'] as JSObject
+          : null;
       // ref: https://developer.mozilla.org/en-US/docs/Web/API/Document
 
-      js.JsObject? window =
-          printWindow.hasProperty('window') ? printWindow['window'] : null;
+      JSObject? window =
+          printWindow.has('window') ? printWindow['window'] as JSObject : null;
       // ref: https://developer.mozilla.org/en-US/docs/Web/API/Window
 
       if (content != null) {
-        document?.callMethod('write', [content]);
+        document?.callMethod('write'.toJS, [content].toJSBox);
       }
-      window?.callMethod('print');
+      window?.callMethod('print'.toJS);
 
       /// if (delay == null) {
       ///   window?.callMethod('print');
@@ -393,7 +423,7 @@ class WebcontentConverter {
       /// }
 
       if (autoClose) {
-        window?.callMethod('close');
+        window?.callMethod('close'.toJS);
       }
 
       return Future.value(true);
@@ -405,15 +435,15 @@ class WebcontentConverter {
 }
 
 /// validator
-class AllowAll implements html.NodeValidator {
-  @override
-  bool allowsAttribute(
-      html.Element element, String attributeName, String value) {
-    return true;
-  }
+// class AllowAll implements web.NodeValidator {
+//   @override
+//   bool allowsAttribute(
+//       web.Element element, String attributeName, String value) {
+//     return true;
+//   }
 
-  @override
-  bool allowsElement(html.Element element) {
-    return true;
-  }
-}
+//   @override
+//   bool allowsElement(web.Element element) {
+//     return true;
+//   }
+// }
