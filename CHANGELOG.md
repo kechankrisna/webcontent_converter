@@ -1,3 +1,7 @@
+## 0.0.10+6
+
+- fix: web html content rendering issue by setting validator attribute to AllowAll
+
 ## 0.0.10+5
 
 - fixed: load on windows for pp
