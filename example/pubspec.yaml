@@ -60,7 +60,7 @@ flutter:
     # - assets/.apps/.local-chrome/140.0.7339.82_chrome-mac-arm64.zip
     # - assets/.apps/.local-chrome/140.0.7339.82_chrome-mac-x64.zip
     # - assets/.apps/.local-chrome/140.0.7339.82_chrome-win32.zip
-    - assets/.apps/.local-chrome/140.0.7339.82_chrome-win64.zip
+    # - assets/.apps/.local-chrome/140.0.7339.82_chrome-win64.zip
     # - assets/.apps/.local-chrome/140.0.7339.82_chrome-linux64.zip
 
   # An image asset can refer to one or more resolution-specific "variants", see
