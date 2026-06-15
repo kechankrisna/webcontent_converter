@@ -7,7 +7,7 @@ version: 1.0.0+1
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
 environment:
-  sdk: ">=3.4.4 <4.0.0"
+  sdk: ">=3.9.2 <4.0.0"
   # flutter: ">=3.0.0"
 
 dependencies:
@@ -46,6 +46,8 @@ dev_dependencies:
 
 # The following section is specific to Flutter.
 flutter:
+  config:
+    enable-swift-package-manager: false
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
