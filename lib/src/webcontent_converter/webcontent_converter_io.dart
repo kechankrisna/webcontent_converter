@@ -9,6 +9,7 @@ import 'package:flutter/widgets.dart';
 import 'package:dio/dio.dart';
 import 'package:puppeteer/plugin.dart';
 import 'package:puppeteer/puppeteer.dart' as pp;
+import 'package:flutter_inappwebview/flutter_inappwebview.dart' as iaw;
 
 import '../../demo.dart';
 import '../../page.dart';
@@ -585,6 +586,66 @@ class WebcontentConverter {
     return result;
   }
 
+  static Future<Uint8List?> _generatePdfViaInAppWebView({
+    required String content,
+    required PdfMargins margins,
+    required PaperFormat format,
+    double duration = 2000,
+  }) async {
+    final completer = Completer<Uint8List?>();
+    iaw.HeadlessInAppWebView? headlessWebView;
+
+    try {
+      final marginCss = _buildMarginCss(margins);
+      final injectedContent = '<style>$marginCss</style>\n$content';
+      final initialSize = _buildInAppWebViewSize(format);
+
+      headlessWebView = iaw.HeadlessInAppWebView(
+        initialSize: initialSize,
+        initialData: iaw.InAppWebViewInitialData(data: injectedContent),
+        onLoadStop: (controller, url) async {
+          try {
+            if (duration > 0) {
+              await Future.delayed(Duration(milliseconds: duration.toInt()));
+            }
+            final pdfConfiguration = iaw.PDFConfiguration(
+              rect: iaw.InAppWebViewRect(
+                x: 0,
+                y: 0,
+                width: initialSize.width,
+                height: initialSize.height,
+              ),
+            );
+            final bytes = await controller.createPdf(
+              pdfConfiguration: pdfConfiguration,
+            );
+            completer.complete(bytes);
+          } catch (e) {
+            completer.completeError(e);
+          }
+        },
+        onReceivedError: (controller, request, error) {
+          if (!completer.isCompleted) {
+            completer.completeError(
+              Exception('[_generatePdfViaInAppWebView] load error: ${error.description}'),
+            );
+          }
+        },
+      );
+
+      await headlessWebView.run();
+      return await completer.future.timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw TimeoutException(
+          '[_generatePdfViaInAppWebView] page load timed out after 30s',
+        ),
+      );
+    } finally {
+      await headlessWebView?.dispose();
+      headlessWebView = null;
+    }
+  }
+
   /// [WevView]
   static Widget embedWebView({
     String? url,
@@ -766,3 +827,12 @@ Map<String, pp.Until> _waitsMap = {
   "networkAlmostIdle": pp.Until.networkAlmostIdle,
   "networkIdle": pp.Until.networkIdle,
 };
+
+String _buildMarginCss(PdfMargins margins) {
+  return '@page { margin: ${margins.top}in ${margins.right}in '
+      '${margins.bottom}in ${margins.left}in; }';
+}
+
+Size _buildInAppWebViewSize(PaperFormat format) {
+  return Size(format.width * 96, format.height * 96);
+}
