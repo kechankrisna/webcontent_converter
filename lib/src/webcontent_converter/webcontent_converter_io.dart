@@ -518,61 +518,52 @@ class WebcontentConverter {
     WebcontentConverter.logger.info(arguments['format']);
     Uint8List? result;
     try {
-      if ((io.Platform.isLinux || io.Platform.isWindows) &&
-          WebViewHelper.isChromeAvailable) {
-        pp.Page? windowBrowserPage;
+      if (io.Platform.isMacOS) {
+        WebcontentConverter.logger.info("macOS: using HeadlessInAppWebView");
+        result = await _generatePdfViaInAppWebView(
+          content: content,
+          margins: _margins,
+          format: format,
+          duration: duration,
+        );
+      } else if (io.Platform.isWindows) {
+        WebcontentConverter.logger.info("Windows: trying HeadlessInAppWebView");
         try {
-          WebcontentConverter.logger.info("Desktop support");
-
-          /// if window browser is null
-          windowBrower ??= await pp.puppeteer.launch(
-            headless: true,
-            executablePath: executablePath ?? WebViewHelper.executablePath(),
-            args: [
-              "--disable-dev-shm-usage",
-              "--no-sandbox",
-            ],
-            defaultViewport: LaunchOptions.viewportNotSpecified,
-            ignoreDefaultArgs: ["--enable-automation"],
+          result = await _generatePdfViaInAppWebView(
+            content: content,
+            margins: _margins,
+            format: format,
+            duration: duration,
           );
-
-          /// if window browser page is null
-          windowBrowserPage = await windowBrower!.newPage();
-
-          windowBrowserPage
-              .setViewport(pp.DeviceViewport(width: 800, height: 1000));
-
-          /// await windowBrowserPage.emulateMediaType(pp.MediaType.print);
-          /// await windowBrowserPage.emulate(pp.puppeteer.devices.laptopWithMDPIScreen);
-          final _waits = ppWaits.map((e) => _waitsMap[e]!).toList();
-          await windowBrowserPage.setContent(content,
-              wait: pp.Until.all(_waits));
-
-          result = await windowBrowserPage.pdf(
-            format: pp.PaperFormat.inches(
-              width: format.width,
-              height: format.height,
-            ),
-            margins: pp.PdfMargins.inches(
-              top: _margins.top,
-              bottom: _margins.bottom,
-              left: _margins.left,
-              right: _margins.right,
-            ),
-            printBackground: true,
+        } catch (e) {
+          WebcontentConverter.logger.warning(
+            "[contentToPDFImage] WebView2 unavailable, falling back to Puppeteer: $e",
           );
-        } on Exception catch (e, stackTrace) {
-          WebcontentConverter.logger.error("Desktop support");
-          WebcontentConverter.logger.error("[method:contentToPDFImage]:  $e");
-          WebcontentConverter.logger.error("$stackTrace");
-          rethrow;
-        } finally {
-          await windowBrowserPage!.close();
-          windowBrowserPage = null;
+          if (WebViewHelper.isChromeAvailable) {
+            result = await _contentToPDFImageViaPuppeteer(
+              content: content,
+              margins: _margins,
+              format: format,
+              duration: duration,
+              executablePath: executablePath,
+              ppWaits: ppWaits,
+            );
+          } else {
+            rethrow;
+          }
         }
+      } else if (io.Platform.isLinux && WebViewHelper.isChromeAvailable) {
+        WebcontentConverter.logger.info("Linux: using Puppeteer");
+        result = await _contentToPDFImageViaPuppeteer(
+          content: content,
+          margins: _margins,
+          format: format,
+          duration: duration,
+          executablePath: executablePath,
+          ppWaits: ppWaits,
+        );
       } else {
-        //mobile method
-        WebcontentConverter.logger.info("Mobile support");
+        WebcontentConverter.logger.info("Mobile: using platform channel");
         result = await _channel.invokeMethod('contentToPDFImage', arguments);
       }
     } on Exception catch (e, stackTrace) {
@@ -684,6 +675,52 @@ class WebcontentConverter {
       return savedPath;
     } on Exception catch (e, stackTrace) {
       WebcontentConverter.logger.error("[_contentToPDFViaPuppeteer]: $e");
+      WebcontentConverter.logger.error("$stackTrace");
+      rethrow;
+    } finally {
+      await windowBrowserPage?.close();
+      windowBrowserPage = null;
+    }
+  }
+
+  static Future<Uint8List?> _contentToPDFImageViaPuppeteer({
+    required String content,
+    required PdfMargins margins,
+    required PaperFormat format,
+    double duration = 2000,
+    String? executablePath,
+    List<String> ppWaits = const ["load", "domContentLoaded"],
+  }) async {
+    pp.Page? windowBrowserPage;
+    try {
+      if (windowBrower == null || windowBrower?.isConnected != true) {
+        windowBrower = await pp.puppeteer.launch(
+          headless: true,
+          executablePath: executablePath ?? WebViewHelper.executablePath(),
+          args: ["--disable-dev-shm-usage", "--no-sandbox"],
+          defaultViewport: LaunchOptions.viewportNotSpecified,
+          ignoreDefaultArgs: ["--enable-automation"],
+        );
+      }
+
+      windowBrowserPage = await windowBrower!.newPage();
+      windowBrowserPage.setViewport(pp.DeviceViewport(width: 800, height: 1000));
+
+      final waits = ppWaits.map((e) => _waitsMap[e]!).toList();
+      await windowBrowserPage.setContent(content, wait: pp.Until.all(waits));
+
+      return await windowBrowserPage.pdf(
+        format: pp.PaperFormat.inches(width: format.width, height: format.height),
+        margins: pp.PdfMargins.inches(
+          top: margins.top,
+          bottom: margins.bottom,
+          left: margins.left,
+          right: margins.right,
+        ),
+        printBackground: true,
+      );
+    } on Exception catch (e, stackTrace) {
+      WebcontentConverter.logger.error("[_contentToPDFImageViaPuppeteer]: $e");
       WebcontentConverter.logger.error("$stackTrace");
       rethrow;
     } finally {
