@@ -585,13 +585,11 @@ class WebcontentConverter {
     iaw.HeadlessInAppWebView? headlessWebView;
 
     try {
-      final marginCss = _buildMarginCss(margins);
-      final injectedContent = '<style>$marginCss</style>\n$content';
       final initialSize = _buildInAppWebViewSize(format);
 
       headlessWebView = iaw.HeadlessInAppWebView(
         initialSize: initialSize,
-        initialData: iaw.InAppWebViewInitialData(data: injectedContent),
+        initialData: iaw.InAppWebViewInitialData(data: content),
         onLoadStop: (controller, url) async {
           try {
             if (duration > 0) {
