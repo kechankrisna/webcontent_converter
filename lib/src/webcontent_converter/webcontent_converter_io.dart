@@ -597,16 +597,8 @@ class WebcontentConverter {
             if (duration > 0) {
               await Future.delayed(Duration(milliseconds: duration.toInt()));
             }
-            final pdfConfiguration = iaw.PDFConfiguration(
-              rect: iaw.InAppWebViewRect(
-                x: 0,
-                y: 0,
-                width: initialSize.width,
-                height: initialSize.height,
-              ),
-            );
             final bytes = await controller.createPdf(
-              pdfConfiguration: pdfConfiguration,
+              pdfConfiguration: iaw.PDFConfiguration(),
             );
             completer.complete(bytes);
           } catch (e) {
