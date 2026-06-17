@@ -1,3 +1,10 @@
+## 0.0.10+7
+
+- feat: macOS now uses `flutter_inappwebview` `HeadlessInAppWebView` for PDF generation (no Chrome required)
+- feat: Windows now tries `flutter_inappwebview` WebView2 for PDF generation, falls back to Puppeteer if WebView2 Runtime is not installed
+- fix: null crash in Puppeteer `finally` blocks when `newPage()` threw an exception
+- fix: Windows Puppeteer path now checks `isConnected` before reusing browser instance
+
 ## 0.0.10+6
 
 - fix: web html content rendering issue by setting validator attribute to AllowAll
