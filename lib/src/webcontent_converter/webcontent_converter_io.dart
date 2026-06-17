@@ -257,7 +257,7 @@ class WebcontentConverter {
             WebcontentConverter.logger.error("$stackTrace");
             rethrow;
           } finally {
-            await windowBrowserPage!.close();
+            await windowBrowserPage?.close();
             windowBrowserPage = null;
           }
         }
