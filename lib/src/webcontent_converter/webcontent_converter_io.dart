@@ -836,3 +836,7 @@ String _buildMarginCss(PdfMargins margins) {
 Size _buildInAppWebViewSize(PaperFormat format) {
   return Size(format.width * 96, format.height * 96);
 }
+
+// Test-only exports — top-level functions wrapping private helpers for unit testing.
+String buildMarginCssForTest(PdfMargins m) => _buildMarginCss(m);
+Size buildInAppWebViewSizeForTest(PaperFormat f) => _buildInAppWebViewSize(f);
