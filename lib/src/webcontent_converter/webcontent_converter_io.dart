@@ -454,7 +454,7 @@ class WebcontentConverter {
             rethrow;
           }
         }
-      } else if (io.Platform.isLinux && WebViewHelper.isChromeAvailable) {
+      } else if ((io.Platform.isMacOS || io.Platform.isMacOS || io.Platform.isLinux )&& WebViewHelper.isChromeAvailable) {
         WebcontentConverter.logger.info("Linux: using Puppeteer");
         result = await _contentToPDFViaPuppeteer(
           content: content,
@@ -597,6 +597,12 @@ class WebcontentConverter {
             if (duration > 0) {
               await Future.delayed(Duration(milliseconds: duration.toInt()));
             }
+            // Wait for all web fonts and stylesheets to finish loading before
+            // capturing. document.fonts.ready resolves only after every
+            // @font-face (including CDN fonts) has been fetched and decoded.
+            await controller.callAsyncJavaScript(
+              functionBody: 'await document.fonts.ready;',
+            );
             final bytes = await controller.createPdf(
               pdfConfiguration: iaw.PDFConfiguration(),
             );
