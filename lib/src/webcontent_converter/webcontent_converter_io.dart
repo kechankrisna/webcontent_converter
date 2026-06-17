@@ -130,7 +130,7 @@ class WebcontentConverter {
         args: args,
         ppWaits: ppWaits,
       );
-    } on Exception catch (e, stackTrace) {
+    } on Exception catch (e) {
       WebcontentConverter.logger.error("[method:filePathToImage]: $e");
       rethrow;
     }

@@ -246,8 +246,11 @@ class ChromeDesktopDirectoryHelper {
         // Additional macOS quarantine check
         if (io.Platform.isMacOS) {
           final chromeAppPath = executableFile.absolute.parent.parent.parent.path;
-          await io.Process.run('xattr', ['-d', 'com.apple.quarantine', chromeAppPath])
-              .catchError((e) => print("Quarantine removal failed (may already be removed): $e"));
+          try {
+            await io.Process.run('xattr', ['-d', 'com.apple.quarantine', chromeAppPath]);
+          } catch (e) {
+            print("Quarantine removal failed (may already be removed): $e");
+          }
         }
         
         print("✅ Chrome executable verified: ${executableFile.absolute.path}");
