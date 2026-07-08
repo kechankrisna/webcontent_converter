@@ -2,6 +2,11 @@
 
 A command-line tool to download Chrome/Chromium binaries for desktop platforms.
 
+> **Building the example app:** `example/assets/.apps/.local-chrome/` is gitignored and not
+> committed. Before building/running the example on desktop, `cd example` and run this tool once
+> per platform you need (e.g. `dart run ../bin/download_desktop.dart -p mac-arm64`) so the zips
+> referenced in `example/pubspec.yaml` exist locally.
+
 ## 📋 Table of Contents
 
 - [Usage](#-usage)

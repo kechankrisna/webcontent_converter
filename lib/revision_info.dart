@@ -14,7 +14,7 @@ class RevisionInfo {
 }
 
 class ChromeInfoConfig {
-  static const String lastVersion = '140.0.7339.82';
+  static const String lastVersion = '150.0.7871.24';
 
   static String getExecutablePath(
       String versionPath, BrowserPlatform platform) {
