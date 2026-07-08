@@ -454,7 +454,7 @@ class WebcontentConverter {
             rethrow;
           }
         }
-      } else if ((io.Platform.isMacOS || io.Platform.isMacOS || io.Platform.isLinux )&& WebViewHelper.isChromeAvailable) {
+      } else if ((io.Platform.isMacOS || io.Platform.isWindows || io.Platform.isLinux )&& WebViewHelper.isChromeAvailable) {
         WebcontentConverter.logger.info("Linux: using Puppeteer");
         result = await _contentToPDFViaPuppeteer(
           content: content,
