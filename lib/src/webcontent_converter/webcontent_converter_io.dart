@@ -211,56 +211,44 @@ class WebcontentConverter {
     Uint8List results = Uint8List.fromList([]);
 
     try {
-      if (io.Platform.isLinux || io.Platform.isWindows) {
-        if (WebViewHelper.isChromeAvailable) {
-          pp.Page? windowBrowserPage;
-          try {
-            WebcontentConverter.logger.info("Desktop support");
-
-            /// if window browser is null
-            if (windowBrower == null || windowBrower?.isConnected != true) {
-              windowBrower = await pp.puppeteer.launch(
-                headless: true,
-                executablePath:
-                    executablePath ?? WebViewHelper.executablePath(),
-                args: [
-                  "--disable-dev-shm-usage",
-                  "--no-sandbox",
-                ],
-                defaultViewport: LaunchOptions.viewportNotSpecified,
-                ignoreDefaultArgs: ["--enable-automation"],
-              );
-            }
-
-            /// if window browser page is null
-            windowBrowserPage = await windowBrower!.newPage();
-            final _waits = ppWaits.map((e) => _waitsMap[e]!).toList();
-            await windowBrowserPage.setContent(content, wait: pp.Until.all(_waits));
-
-            windowBrowserPage
-                .setViewport(pp.DeviceViewport(deviceScaleFactor: scale));
-            await windowBrowserPage.emulateMediaType(pp.MediaType.print);
-            var offsetHeight =
-                await windowBrowserPage.evaluate('document.body.offsetHeight');
-            var offsetWidth =
-                await windowBrowserPage.evaluate('document.body.offsetWidth');
-            results = await windowBrowserPage.screenshot(
-              format: pp.ScreenshotFormat.png,
-              clip: pp.Rectangle.fromPoints(
-                  pp.Point(0, 0), pp.Point(offsetWidth, offsetHeight)),
-              fullPage: false,
-              omitBackground: true,
+      if (io.Platform.isMacOS) {
+        WebcontentConverter.logger.info("macOS: using HeadlessInAppWebView");
+        results = await _generateImageViaInAppWebView(
+              content: content,
+              duration: duration,
+            ) ??
+            results;
+      } else if (io.Platform.isWindows) {
+        WebcontentConverter.logger.info("Windows: trying HeadlessInAppWebView");
+        try {
+          results = await _generateImageViaInAppWebView(
+                content: content,
+                duration: duration,
+              ) ??
+              results;
+        } catch (e) {
+          WebcontentConverter.logger.warning(
+            "[contentToImage] WebView2 unavailable, falling back to Puppeteer: $e",
+          );
+          if (WebViewHelper.isChromeAvailable) {
+            results = await _contentToImageViaPuppeteer(
+              content: content,
+              scale: scale,
+              executablePath: executablePath,
+              ppWaits: ppWaits,
             );
-          } on Exception catch (e, stackTrace) {
-            WebcontentConverter.logger.error("Desktop support");
-            WebcontentConverter.logger.error("[method:contentToImage]:  $e");
-            WebcontentConverter.logger.error("$stackTrace");
+          } else {
             rethrow;
-          } finally {
-            await windowBrowserPage?.close();
-            windowBrowserPage = null;
           }
         }
+      } else if (io.Platform.isLinux && WebViewHelper.isChromeAvailable) {
+        WebcontentConverter.logger.info("Linux: using Puppeteer");
+        results = await _contentToImageViaPuppeteer(
+          content: content,
+          scale: scale,
+          executablePath: executablePath,
+          ppWaits: ppWaits,
+        );
       } else {
         /// mobile method
         WebcontentConverter.logger.info("Mobile support");
@@ -273,6 +261,124 @@ class WebcontentConverter {
       rethrow;
     }
     return results;
+  }
+
+  static Future<Uint8List> _contentToImageViaPuppeteer({
+    required String content,
+    int scale = 3,
+    String? executablePath,
+    List<String> ppWaits = const ["load", "domContentLoaded"],
+  }) async {
+    pp.Page? windowBrowserPage;
+    try {
+      if (windowBrower == null || windowBrower?.isConnected != true) {
+        windowBrower = await pp.puppeteer.launch(
+          headless: true,
+          executablePath: executablePath ?? WebViewHelper.executablePath(),
+          args: [
+            "--disable-dev-shm-usage",
+            "--no-sandbox",
+          ],
+          defaultViewport: LaunchOptions.viewportNotSpecified,
+          ignoreDefaultArgs: ["--enable-automation"],
+        );
+      }
+
+      windowBrowserPage = await windowBrower!.newPage();
+      final waits = ppWaits.map((e) => _waitsMap[e]!).toList();
+      await windowBrowserPage.setContent(content, wait: pp.Until.all(waits));
+
+      windowBrowserPage
+          .setViewport(pp.DeviceViewport(deviceScaleFactor: scale));
+      await windowBrowserPage.emulateMediaType(pp.MediaType.print);
+      var offsetHeight =
+          await windowBrowserPage.evaluate('document.body.offsetHeight');
+      var offsetWidth =
+          await windowBrowserPage.evaluate('document.body.offsetWidth');
+      return await windowBrowserPage.screenshot(
+        format: pp.ScreenshotFormat.png,
+        clip: pp.Rectangle.fromPoints(
+            pp.Point(0, 0), pp.Point(offsetWidth, offsetHeight)),
+        fullPage: false,
+        omitBackground: true,
+      );
+    } on Exception catch (e, stackTrace) {
+      WebcontentConverter.logger.error("[_contentToImageViaPuppeteer]: $e");
+      WebcontentConverter.logger.error("$stackTrace");
+      rethrow;
+    } finally {
+      await windowBrowserPage?.close();
+      windowBrowserPage = null;
+    }
+  }
+
+  static Future<Uint8List?> _generateImageViaInAppWebView({
+    required String content,
+    double duration = 2000,
+  }) async {
+    final completer = Completer<Uint8List?>();
+    iaw.HeadlessInAppWebView? headlessWebView;
+
+    try {
+      headlessWebView = iaw.HeadlessInAppWebView(
+        initialSize: const Size(800, 600),
+        initialData: iaw.InAppWebViewInitialData(data: content),
+        onLoadStop: (controller, url) async {
+          try {
+            if (duration > 0) {
+              await Future.delayed(Duration(milliseconds: duration.toInt()));
+            }
+            // Wait for all web fonts and stylesheets to finish loading before
+            // capturing. document.fonts.ready resolves only after every
+            // @font-face (including CDN fonts) has been fetched and decoded.
+            await controller.callAsyncJavaScript(
+              functionBody: 'await document.fonts.ready;',
+            );
+            final contentSize = await controller.callAsyncJavaScript(
+              functionBody:
+                  'return {width: document.body.scrollWidth, height: document.body.scrollHeight};',
+            );
+            final sizeMap = contentSize?.value as Map?;
+            final width = (sizeMap?['width'] as num?)?.toDouble() ?? 800;
+            final height = (sizeMap?['height'] as num?)?.toDouble() ?? 600;
+
+            /// resize the headless view to the actual content size so the
+            /// screenshot's default rect (the view's bounds) captures the
+            /// full content instead of just the initial viewport.
+            await headlessWebView?.setSize(Size(width, height));
+            await Future.delayed(const Duration(milliseconds: 100));
+
+            final bytes = await controller.takeScreenshot(
+              screenshotConfiguration: iaw.ScreenshotConfiguration(
+                compressFormat: iaw.CompressFormat.PNG,
+                quality: 100,
+              ),
+            );
+            completer.complete(bytes);
+          } catch (e) {
+            completer.completeError(e);
+          }
+        },
+        onReceivedError: (controller, request, error) {
+          if (!completer.isCompleted) {
+            completer.completeError(
+              Exception('[_generateImageViaInAppWebView] load error: ${error.description}'),
+            );
+          }
+        },
+      );
+
+      await headlessWebView.run();
+      return await completer.future.timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw TimeoutException(
+          '[_generateImageViaInAppWebView] page load timed out after 30s',
+        ),
+      );
+    } finally {
+      await headlessWebView?.dispose();
+      headlessWebView = null;
+    }
   }
 
   /**
@@ -552,7 +658,7 @@ class WebcontentConverter {
             rethrow;
           }
         }
-      } else if (io.Platform.isLinux && WebViewHelper.isChromeAvailable) {
+      } else if ((io.Platform.isMacOS || io.Platform.isWindows || io.Platform.isLinux )&& WebViewHelper.isChromeAvailable) {
         WebcontentConverter.logger.info("Linux: using Puppeteer");
         result = await _contentToPDFImageViaPuppeteer(
           content: content,
