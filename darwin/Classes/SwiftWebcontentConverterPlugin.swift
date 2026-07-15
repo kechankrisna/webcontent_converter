@@ -493,73 +493,90 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                                 let marginLeft = CGFloat(inchToPx(margins?["left"] ?? 0.0))
                                 let marginRight = CGFloat(inchToPx(margins?["right"] ?? 0.0))
                                 let formatName = format?["name"] as? String
-                                if(format != nil && formatName != nil  && ((formatName?.isEmpty) != nil) ) {
-                                    if formatName == "custom" {
-                                        // ✅ CUSTOM: Use width and height from format dictionary
-                                        let customWidth = CGFloat(inchToPx(format!["width"] as? Double ?? 1.0))
-                                        let customHeight = CGFloat(inchToPx(format!["height"] as? Double ?? 1.0))
-                                                                            
-                                        print("📐 Using custom format - width: \(customWidth), height: \(customHeight)")
-                                        
-                                        contentWidth = customWidth + marginLeft + marginRight; // 300 DPI = high-quality print
-                                        contentWidth = customHeight + marginTop + marginBottom;
-                                    } else {
-                                        let paperFormat =  PaperFormat.fromString(formatName!);
-                                        contentWidth = CGFloat(paperFormat.widthPixels) + marginLeft + marginRight + 300; // 300 DPI = high-quality print resolution
-                                        //                                    contentHeight = CGFloat(paperFormat.heightPixels);
-                                    }
-                                }
-                                
-                                print("📏 WebView frame: \(self.webView.frame)")
-                                print("📏 Content size: \(contentWidth) x \(contentHeight)")
 
-                                // Resize the WebView to match content size for full capture
+                                let pageWidthPx: Double
+                                let pageHeightPx: Double
+                                if let formatName = formatName, !formatName.isEmpty {
+                                    if formatName == "custom" {
+                                        pageWidthPx = inchToPx(format!["width"] as? Double ?? 1.0)
+                                        pageHeightPx = inchToPx(format!["height"] as? Double ?? 1.0)
+                                    } else {
+                                        let paperFormat = PaperFormat.fromString(formatName)
+                                        pageWidthPx = Double(paperFormat.widthPixels)
+                                        pageHeightPx = Double(paperFormat.heightPixels)
+                                    }
+                                } else {
+                                    // No explicit format: preserve the existing "one page,
+                                    // sized to fit all content" behavior instead of paginating
+                                    // against an arbitrary page size. Padding pageHeight by the
+                                    // margins guarantees computePdfPageSlices always returns
+                                    // exactly one slice below.
+                                    pageWidthPx = Double(contentWidth) + Double(marginLeft) + Double(marginRight)
+                                    pageHeightPx = Double(contentHeight) + Double(marginTop) + Double(marginBottom)
+                                }
+
+                                let renderWidth = max(1.0, pageWidthPx - Double(marginLeft) - Double(marginRight))
+
+                                print("📏 WebView frame: \(self.webView.frame)")
+                                print("📏 Page geometry: \(pageWidthPx) x \(pageHeightPx), render width: \(renderWidth)")
+
+                                // Resize the WebView to the full rendered content height at the
+                                // printable width, so every Y-coordinate in its frame maps 1:1
+                                // to a document Y-offset for the page slicing below.
                                 let originalFrame = self.webView.frame
                                 let fullContentFrame = CGRect(
-                                    x: 0, y: 0, width: contentWidth, height: contentHeight)
-
+                                    x: 0, y: 0, width: renderWidth, height: Double(contentHeight))
                                 self.webView.frame = fullContentFrame
                                 print("📏 WebView fullContentFrame: \(fullContentFrame)")
-                                
-                                    DispatchQueue.main.asyncAfter(
-                                        deadline: .now() + (duration! / 10000)
-                                    ) {
-                                        if #available(macOS 11.0, *) {
-                                            let configuration = WKPDFConfiguration()
-                                            configuration.rect = CGRect(
-                                                origin: .zero, size: fullContentFrame.size)
 
-                                            self.webView.createPDF(configuration: configuration) {
-                                                (pdfResult) in
-                                                switch pdfResult {
-                                                case .success(let data):
-                                                    // Save PDF data to the specified path
-                                                    do {
-                                                        let url = URL(fileURLWithPath: savedPath!)
-                                                        try data.write(to: url)
-                                                        print(
-                                                            "✅ PDF saved successfully to: \(savedPath!) (\(data.count) bytes)"
-                                                        )
-                                                        result(savedPath!)  // Return the saved path
-                                                    } catch {
-                                                        print(
-                                                            "❌ Failed to save PDF: \(error.localizedDescription)"
-                                                        )
-                                                        result(nil)
-                                                    }
-                                                    self.dispose()
-                                                case .failure(let error):
-                                                    print(
-                                                        "❌ PDF creation failed: \(error.localizedDescription)"
-                                                    )
-                                                    result(nil)
-                                                    self.dispose()
-                                                }
-                                            }
-                                        } else {
+                                DispatchQueue.main.asyncAfter(
+                                    deadline: .now() + (duration! / 10000)
+                                ) {
+                                    guard #available(macOS 11.0, *) else {
+                                        result(nil)
+                                        self.dispose()
+                                        return
+                                    }
+
+                                    let slices = computePdfPageSlices(
+                                        contentHeight: Double(contentHeight),
+                                        pageHeight: pageHeightPx,
+                                        marginTop: Double(marginTop),
+                                        marginBottom: Double(marginBottom)
+                                    )
+                                    print("📄 Total pages: \(slices.count)")
+
+                                    self.capturePdfPageSlicesSequentially(slices: slices, pageWidth: renderWidth) { pageDatas in
+                                        self.webView.frame = originalFrame
+
+                                        guard let pageDatas = pageDatas,
+                                              let mergedData = mergePdfPageSlices(
+                                                pageDatas: pageDatas,
+                                                pageWidth: pageWidthPx,
+                                                pageHeight: pageHeightPx,
+                                                marginTop: Double(marginTop),
+                                                marginLeft: Double(marginLeft)
+                                              )
+                                        else {
+                                            print("❌ PDF page capture or merge failed")
+                                            result(nil)
+                                            self.dispose()
+                                            return
+                                        }
+
+                                        do {
+                                            let url = URL(fileURLWithPath: savedPath!)
+                                            try mergedData.write(to: url)
+                                            print(
+                                                "✅ PDF saved successfully to: \(savedPath!) (\(mergedData.count) bytes, \(pageDatas.count) pages)"
+                                            )
+                                            result(savedPath!)
+                                        } catch {
+                                            print("❌ Failed to save PDF: \(error.localizedDescription)")
                                             result(nil)
                                         }
-                                    
+                                        self.dispose()
+                                    }
                                 }
                             }
                         }
@@ -678,6 +695,43 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
 
             // Run the print operation
             printOperation.run()
+        }
+    #endif
+
+    #if os(macOS)
+        @available(macOS 11.0, *)
+        private func capturePdfPageSlicesSequentially(
+            slices: [PdfPageSlice],
+            pageWidth: Double,
+            index: Int = 0,
+            collected: [Data] = [],
+            completion: @escaping ([Data]?) -> Void
+        ) {
+            guard index < slices.count else {
+                completion(collected)
+                return
+            }
+
+            let slice = slices[index]
+            let configuration = WKPDFConfiguration()
+            configuration.rect = CGRect(
+                x: 0, y: slice.sourceY, width: pageWidth, height: slice.sourceHeight)
+
+            self.webView.createPDF(configuration: configuration) { pdfResult in
+                switch pdfResult {
+                case .success(let data):
+                    self.capturePdfPageSlicesSequentially(
+                        slices: slices,
+                        pageWidth: pageWidth,
+                        index: index + 1,
+                        collected: collected + [data],
+                        completion: completion
+                    )
+                case .failure(let error):
+                    print("❌ PDF page \(index) creation failed: \(error.localizedDescription)")
+                    completion(nil)
+                }
+            }
         }
     #endif
 
