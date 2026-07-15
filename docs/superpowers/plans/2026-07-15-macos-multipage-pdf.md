@@ -13,7 +13,7 @@
 - Design source of truth: `docs/superpowers/specs/2026-07-15-macos-multipage-pdf-design.md`.
 - CSS print-media pagination fidelity (page-break-inside, orphans/widows, `@page`) is explicitly out of scope — mechanical fixed-height slicing is acceptable, including cutting a table row or paragraph across a page boundary.
 - Only the macOS branch of `contentToPDF` in `darwin/Classes/SwiftWebcontentConverterPlugin.swift` changes. iOS, Windows, Linux, and `contentToPDFImage` are unaffected.
-- "No format requested" (auto-size) mode must keep producing exactly one page sized to fit all content, unchanged from today — pagination only kicks in when a `PaperFormat` is supplied.
+- "No format requested" (auto-size) mode must keep producing exactly one page sized to fit all content — pagination only kicks in when a `PaperFormat` is supplied. As implemented, margins (if passed) are now honored in this mode too (previously ignored); see the spec's "Implementation note" for why this is intentional, not a regression.
 - New public Swift symbols must be `public` (not `internal`) because macOS unit tests live in a separate module (`RunnerTests`, part of the example app) that imports `webcontent_converter`.
 - All geometry units are CSS pixels @ 96 DPI, matching the existing `inchToPx`/`PaperFormat.widthPixels`/`heightPixels` convention in `darwin/Classes/Page.swift`.
 
