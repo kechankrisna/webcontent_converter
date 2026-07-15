@@ -212,3 +212,47 @@ extension PdfMargins: CustomStringConvertible {
         return "PdfMargins.inches(top: \(top), bottom: \(bottom), left: \(left), right: \(right))"
     }
 }
+
+// MARK: - PDF Page Slicing
+
+/// A single page's vertical slice of rendered source content, expressed in
+/// the same coordinate space as the resized WKWebView frame used to render
+/// it (CSS pixels @ 96 DPI, matching `PaperFormat.heightPixels`).
+public struct PdfPageSlice {
+    public let sourceY: Double
+    public let sourceHeight: Double
+
+    public init(sourceY: Double, sourceHeight: Double) {
+        self.sourceY = sourceY
+        self.sourceHeight = sourceHeight
+    }
+}
+
+/// Compute the vertical slices needed to paginate `contentHeight` worth of
+/// rendered content into pages of `pageHeight`, after subtracting
+/// `marginTop`/`marginBottom` (the usable content height per page).
+///
+/// Always returns at least one slice. A single page whose content is
+/// shorter than the usable page height captures exactly that content's
+/// height (not padded to a full page) — the merge step is responsible for
+/// placing it at the top margin and leaving the remainder blank.
+public func computePdfPageSlices(
+    contentHeight: Double,
+    pageHeight: Double,
+    marginTop: Double,
+    marginBottom: Double
+) -> [PdfPageSlice] {
+    let usableHeight = max(1.0, pageHeight - marginTop - marginBottom)
+    let clampedContentHeight = max(0.0, contentHeight)
+
+    if clampedContentHeight <= usableHeight {
+        return [PdfPageSlice(sourceY: 0, sourceHeight: max(clampedContentHeight, 1.0))]
+    }
+
+    let pageCount = Int(ceil(clampedContentHeight / usableHeight))
+    return (0..<pageCount).map { pageIndex in
+        let sourceY = Double(pageIndex) * usableHeight
+        let sourceHeight = min(usableHeight, clampedContentHeight - sourceY)
+        return PdfPageSlice(sourceY: sourceY, sourceHeight: sourceHeight)
+    }
+}

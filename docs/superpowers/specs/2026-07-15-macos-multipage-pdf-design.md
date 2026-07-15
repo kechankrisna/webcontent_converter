@@ -104,3 +104,39 @@ immediately overwrite it with a height+margin expression before it's used
 for anything — dead, contradictory code. This is subsumed by the rewrite
 described above, which stops using JS-measured height as the *page* height
 entirely (it's only used to compute `pageCount`).
+
+## Known follow-up: page mediaBox is in px-as-points (~1.33x oversized)
+
+`PaperFormat.widthPixels`/`heightPixels` are 96-DPI pixel counts (e.g. A4 ≈
+794×1123px), but this design (and the pre-existing single-page code it
+replaces) feeds that number directly into `WKPDFConfiguration.rect` and the
+merged `PDFDocument`'s mediaBox, both of which are in PDF points (72 DPI).
+The result: pagination itself (page *count*, proportions, relative margins)
+is correct, but the physical page size is ~1.33x too large in each
+dimension — "A4" output measures ≈11.03in × 15.60in instead of the true
+8.27in × 11.7in.
+
+This predates this change (the base code already did
+`CGFloat(paperFormat.widthPixels) + ... ` straight into `configuration.rect`)
+and is inherited by this design's `pageWidthPx`/`pageHeightPx` values, so
+fixing it here was out of scope. A correct fix scales the four page/margin
+dimensions by `72.0/96.0` at the point where they cross into
+`WKPDFConfiguration.rect` / the merge helper's mediaBox — but that same
+96-DPI-as-points convention is used elsewhere in this file (e.g. the image
+snapshot path), so the fix should be scoped and verified across all of
+them together, not patched in isolation here. Tracked as a follow-up, not
+fixed in this change.
+
+## Implementation note: auto-size (no-format) mode now applies margins
+
+During implementation, the auto-size (no `PaperFormat` given) branch was
+built to pad `pageHeightPx`/`pageWidthPx` by the requested margins and inset
+the captured content accordingly — this was necessary so the shared
+`computePdfPageSlices` helper reliably returns exactly one slice for that
+branch (see Task 3's code). A side effect: margins, if passed, now apply in
+auto-size mode too, whereas the pre-existing code ignored margins entirely
+when no format was given. This is a deliberate, confirmed choice (margins
+now behave consistently regardless of whether a format is specified) rather
+than the byte-for-byte "unchanged from today" framing used earlier in this
+document — auto-size mode still always produces exactly one page, which was
+the actual invariant that mattered.
