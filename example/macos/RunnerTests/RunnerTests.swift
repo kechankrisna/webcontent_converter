@@ -1,6 +1,7 @@
 import Cocoa
 import FlutterMacOS
 import XCTest
+import PDFKit
 import webcontent_converter
 
 class RunnerTests: XCTestCase {
@@ -50,5 +51,54 @@ class RunnerTests: XCTestCase {
     XCTAssertEqual(slices.first?.sourceHeight, 1)
     XCTAssertEqual(slices.last?.sourceY, 9)
     XCTAssertEqual(slices.last?.sourceHeight, 1)
+  }
+
+  private func makeTestPdfPageData(width: CGFloat, height: CGFloat) -> Data {
+    let pdfData = NSMutableData()
+    var mediaBox = CGRect(x: 0, y: 0, width: width, height: height)
+    guard let consumer = CGDataConsumer(data: pdfData as CFMutableData),
+          let context = CGContext(consumer: consumer, mediaBox: &mediaBox, nil) else {
+      fatalError("failed to create test PDF context")
+    }
+    context.beginPDFPage(nil)
+    context.setFillColor(NSColor.red.cgColor)
+    context.fill(mediaBox)
+    context.endPDFPage()
+    context.closePDF()
+    return pdfData as Data
+  }
+
+  func testMergePdfPageSlices_emptyInput_returnsNil() {
+    let result = mergePdfPageSlices(pageDatas: [], pageWidth: 800, pageHeight: 1000, marginTop: 50, marginLeft: 50)
+    XCTAssertNil(result)
+  }
+
+  func testMergePdfPageSlices_invalidPdfData_returnsNil() {
+    let result = mergePdfPageSlices(
+      pageDatas: [Data([0x00, 0x01, 0x02])],
+      pageWidth: 800, pageHeight: 1000, marginTop: 50, marginLeft: 50
+    )
+    XCTAssertNil(result)
+  }
+
+  func testMergePdfPageSlices_twoSlices_producesTwoPagesAtRequestedSize() {
+    let slice1 = makeTestPdfPageData(width: 700, height: 900)
+    let slice2 = makeTestPdfPageData(width: 700, height: 300)
+
+    let merged = mergePdfPageSlices(
+      pageDatas: [slice1, slice2],
+      pageWidth: 800, pageHeight: 1000, marginTop: 50, marginLeft: 50
+    )
+
+    XCTAssertNotNil(merged)
+    let document = PDFDocument(data: merged!)
+    XCTAssertNotNil(document)
+    XCTAssertEqual(document?.pageCount, 2)
+
+    for pageIndex in 0..<2 {
+      let bounds = document!.page(at: pageIndex)!.bounds(for: .mediaBox)
+      XCTAssertEqual(Double(bounds.width), 800, accuracy: 0.5)
+      XCTAssertEqual(Double(bounds.height), 1000, accuracy: 0.5)
+    }
   }
 }
