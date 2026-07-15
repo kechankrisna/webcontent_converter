@@ -450,13 +450,9 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                 // macOS PDF generation implementation
                 let path = arguments!["savedPath"] as? String
                 let savedPath = URL.init(string: path!)?.path
-                //  var width = arguments!["width"] as? Double
-                //  var height = arguments!["height"] as? Double
                 let format = arguments!["format"] as? [String: Any]
                 let margins = arguments!["margins"] as? [String: Double]
-                                    
-                //  print("width \(String(describing: width))")
-                //  print("height \(String(describing: height))")
+
                 print("format \(String(describing: format))")
                 print("margins \(String(describing: margins))")
 
@@ -467,7 +463,45 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                     return
                 }
 
-                self.webView = WKWebView()
+                let marginTop = CGFloat(inchToPx(margins?["top"] ?? 0.0))
+                let marginBottom = CGFloat(inchToPx(margins?["bottom"] ?? 0.0))
+                let marginLeft = CGFloat(inchToPx(margins?["left"] ?? 0.0))
+                let marginRight = CGFloat(inchToPx(margins?["right"] ?? 0.0))
+                let formatName = format?["name"] as? String
+
+                // Determine the WebView's starting width UP FRONT, before any
+                // content loads, so WebKit's initial layout pass resolves
+                // percentage-based CSS widths (width: 50%, width: 100%, etc.)
+                // against a definite containing block instead of collapsing
+                // them to 0 — see
+                // docs/superpowers/specs/2026-07-15-macos-pdf-zero-width-layout-bug-design.md.
+                // When a PaperFormat is specified this is also the FINAL
+                // render width (fully known from format + margins,
+                // independent of content). In auto-size mode (no format),
+                // there's no content-independent target width yet, so fall
+                // back to the same 800px default contentToImage's macOS
+                // branch and the Puppeteer path already use.
+                let initialFormatWidthPx: Double?
+                let initialFormatHeightPx: Double?
+                if let formatName = formatName, !formatName.isEmpty {
+                    if formatName == "custom" {
+                        initialFormatWidthPx = inchToPx(format!["width"] as? Double ?? 1.0)
+                        initialFormatHeightPx = inchToPx(format!["height"] as? Double ?? 1.0)
+                    } else {
+                        let paperFormat = PaperFormat.fromString(formatName)
+                        initialFormatWidthPx = Double(paperFormat.widthPixels)
+                        initialFormatHeightPx = Double(paperFormat.heightPixels)
+                    }
+                } else {
+                    initialFormatWidthPx = nil
+                    initialFormatHeightPx = nil
+                }
+
+                let initialRenderWidth = max(
+                    1.0, (initialFormatWidthPx ?? 800.0) - Double(marginLeft) - Double(marginRight))
+
+                self.webView = WKWebView(
+                    frame: CGRect(x: 0, y: 0, width: initialRenderWidth, height: 10))
                 self.webView.isHidden = false
                 self.webView.loadHTMLString(content, baseURL: Bundle.main.resourceURL)
                 self.webView.viewWithTag(100)
@@ -486,25 +520,15 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                                 "Math.max(document.body.scrollWidth, document.body.offsetWidth, document.documentElement.clientWidth, document.documentElement.scrollWidth, document.documentElement.offsetWidth)"
                             ) { (width, error) in
                                 // 🔧 AUTO HEIGHT & WIDTH - Get actual content dimensions
-                                var contentWidth = width as? Double ?? CGFloat(PaperFormat.a4.widthPixels)  // Fallback to A4 width
-                                var contentHeight = height as? Double ?? CGFloat(PaperFormat.a4.heightPixels)  // Fallback to A4 height
-                                let marginTop = CGFloat(inchToPx(margins?["top"] ?? 0.0))
-                                let marginBottom = CGFloat(inchToPx(margins?["bottom"] ?? 0.0))
-                                let marginLeft = CGFloat(inchToPx(margins?["left"] ?? 0.0))
-                                let marginRight = CGFloat(inchToPx(margins?["right"] ?? 0.0))
-                                let formatName = format?["name"] as? String
+                                let contentWidth = width as? Double ?? CGFloat(PaperFormat.a4.widthPixels)  // Fallback to A4 width
+                                let contentHeight = height as? Double ?? CGFloat(PaperFormat.a4.heightPixels)  // Fallback to A4 height
 
                                 let pageWidthPx: Double
                                 let pageHeightPx: Double
-                                if let formatName = formatName, !formatName.isEmpty {
-                                    if formatName == "custom" {
-                                        pageWidthPx = inchToPx(format!["width"] as? Double ?? 1.0)
-                                        pageHeightPx = inchToPx(format!["height"] as? Double ?? 1.0)
-                                    } else {
-                                        let paperFormat = PaperFormat.fromString(formatName)
-                                        pageWidthPx = Double(paperFormat.widthPixels)
-                                        pageHeightPx = Double(paperFormat.heightPixels)
-                                    }
+                                if let formatWidthPx = initialFormatWidthPx,
+                                   let formatHeightPx = initialFormatHeightPx {
+                                    pageWidthPx = formatWidthPx
+                                    pageHeightPx = formatHeightPx
                                 } else {
                                     // No explicit format: preserve the existing "one page,
                                     // sized to fit all content" behavior instead of paginating
@@ -520,9 +544,14 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                                 print("📏 WebView frame: \(self.webView.frame)")
                                 print("📏 Page geometry: \(pageWidthPx) x \(pageHeightPx), render width: \(renderWidth)")
 
-                                // Resize the WebView to the full rendered content height at the
-                                // printable width, so every Y-coordinate in its frame maps 1:1
-                                // to a document Y-offset for the page slicing below.
+                                // Grow the WebView's frame to the full content height at
+                                // the SAME width it was already loaded/laid-out at
+                                // (renderWidth for a formatted request never changes here
+                                // — only height grows to fit content), so every
+                                // Y-coordinate in its frame maps 1:1 to a document
+                                // Y-offset for the page slicing below, and the
+                                // percentage-width layout already resolved correctly
+                                // against the width set before load is undisturbed.
                                 let originalFrame = self.webView.frame
                                 let fullContentFrame = CGRect(
                                     x: 0, y: 0, width: renderWidth, height: Double(contentHeight))
