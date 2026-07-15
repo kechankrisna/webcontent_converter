@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans&family=Noto+Serif+Khmer:wght@100;200;300&display=swap');
+        @page {
+            margin: 0cm;
+        }
+        
+        html {
+            padding: 0;
+            margin: 0;
+            font-family: 'Noto Serif Khmer', 'Noto Sans', sans-serif !important;
+        }
+
+        * {
+            -webkit-print-color-adjust: true;
+            -webkit-print-color-adjust: exact;
+        }
+
+        body,
+        p {
+            width: 1.0in;
+            margin: 0px;
+            padding: 0px;
+            font-family: 'Noto Serif Khmer', 'Noto Sans', sans-serif;
+            font-size: 10px;
+            line-height: 14px;
+        }
+      
+        
+        .label {
+            width: 1.0in;
+            height: 1.0in;
+            padding: 0;
+            margin: 0;
+            float: left;
+            text-align: center;
+            outline: none !important;
+            border: none !important;
+            overflow: hidden;
+            clear: both;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .block {
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            position: absolute;
+        }
+
+        .barcode {
+            max-width: 1in;
+            /* max-height:50px; */
+            text-align: center;
+            clear: both;
+        }
+
+        .barcode svg {
+            display: block;
+            width: 100%;
+            height: auto;
+            /* aspect ratio comes from the SVG's own viewBox, no need to force one */
+        }
+        
+        .page-break {
+            clear: left;
+            display: block;
+            page-break-after: auto;
+        }
+        
+        @media print {
+            @page {
+                size: 1.0in 1.0in;
+                size: portrate;
+                margin: 0px;
+                outline: none !important;
+                border: none !important;
+            }
+            .label {
+                size: 1.0in 1.0in;
+                outline: none !important;
+                border: none !important;
+                margin: 0px;
+                padding: 0px;
+
+            }
+            .label, .page-break, div[class*="label"] {
+                outline: none !important;
+                border: none !important;
+            }
+        }
+        /* barcode css */
+    </style>
+
+</head>
+
+<body>
+    
+      
+        <div class="label">
+            <div class="flex items-center justify-center w-full h-full m-0 p-0 relative">
+                <div class="text-center m-0 p-0 max-w-full">
+                    
+                    <p class="font-bold">multi store name</p>
+                    
+                    
+                    <p class="font-bold">testing stock item</p>
+                    
+                    
+                    <div class="barcode"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24.500 12.000" preserveAspectRatio="xMidYMid meet" role="img" aria-label="barcode 2000398"><g id="barcode_group"><rect x="1.000" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="1.750" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="2.500" y="1.000" width="0.750" height="10.000" style="fill:black;"/><rect x="3.750" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="4.750" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="5.500" y="1.000" width="0.750" height="10.000" style="fill:black;"/><rect x="6.500" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="7.250" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="8.250" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="9.250" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="10.000" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="11.000" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="12.000" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="12.500" y="1.000" width="1.000" height="10.000" style="fill:black;"/><rect x="13.750" y="1.000" width="0.750" height="10.000" style="fill:black;"/><rect x="14.750" y="1.000" width="0.750" height="10.000" style="fill:black;"/><rect x="15.750" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="16.500" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="17.500" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="18.750" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="19.750" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="20.250" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="21.500" y="1.000" width="0.750" height="10.000" style="fill:black;"/><rect x="22.500" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="23.000" y="1.000" width="0.500" height="10.000" style="fill:black;"/></g></svg> </div>
+                    
+                    
+                    <p class="font-bold">\$ 0.00</p>
+                    
+                </div>
+            </div>
+        </div>
+      <div class="page-break"></div>
+      
+    
+      
+        <div class="label">
+            <div class="flex items-center justify-center w-full h-full m-0 p-0 relative">
+                <div class="text-center m-0 p-0 max-w-full">
+                    
+                    <p class="font-bold">multi store name</p>
+                    
+                    
+                    <p class="font-bold">testing only hlo</p>
+                    
+                    
+                    <div class="barcode"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32.750 12.000" preserveAspectRatio="xMidYMid meet" role="img" aria-label="barcode 00333333ASG"><g id="barcode_group"><rect x="1.000" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="1.750" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="2.500" y="1.000" width="0.750" height="10.000" style="fill:black;"/><rect x="3.750" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="4.500" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="5.500" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="6.500" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="7.000" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="8.000" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="9.250" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="9.750" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="10.750" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="12.000" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="12.500" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="13.500" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="14.750" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="15.250" y="1.000" width="1.000" height="10.000" style="fill:black;"/><rect x="16.500" y="1.000" width="0.750" height="10.000" style="fill:black;"/><rect x="17.500" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="18.000" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="19.000" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="20.250" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="21.000" y="1.000" width="0.750" height="10.000" style="fill:black;"/><rect x="22.000" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="23.000" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="23.750" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="24.750" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="25.750" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="26.750" y="1.000" width="0.750" height="10.000" style="fill:black;"/><rect x="28.000" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="28.500" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="29.750" y="1.000" width="0.750" height="10.000" style="fill:black;"/><rect x="30.750" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="31.250" y="1.000" width="0.500" height="10.000" style="fill:black;"/></g></svg> </div>
+                    
+                    
+                    <p class="font-bold">\$ 2.00</p>
+                    
+                </div>
+            </div>
+        </div>
+      <div class="page-break"></div>
+      
+    
+      
+        <div class="label">
+            <div class="flex items-center justify-center w-full h-full m-0 p-0 relative">
+                <div class="text-center m-0 p-0 max-w-full">
+                    
+                    <p class="font-bold">multi store name</p>
+                    
+                    
+                    <p class="font-bold">testing only hi</p>
+                    
+                    
+                    <div class="barcode"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24.500 12.000" preserveAspectRatio="xMidYMid meet" role="img" aria-label="barcode 2000393"><g id="barcode_group"><rect x="1.000" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="1.750" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="2.500" y="1.000" width="0.750" height="10.000" style="fill:black;"/><rect x="3.750" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="4.750" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="5.500" y="1.000" width="0.750" height="10.000" style="fill:black;"/><rect x="6.500" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="7.250" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="8.250" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="9.250" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="10.000" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="11.000" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="12.000" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="12.500" y="1.000" width="1.000" height="10.000" style="fill:black;"/><rect x="13.750" y="1.000" width="0.750" height="10.000" style="fill:black;"/><rect x="14.750" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="15.750" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="16.250" y="1.000" width="0.750" height="10.000" style="fill:black;"/><rect x="17.500" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="18.250" y="1.000" width="0.750" height="10.000" style="fill:black;"/><rect x="19.250" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="20.250" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="21.500" y="1.000" width="0.750" height="10.000" style="fill:black;"/><rect x="22.500" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="23.000" y="1.000" width="0.500" height="10.000" style="fill:black;"/></g></svg> </div>
+                    
+                    
+                    <p class="font-bold">\$ 2.00</p>
+                    
+                </div>
+            </div>
+        </div>
+      <div class="page-break"></div>
+      
+    
+      
+        <div class="label">
+            <div class="flex items-center justify-center w-full h-full m-0 p-0 relative">
+                <div class="text-center m-0 p-0 max-w-full">
+                    
+                    <p class="font-bold">multi store name</p>
+                    
+                    
+                    <p class="font-bold">ទឹកបន្ទក់ភ្នែកឃ្វីនអាយ QUEEN EYE EXPERT EYE DROP (USA, 15ml)green</p>
+                    
+                    
+                    <div class="barcode"> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 27.250 12.000" preserveAspectRatio="xMidYMid meet" role="img" aria-label="barcode 123456789"><g id="barcode_group"><rect x="1.000" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="1.750" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="2.500" y="1.000" width="0.750" height="10.000" style="fill:black;"/><rect x="3.750" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="4.250" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="5.250" y="1.000" width="0.750" height="10.000" style="fill:black;"/><rect x="6.500" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="7.500" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="8.000" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="9.250" y="1.000" width="0.750" height="10.000" style="fill:black;"/><rect x="10.750" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="11.250" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="12.000" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="13.500" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="14.000" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="14.750" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="15.250" y="1.000" width="1.000" height="10.000" style="fill:black;"/><rect x="16.500" y="1.000" width="0.750" height="10.000" style="fill:black;"/><rect x="17.500" y="1.000" width="0.750" height="10.000" style="fill:black;"/><rect x="18.750" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="19.250" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="20.250" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="21.250" y="1.000" width="1.000" height="10.000" style="fill:black;"/><rect x="22.500" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="23.000" y="1.000" width="0.500" height="10.000" style="fill:black;"/><rect x="24.250" y="1.000" width="0.750" height="10.000" style="fill:black;"/><rect x="25.250" y="1.000" width="0.250" height="10.000" style="fill:black;"/><rect x="25.750" y="1.000" width="0.500" height="10.000" style="fill:black;"/></g></svg> </div>
+                    
+                    
+                    <p class="font-bold">\$ 35.00</p>
+                    
+                </div>
+            </div>
+        </div>
+      <div class="page-break"></div>
+      
+     
+
+</body>
+
+</html>
