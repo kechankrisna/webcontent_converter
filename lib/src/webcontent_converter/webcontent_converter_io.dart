@@ -211,14 +211,7 @@ class WebcontentConverter {
     Uint8List results = Uint8List.fromList([]);
 
     try {
-      if (io.Platform.isMacOS) {
-        WebcontentConverter.logger.info("macOS: using HeadlessInAppWebView");
-        results = await _generateImageViaInAppWebView(
-              content: content,
-              duration: duration,
-            ) ??
-            results;
-      } else if (io.Platform.isWindows) {
+     if (io.Platform.isWindows) {
         WebcontentConverter.logger.info("Windows: trying HeadlessInAppWebView");
         try {
           results = await _generateImageViaInAppWebView(
@@ -517,19 +510,7 @@ class WebcontentConverter {
     WebcontentConverter.logger.info(arguments['format']);
     String? result;
     try {
-      if (io.Platform.isMacOS) {
-        WebcontentConverter.logger.info("macOS: using HeadlessInAppWebView");
-        final bytes = await _generatePdfViaInAppWebView(
-          content: content,
-          margins: _margins,
-          format: format,
-          duration: duration,
-        );
-        if (bytes != null) {
-          await io.File(savedPath).writeAsBytes(bytes);
-          result = savedPath;
-        }
-      } else if (io.Platform.isWindows) {
+      if (io.Platform.isWindows) {
         WebcontentConverter.logger.info("Windows: trying HeadlessInAppWebView");
         try {
           final bytes = await _generatePdfViaInAppWebView(
@@ -560,7 +541,7 @@ class WebcontentConverter {
             rethrow;
           }
         }
-      } else if ((io.Platform.isMacOS || io.Platform.isWindows || io.Platform.isLinux )&& WebViewHelper.isChromeAvailable) {
+      } else if ((io.Platform.isWindows || io.Platform.isLinux )&& WebViewHelper.isChromeAvailable) {
         WebcontentConverter.logger.info("Linux: using Puppeteer");
         result = await _contentToPDFViaPuppeteer(
           content: content,

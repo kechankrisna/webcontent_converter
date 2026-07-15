@@ -522,6 +522,8 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                                 // 🔧 AUTO HEIGHT & WIDTH - Get actual content dimensions
                                 let contentWidth = width as? Double ?? CGFloat(PaperFormat.a4.widthPixels)  // Fallback to A4 width
                                 let contentHeight = height as? Double ?? CGFloat(PaperFormat.a4.heightPixels)  // Fallback to A4 height
+//                                let widthInPixel = CGFloat(inchToPx(format["width"] as? Double ?? PaperFormat.a4.width))
+//                                let heightInPixel = CGFloat(inchToPx(format["height"] as? Double ?? PaperFormat.a4.height))
 
                                 let pageWidthPx: Double
                                 let pageHeightPx: Double
@@ -543,6 +545,12 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
 
                                 print("📏 WebView frame: \(self.webView.frame)")
                                 print("📏 Page geometry: \(pageWidthPx) x \(pageHeightPx), render width: \(renderWidth)")
+                                print("marginTop \(marginTop)")
+                                print("marginBottom \(marginBottom)")
+                                print("marginLeft \(marginLeft)")
+                                print("marginRight \(marginRight)")
+//                                print("widthInPixel \(widthInPixel)")
+//                                print("heightInPixel \(heightInPixel)")
 
                                 // Grow the WebView's frame to the full content height at
                                 // the SAME width it was already loaded/laid-out at
