@@ -43,24 +43,8 @@ class WebcontentConverter {
     String? executablePath,
     String? content,
   }) async {
-    if (io.Platform.isLinux || io.Platform.isWindows) {
-      if (WebViewHelper.isChromeAvailable) {
-        windowBrower ??= await pp.puppeteer.launch(
-          executablePath: executablePath ?? WebViewHelper.executablePath(),
-          args: [
-            "--disable-dev-shm-usage",
-            "--no-sandbox",
-          ],
-          defaultViewport: LaunchOptions.viewportNotSpecified,
-          ignoreDefaultArgs: ["--enable-automation"],
-        );
-      }
-    } else if (io.Platform.isAndroid ||
-        io.Platform.isMacOS ||
-        io.Platform.isIOS) {
-      preloadBytes =
+    preloadBytes =
           await contentToImage(content: content ?? Demo.getReceiptContent());
-    }
 
     WebcontentConverter.logger.debug('webcontent converter initialized');
   }
@@ -90,6 +74,9 @@ class WebcontentConverter {
       LevelMessages.error,
       LevelMessages.warning
     ],
+    printer: (Object object, {String? name, LevelMessages? level, StackTrace? stackTrace}) =>
+        easyLogDefaultPrinter('[${DateTime.now()}] $object',
+            name: name, level: level, stackTrace: stackTrace),
   );
 
   /**
@@ -117,6 +104,7 @@ class WebcontentConverter {
     int scale = 3,
     Map<String, dynamic> args = const {},
     List<String> ppWaits = const ["load", "domContentLoaded"],
+    bool enableLogger = true,
   }) async {
     Uint8List result = Uint8List.fromList([]);
     try {
@@ -129,9 +117,12 @@ class WebcontentConverter {
         scale: scale,
         args: args,
         ppWaits: ppWaits,
+        enableLogger: enableLogger,
       );
     } on Exception catch (e) {
-      WebcontentConverter.logger.error("[method:filePathToImage]: $e");
+      if (enableLogger) {
+        WebcontentConverter.logger.error("[method:filePathToImage]: $e");
+      }
       rethrow;
     }
     return result;
@@ -156,6 +147,7 @@ class WebcontentConverter {
     int scale = 3,
     Map<String, dynamic> args = const {},
     List<String> ppWaits = const ["load", "domContentLoaded"],
+    bool enableLogger = true,
   }) async {
     Uint8List result = Uint8List.fromList([]);
     try {
@@ -168,9 +160,12 @@ class WebcontentConverter {
         scale: scale,
         args: args,
         ppWaits: ppWaits,
+        enableLogger: enableLogger,
       );
     } on Exception catch (e) {
-      WebcontentConverter.logger.error("[method:webUriToImage]: $e");
+      if (enableLogger) {
+        WebcontentConverter.logger.error("[method:webUriToImage]: $e");
+      }
       throw Exception("Error: $e");
     }
     return result;
@@ -197,6 +192,7 @@ class WebcontentConverter {
     int scale = 3,
     Map<String, dynamic> args = const {},
     List<String> ppWaits = const ["load", "domContentLoaded"],
+    bool enableLogger = true,
   }) async {
     final Map<String, dynamic> arguments = {
       'content': content,
@@ -209,178 +205,35 @@ class WebcontentConverter {
       arguments.addAll(args);
     }
     Uint8List results = Uint8List.fromList([]);
+    final stopwatch = Stopwatch()..start();
+
+    if (enableLogger) {
+      WebcontentConverter.logger.info(
+          "[contentToImage] starting: content=${content.length} chars, duration=${duration}ms, scale=$scale, args=$args");
+    }
 
     try {
-      if (io.Platform.isMacOS) {
-        WebcontentConverter.logger.info("macOS: using HeadlessInAppWebView");
-        results = await _generateImageViaInAppWebView(
-              content: content,
-              duration: duration,
-            ) ??
-            results;
-      } else if (io.Platform.isWindows) {
-        WebcontentConverter.logger.info("Windows: trying HeadlessInAppWebView");
-        try {
-          results = await _generateImageViaInAppWebView(
-                content: content,
-                duration: duration,
-              ) ??
-              results;
-        } catch (e) {
-          WebcontentConverter.logger.warning(
-            "[contentToImage] WebView2 unavailable, falling back to Puppeteer: $e",
-          );
-          if (WebViewHelper.isChromeAvailable) {
-            results = await _contentToImageViaPuppeteer(
-              content: content,
-              scale: scale,
-              executablePath: executablePath,
-              ppWaits: ppWaits,
-            );
-          } else {
-            rethrow;
-          }
-        }
-      } else if (io.Platform.isLinux && WebViewHelper.isChromeAvailable) {
-        WebcontentConverter.logger.info("Linux: using Puppeteer");
-        results = await _contentToImageViaPuppeteer(
-          content: content,
-          scale: scale,
-          executablePath: executablePath,
-          ppWaits: ppWaits,
-        );
-      } else {
-        /// mobile method
-        WebcontentConverter.logger.info("Mobile support");
-        results = await (_channel.invokeMethod('contentToImage', arguments));
-        logger.info("results ${results.length}");
+      /// native method
+      if (enableLogger) {
+        WebcontentConverter.logger
+            .info("[contentToImage] invoking native platform channel");
+      }
+      results = await (_channel.invokeMethod('contentToImage', arguments));
+      if (enableLogger) {
+        WebcontentConverter.logger.info(
+            "[contentToImage] completed: ${results.length} bytes in ${stopwatch.elapsedMilliseconds}ms");
       }
     } on Exception catch (e, stackTrace) {
-      WebcontentConverter.logger.error("[method:contentToImage]: $e");
-      WebcontentConverter.logger.error("$stackTrace");
+      if (enableLogger) {
+        WebcontentConverter.logger.error(
+            "[contentToImage] failed after ${stopwatch.elapsedMilliseconds}ms: $e");
+        WebcontentConverter.logger.error("$stackTrace");
+      }
       rethrow;
     }
     return results;
   }
-
-  static Future<Uint8List> _contentToImageViaPuppeteer({
-    required String content,
-    int scale = 3,
-    String? executablePath,
-    List<String> ppWaits = const ["load", "domContentLoaded"],
-  }) async {
-    pp.Page? windowBrowserPage;
-    try {
-      if (windowBrower == null || windowBrower?.isConnected != true) {
-        windowBrower = await pp.puppeteer.launch(
-          headless: true,
-          executablePath: executablePath ?? WebViewHelper.executablePath(),
-          args: [
-            "--disable-dev-shm-usage",
-            "--no-sandbox",
-          ],
-          defaultViewport: LaunchOptions.viewportNotSpecified,
-          ignoreDefaultArgs: ["--enable-automation"],
-        );
-      }
-
-      windowBrowserPage = await windowBrower!.newPage();
-      final waits = ppWaits.map((e) => _waitsMap[e]!).toList();
-      await windowBrowserPage.setContent(content, wait: pp.Until.all(waits));
-
-      windowBrowserPage
-          .setViewport(pp.DeviceViewport(deviceScaleFactor: scale));
-      await windowBrowserPage.emulateMediaType(pp.MediaType.print);
-      var offsetHeight =
-          await windowBrowserPage.evaluate('document.body.offsetHeight');
-      var offsetWidth =
-          await windowBrowserPage.evaluate('document.body.offsetWidth');
-      return await windowBrowserPage.screenshot(
-        format: pp.ScreenshotFormat.png,
-        clip: pp.Rectangle.fromPoints(
-            pp.Point(0, 0), pp.Point(offsetWidth, offsetHeight)),
-        fullPage: false,
-        omitBackground: true,
-      );
-    } on Exception catch (e, stackTrace) {
-      WebcontentConverter.logger.error("[_contentToImageViaPuppeteer]: $e");
-      WebcontentConverter.logger.error("$stackTrace");
-      rethrow;
-    } finally {
-      await windowBrowserPage?.close();
-      windowBrowserPage = null;
-    }
-  }
-
-  static Future<Uint8List?> _generateImageViaInAppWebView({
-    required String content,
-    double duration = 2000,
-  }) async {
-    final completer = Completer<Uint8List?>();
-    iaw.HeadlessInAppWebView? headlessWebView;
-
-    try {
-      headlessWebView = iaw.HeadlessInAppWebView(
-        initialSize: const Size(800, 600),
-        initialData: iaw.InAppWebViewInitialData(data: content),
-        onLoadStop: (controller, url) async {
-          try {
-            if (duration > 0) {
-              await Future.delayed(Duration(milliseconds: duration.toInt()));
-            }
-            // Wait for all web fonts and stylesheets to finish loading before
-            // capturing. document.fonts.ready resolves only after every
-            // @font-face (including CDN fonts) has been fetched and decoded.
-            await controller.callAsyncJavaScript(
-              functionBody: 'await document.fonts.ready;',
-            );
-            final contentSize = await controller.callAsyncJavaScript(
-              functionBody:
-                  'return {width: document.body.scrollWidth, height: document.body.scrollHeight};',
-            );
-            final sizeMap = contentSize?.value as Map?;
-            final width = (sizeMap?['width'] as num?)?.toDouble() ?? 800;
-            final height = (sizeMap?['height'] as num?)?.toDouble() ?? 600;
-
-            /// resize the headless view to the actual content size so the
-            /// screenshot's default rect (the view's bounds) captures the
-            /// full content instead of just the initial viewport.
-            await headlessWebView?.setSize(Size(width, height));
-            await Future.delayed(const Duration(milliseconds: 100));
-
-            final bytes = await controller.takeScreenshot(
-              screenshotConfiguration: iaw.ScreenshotConfiguration(
-                compressFormat: iaw.CompressFormat.PNG,
-                quality: 100,
-              ),
-            );
-            completer.complete(bytes);
-          } catch (e) {
-            completer.completeError(e);
-          }
-        },
-        onReceivedError: (controller, request, error) {
-          if (!completer.isCompleted) {
-            completer.completeError(
-              Exception('[_generateImageViaInAppWebView] load error: ${error.description}'),
-            );
-          }
-        },
-      );
-
-      await headlessWebView.run();
-      return await completer.future.timeout(
-        const Duration(seconds: 30),
-        onTimeout: () => throw TimeoutException(
-          '[_generateImageViaInAppWebView] page load timed out after 30s',
-        ),
-      );
-    } finally {
-      await headlessWebView?.dispose();
-      headlessWebView = null;
-    }
-  }
-
+  
   /**
    * `PDF`
    * Convert html content, file, uri to pdf
@@ -410,6 +263,7 @@ class WebcontentConverter {
     String? executablePath,
     Map<String, dynamic> args = const {},
     List<String> ppWaits = const ["load", "domContentLoaded"],
+    bool enableLogger = true,
   }) async {
     var result;
     try {
@@ -423,10 +277,13 @@ class WebcontentConverter {
         executablePath: executablePath,
         args: args,
         ppWaits: ppWaits,
+        enableLogger: enableLogger,
       );
     } on Exception catch (e, stackTrace) {
-      WebcontentConverter.logger.error("[method:filePathToPdf]: $e");
-      WebcontentConverter.logger.error("$stackTrace");
+      if (enableLogger) {
+        WebcontentConverter.logger.error("[method:filePathToPdf]: $e");
+        WebcontentConverter.logger.error("$stackTrace");
+      }
       rethrow;
     }
     return result;
@@ -452,6 +309,7 @@ class WebcontentConverter {
     String? executablePath,
     Map<String, dynamic> args = const {},
     List<String> ppWaits = const ["load", "domContentLoaded"],
+    bool enableLogger = true,
   }) async {
     var result;
     try {
@@ -466,10 +324,13 @@ class WebcontentConverter {
         executablePath: executablePath,
         args: args,
         ppWaits: ppWaits,
+        enableLogger: enableLogger,
       );
     } on Exception catch (e, stackTrace) {
-      WebcontentConverter.logger.error("[method:webUriToImage]: $e");
-      WebcontentConverter.logger.error("$stackTrace");
+      if (enableLogger) {
+        WebcontentConverter.logger.error("[method:webUriToImage]: $e");
+        WebcontentConverter.logger.error("$stackTrace");
+      }
       rethrow;
     }
     return result;
@@ -498,6 +359,7 @@ class WebcontentConverter {
     String? executablePath,
     Map<String, dynamic> args = const {},
     List<String> ppWaits = const ["load", "domContentLoaded"],
+    bool enableLogger = true,
   }) async {
     PdfMargins _margins = margins ?? PdfMargins.zero;
     final Map<String, dynamic> arguments = {
@@ -512,72 +374,28 @@ class WebcontentConverter {
     if (args.isNotEmpty) {
       arguments.addAll(args);
     }
-    WebcontentConverter.logger.info(arguments['savedPath']);
-    WebcontentConverter.logger.info(arguments['margins']);
-    WebcontentConverter.logger.info(arguments['format']);
+    final stopwatch = Stopwatch()..start();
+    if (enableLogger) {
+      WebcontentConverter.logger.info(
+          "[contentToPDF] starting: content=${content.length} chars, savedPath=${arguments['savedPath']}, margins=${arguments['margins']}, format=${arguments['format']}");
+    }
     String? result;
     try {
-      if (io.Platform.isMacOS) {
-        WebcontentConverter.logger.info("macOS: using HeadlessInAppWebView");
-        final bytes = await _generatePdfViaInAppWebView(
-          content: content,
-          margins: _margins,
-          format: format,
-          duration: duration,
-        );
-        if (bytes != null) {
-          await io.File(savedPath).writeAsBytes(bytes);
-          result = savedPath;
-        }
-      } else if (io.Platform.isWindows) {
-        WebcontentConverter.logger.info("Windows: trying HeadlessInAppWebView");
-        try {
-          final bytes = await _generatePdfViaInAppWebView(
-            content: content,
-            margins: _margins,
-            format: format,
-            duration: duration,
-          );
-          if (bytes != null) {
-            await io.File(savedPath).writeAsBytes(bytes);
-            result = savedPath;
-          }
-        } catch (e) {
-          WebcontentConverter.logger.warning(
-            "[contentToPDF] WebView2 unavailable, falling back to Puppeteer: $e",
-          );
-          if (WebViewHelper.isChromeAvailable) {
-            result = await _contentToPDFViaPuppeteer(
-              content: content,
-              savedPath: savedPath,
-              margins: _margins,
-              format: format,
-              duration: duration,
-              executablePath: executablePath,
-              ppWaits: ppWaits,
-            );
-          } else {
-            rethrow;
-          }
-        }
-      } else if ((io.Platform.isMacOS || io.Platform.isWindows || io.Platform.isLinux )&& WebViewHelper.isChromeAvailable) {
-        WebcontentConverter.logger.info("Linux: using Puppeteer");
-        result = await _contentToPDFViaPuppeteer(
-          content: content,
-          savedPath: savedPath,
-          margins: _margins,
-          format: format,
-          duration: duration,
-          executablePath: executablePath,
-          ppWaits: ppWaits,
-        );
-      } else {
-        WebcontentConverter.logger.info("Mobile: using platform channel");
-        result = await _channel.invokeMethod('contentToPDF', arguments);
+      if (enableLogger) {
+        WebcontentConverter.logger
+            .info("[contentToPDF] invoking native platform channel");
+      }
+      result = await _channel.invokeMethod('contentToPDF', arguments);
+      if (enableLogger) {
+        WebcontentConverter.logger.info(
+            "[contentToPDF] completed: $result in ${stopwatch.elapsedMilliseconds}ms");
       }
     } on Exception catch (e, stackTrace) {
-      WebcontentConverter.logger.error("[method:contentToPDF]: $e");
-      WebcontentConverter.logger.error("$stackTrace");
+      if (enableLogger) {
+        WebcontentConverter.logger.error(
+            "[contentToPDF] failed after ${stopwatch.elapsedMilliseconds}ms: $e");
+        WebcontentConverter.logger.error("$stackTrace");
+      }
       rethrow;
     }
 
@@ -606,6 +424,7 @@ class WebcontentConverter {
     String? executablePath,
     Map<String, dynamic> args = const {},
     List<String> ppWaits = const ["load", "domContentLoaded"],
+    bool enableLogger = true,
   }) async {
     PdfMargins _margins = margins ?? PdfMargins.zero;
     final Map<String, dynamic> arguments = {
@@ -619,13 +438,18 @@ class WebcontentConverter {
     if (args.isNotEmpty) {
       arguments.addAll(args);
     }
-    // WebcontentConverter.logger.info(arguments['savedPath']);
-    WebcontentConverter.logger.info(arguments['margins']);
-    WebcontentConverter.logger.info(arguments['format']);
+    final stopwatch = Stopwatch()..start();
+    if (enableLogger) {
+      WebcontentConverter.logger.info(
+          "[contentToPDFImage] starting: content=${content.length} chars, margins=${arguments['margins']}, format=${arguments['format']}");
+    }
     Uint8List? result;
     try {
       if (io.Platform.isMacOS) {
-        WebcontentConverter.logger.info("macOS: using HeadlessInAppWebView");
+        if (enableLogger) {
+          WebcontentConverter.logger
+              .info("[contentToPDFImage] macOS: using HeadlessInAppWebView");
+        }
         result = await _generatePdfViaInAppWebView(
           content: content,
           margins: _margins,
@@ -633,7 +457,10 @@ class WebcontentConverter {
           duration: duration,
         );
       } else if (io.Platform.isWindows) {
-        WebcontentConverter.logger.info("Windows: trying HeadlessInAppWebView");
+        if (enableLogger) {
+          WebcontentConverter.logger.info(
+              "[contentToPDFImage] Windows: trying HeadlessInAppWebView");
+        }
         try {
           result = await _generatePdfViaInAppWebView(
             content: content,
@@ -642,9 +469,11 @@ class WebcontentConverter {
             duration: duration,
           );
         } catch (e) {
-          WebcontentConverter.logger.warning(
-            "[contentToPDFImage] WebView2 unavailable, falling back to Puppeteer: $e",
-          );
+          if (enableLogger) {
+            WebcontentConverter.logger.warning(
+              "[contentToPDFImage] WebView2 unavailable, falling back to Puppeteer: $e",
+            );
+          }
           if (WebViewHelper.isChromeAvailable) {
             result = await _contentToPDFImageViaPuppeteer(
               content: content,
@@ -653,13 +482,17 @@ class WebcontentConverter {
               duration: duration,
               executablePath: executablePath,
               ppWaits: ppWaits,
+              enableLogger: enableLogger,
             );
           } else {
             rethrow;
           }
         }
       } else if ((io.Platform.isMacOS || io.Platform.isWindows || io.Platform.isLinux )&& WebViewHelper.isChromeAvailable) {
-        WebcontentConverter.logger.info("Linux: using Puppeteer");
+        if (enableLogger) {
+          WebcontentConverter.logger
+              .info("[contentToPDFImage] Linux: using Puppeteer");
+        }
         result = await _contentToPDFImageViaPuppeteer(
           content: content,
           margins: _margins,
@@ -667,14 +500,25 @@ class WebcontentConverter {
           duration: duration,
           executablePath: executablePath,
           ppWaits: ppWaits,
+          enableLogger: enableLogger,
         );
       } else {
-        WebcontentConverter.logger.info("Mobile: using platform channel");
+        if (enableLogger) {
+          WebcontentConverter.logger
+              .info("[contentToPDFImage] Mobile: using platform channel");
+        }
         result = await _channel.invokeMethod('contentToPDFImage', arguments);
       }
+      if (enableLogger) {
+        WebcontentConverter.logger.info(
+            "[contentToPDFImage] completed: ${result?.length ?? 0} bytes in ${stopwatch.elapsedMilliseconds}ms");
+      }
     } on Exception catch (e, stackTrace) {
-      WebcontentConverter.logger.error("[method:contentToPDFImage]: $e");
-      WebcontentConverter.logger.error("$stackTrace");
+      if (enableLogger) {
+        WebcontentConverter.logger.error(
+            "[contentToPDFImage] failed after ${stopwatch.elapsedMilliseconds}ms: $e");
+        WebcontentConverter.logger.error("$stackTrace");
+      }
       rethrow;
     }
 
@@ -792,6 +636,7 @@ class WebcontentConverter {
     double duration = 2000,
     String? executablePath,
     List<String> ppWaits = const ["load", "domContentLoaded"],
+    bool enableLogger = true,
   }) async {
     pp.Page? windowBrowserPage;
     try {
@@ -822,8 +667,11 @@ class WebcontentConverter {
         printBackground: true,
       );
     } on Exception catch (e, stackTrace) {
-      WebcontentConverter.logger.error("[_contentToPDFImageViaPuppeteer]: $e");
-      WebcontentConverter.logger.error("$stackTrace");
+      if (enableLogger) {
+        WebcontentConverter.logger
+            .error("[_contentToPDFImageViaPuppeteer]: $e");
+        WebcontentConverter.logger.error("$stackTrace");
+      }
       rethrow;
     } finally {
       await windowBrowserPage?.close();

@@ -6,6 +6,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   flutter_inappwebview_windows
   printing
   screen_retriever_windows
+  webcontent_converter
   window_manager
 )
 

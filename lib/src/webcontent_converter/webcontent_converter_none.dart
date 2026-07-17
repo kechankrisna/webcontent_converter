@@ -35,6 +35,9 @@ class WebcontentConverter {
       LevelMessages.error,
       LevelMessages.warning
     ],
+    printer: (Object object, {String? name, LevelMessages? level, StackTrace? stackTrace}) =>
+        easyLogDefaultPrinter('[${DateTime.now()}] $object',
+            name: name, level: level, stackTrace: stackTrace),
   );
 
   static Future<void> ensureInitialized({
@@ -66,6 +69,7 @@ class WebcontentConverter {
     int scale = 3,
     Map<String, dynamic> args = const {},
     List<String> ppWaits = const ["load", "domContentLoaded"],
+    bool enableLogger = true,
   }) async {
     UnimplementedError('filePathToImage');
     return Future.value(Uint8List.fromList([]));
@@ -79,6 +83,7 @@ class WebcontentConverter {
     int scale = 3,
     Map<String, dynamic> args = const {},
     List<String> ppWaits = const ["load", "domContentLoaded"],
+    bool enableLogger = true,
   }) async {
     UnimplementedError('webUriToImage');
     return Future.value(Uint8List.fromList([]));
@@ -92,6 +97,7 @@ class WebcontentConverter {
     int scale = 3,
     Map<String, dynamic> args = const {},
     List<String> ppWaits = const ["load", "domContentLoaded"],
+    bool enableLogger = true,
   }) async {
     UnimplementedError('contentToImage');
     return Future.value(Uint8List.fromList([]));
@@ -106,6 +112,7 @@ class WebcontentConverter {
     String? executablePath,
     Map<String, dynamic> args = const {},
     List<String> ppWaits = const ["load", "domContentLoaded"],
+    bool enableLogger = true,
   }) async {
     UnimplementedError('filePathToPdf');
     return null;
@@ -120,6 +127,7 @@ class WebcontentConverter {
     String? executablePath,
     Map<String, dynamic> args = const {},
     List<String> ppWaits = const ["load", "domContentLoaded"],
+    bool enableLogger = true,
   }) async {
     UnimplementedError('webUriToPdf');
     return null;
@@ -135,6 +143,7 @@ class WebcontentConverter {
     bool autoClosePage = true,
     Map<String, dynamic> args = const {},
     List<String> ppWaits = const ["load", "domContentLoaded"],
+    bool enableLogger = true,
   }) async {
     UnimplementedError('contentToPDF');
     return null;
@@ -149,6 +158,7 @@ class WebcontentConverter {
     bool autoClosePage = true,
     Map<String, dynamic> args = const {},
     List<String> ppWaits = const ["load", "domContentLoaded"],
+    bool enableLogger = true,
   }) async {
     UnimplementedError('contentToPDFImage');
     return null;

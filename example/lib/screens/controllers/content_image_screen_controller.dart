@@ -52,6 +52,7 @@ class ContentImageScreenController extends ChangeNotifier {
         "bitmap_width": 300.0,
         // "format": {"width": 8.27, "height": 11.69, "name": "a4"},
       },
+      duration: 1, // Duration in seconds
     );
 
     bytes = result;
@@ -64,7 +65,7 @@ class ContentImageScreenController extends ChangeNotifier {
     bytes != null && file != null
         ? await file!.writeAsBytes(bytes!)
         : null;
-    WebcontentConverter.logger.info(result ?? '');
+    WebcontentConverter.logger.info(result.length ?? '');
     notifyListeners();
   }
 

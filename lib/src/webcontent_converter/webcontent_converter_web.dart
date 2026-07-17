@@ -60,6 +60,9 @@ class WebcontentConverter {
       LevelMessages.error,
       LevelMessages.warning
     ],
+    printer: (Object object, {String? name, LevelMessages? level, StackTrace? stackTrace}) =>
+        easyLogDefaultPrinter('[${DateTime.now()}] $object',
+            name: name, level: level, stackTrace: stackTrace),
   );
 
   static Future<void> ensureInitialized({
@@ -100,6 +103,7 @@ class WebcontentConverter {
     bool autoClosePage = true,
     int scale = 3,
     Map<String, dynamic> args = const {},
+    bool enableLogger = true,
   }) async {
     Uint8List result = Uint8List.fromList([]);
     try {
@@ -111,9 +115,12 @@ class WebcontentConverter {
         executablePath: executablePath,
         scale: scale,
         args: args,
+        enableLogger: enableLogger,
       );
     } on Exception catch (e) {
-      WebcontentConverter.logger.error("[method:filePathToImage]: $e");
+      if (enableLogger) {
+        WebcontentConverter.logger.error("[method:filePathToImage]: $e");
+      }
       throw Exception("Error: $e");
     }
     return result;
@@ -126,6 +133,7 @@ class WebcontentConverter {
     bool autoClosePage = true,
     int scale = 3,
     Map<String, dynamic> args = const {},
+    bool enableLogger = true,
   }) async {
     Uint8List result = Uint8List.fromList([]);
     try {
@@ -137,9 +145,12 @@ class WebcontentConverter {
         executablePath: executablePath,
         scale: scale,
         args: args,
+        enableLogger: enableLogger,
       );
     } on Exception catch (e) {
-      WebcontentConverter.logger.error("[method:webUriToImage]: $e");
+      if (enableLogger) {
+        WebcontentConverter.logger.error("[method:webUriToImage]: $e");
+      }
       throw Exception("Error: $e");
     }
     return result;
@@ -152,7 +163,13 @@ class WebcontentConverter {
     bool autoClosePage = true,
     int scale = 3,
     Map<String, dynamic> args = const {},
+    bool enableLogger = true,
   }) async {
+    final stopwatch = Stopwatch()..start();
+    if (enableLogger) {
+      logger.info(
+          "[contentToImage] starting: content=${content.length} chars, scale=$scale");
+    }
     var div = web.document.createElement('div') as web.HTMLDivElement;
     // div.setInnerHtml(content, validator: AllowAll());
     div.innerHTML = content.toJS;
@@ -171,11 +188,11 @@ class WebcontentConverter {
         "html2canvas": {"scale": 5},
       };
 
-    logger.debug("[contentToImage]: opt: $opt");
+    if (enableLogger) logger.debug("[contentToImage]: opt: $opt");
     List<int> result = [];
     web.HTMLCanvasElement? canvas =
         (await html2canvas(div, opt.jsify()).toDart) as web.HTMLCanvasElement?;
-    logger.debug("[contentToImage]: canvas: $canvas");
+    if (enableLogger) logger.debug("[contentToImage]: canvas: $canvas");
 
     if (canvas != null) {
       await Future.delayed(const Duration(seconds: 1));
@@ -186,6 +203,10 @@ class WebcontentConverter {
 
     web.document.body?.children.delete(div);
 
+    if (enableLogger) {
+      logger.info(
+          "[contentToImage] completed: ${result.length} bytes in ${stopwatch.elapsedMilliseconds}ms");
+    }
     return Uint8List.fromList(result);
   }
 
@@ -197,6 +218,7 @@ class WebcontentConverter {
     PaperFormat format = PaperFormat.a4,
     String? executablePath,
     Map<String, dynamic> args = const {},
+    bool enableLogger = true,
   }) async {
     var result;
     try {
@@ -208,9 +230,12 @@ class WebcontentConverter {
         margins: margins,
         format: format,
         executablePath: executablePath,
+        enableLogger: enableLogger,
       );
     } on Exception catch (e) {
-      WebcontentConverter.logger.error("[method:filePathToPdf]: $e");
+      if (enableLogger) {
+        WebcontentConverter.logger.error("[method:filePathToPdf]: $e");
+      }
       throw Exception("Error: $e");
     }
     return result;
@@ -224,6 +249,7 @@ class WebcontentConverter {
     PaperFormat format = PaperFormat.a4,
     String? executablePath,
     Map<String, dynamic> args = const {},
+    bool enableLogger = true,
   }) async {
     var result;
     try {
@@ -237,9 +263,12 @@ class WebcontentConverter {
         format: format,
         executablePath: executablePath,
         args: args,
+        enableLogger: enableLogger,
       );
     } on Exception catch (e) {
-      WebcontentConverter.logger.error("[method:webUriToImage]: $e");
+      if (enableLogger) {
+        WebcontentConverter.logger.error("[method:webUriToImage]: $e");
+      }
       throw Exception("Error: $e");
     }
     return result;
@@ -254,7 +283,13 @@ class WebcontentConverter {
     String? executablePath,
     bool autoClosePage = true,
     Map<String, dynamic> args = const {},
+    bool enableLogger = true,
   }) async {
+    final stopwatch = Stopwatch()..start();
+    if (enableLogger) {
+      logger.info(
+          "[contentToPDF] starting: content=${content.length} chars, savedPath=$savedPath, format=${format.toMap()}");
+    }
     var div = web.document.createElement('div') as web.HTMLDivElement;
     // div.setInnerHtml(content, validator: AllowAll());
     div.innerHTML = content.toJS;
@@ -262,7 +297,7 @@ class WebcontentConverter {
     div.style.color = 'black';
     div.style.background = 'white';
     web.document.body?.children.add(div);
-    
+
     var opt = {
       "margin": 0,
       "filename": savedPath,
@@ -283,6 +318,10 @@ class WebcontentConverter {
     await (html2pdf(div, opt.jsify()).toDart);
 
     web.document.body?.children.delete(div);
+    if (enableLogger) {
+      logger.info(
+          "[contentToPDF] completed in ${stopwatch.elapsedMilliseconds}ms");
+    }
     return null;
   }
 
@@ -294,6 +333,7 @@ class WebcontentConverter {
     String? executablePath,
     bool autoClosePage = true,
     Map<String, dynamic> args = const {},
+    bool enableLogger = true,
   }) async {
     var div = web.document.createElement('div') as web.HTMLDivElement;
     // div.setInnerHtml(content, validator: AllowAll());
