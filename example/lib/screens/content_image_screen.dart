@@ -41,18 +41,8 @@ class ContentToImageScreenScaffold extends StatelessWidget {
         actions: [
           IconButton(
             icon: Icon(Icons.image),
-            onPressed: () {
-              Future.forEach(
-                  List.generate(controller.counter, (index) => null).toList(),
-                  (i) async {
-                try {
-                  await controller.convert();
-                  await Future.delayed(Duration(seconds: 5));
-                } catch (e) {
-                  ///
-                }
-              });
-            },
+            onPressed:
+                controller.isConverting ? null : controller.convertBatch,
           ),
           IconButton(
             icon: Icon(Icons.wifi_rounded),

@@ -11,6 +11,7 @@ class ContentImageScreenController extends ChangeNotifier {
   int counter = 1;
   io.File? file;
   Uint8List? bytes;
+  bool isConverting = false;
   final TextEditingController textEditingController = TextEditingController();
 
   final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
@@ -67,6 +68,39 @@ class ContentImageScreenController extends ChangeNotifier {
         : null;
     WebcontentConverter.logger.info(result.length ?? '');
     notifyListeners();
+  }
+
+  // Runs `counter` conversions back to back, spaced 5s apart. Guarded by
+  // isConverting so a tap while a batch is still running is ignored instead
+  // of stacking a second full batch on top of it: since counter grows with
+  // every successful conversion, and this reads counter fresh each call,
+  // overlapping batches from rapid taps would compound (each tap's batch
+  // sized by whatever counter has already grown to) and flood the native
+  // request queue -- which only ever runs one request at a time -- with far
+  // more work than the taps that triggered it, showing up as ever-longer
+  // waits for whatever's queued at the back.
+  Future<void> convertBatch() async {
+    if (isConverting) return;
+    isConverting = true;
+    notifyListeners();
+
+    // Batch size captured once, upfront -- counter increments inside
+    // convert(), so looping on `i < counter` directly would never
+    // terminate (counter always stays one step ahead of i).
+    final batchSize = counter;
+    try {
+      for (var i = 0; i < batchSize; i++) {
+        try {
+          await convert();
+        } catch (e) {
+          WebcontentConverter.logger.error("convertBatch iteration failed: $e");
+        }
+        await Future.delayed(Duration(seconds: 5));
+      }
+    } finally {
+      isConverting = false;
+      notifyListeners();
+    }
   }
 
   previewPDF() async {
