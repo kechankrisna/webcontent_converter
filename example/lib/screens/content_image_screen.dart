@@ -41,18 +41,7 @@ class ContentToImageScreenScaffold extends StatelessWidget {
         actions: [
           IconButton(
             icon: Icon(Icons.image),
-            onPressed: () {
-              Future.forEach(
-                  List.generate(controller.counter, (index) => null).toList(),
-                  (i) async {
-                try {
-                  await controller.convert();
-                  await Future.delayed(Duration(seconds: 5));
-                } catch (e) {
-                  ///
-                }
-              });
-            },
+            onPressed: controller.isConverting ? null : controller.convertBatch,
           ),
           IconButton(
             icon: Icon(Icons.wifi_rounded),
@@ -63,11 +52,18 @@ class ContentToImageScreenScaffold extends StatelessWidget {
             onPressed: controller.startPrintBluetooth,
           ),
           IconButton(
-              onPressed: () {
-                if (controller.scaffoldKey.currentState == null) return;
-                controller.scaffoldKey.currentState!.openEndDrawer();
-              },
-              icon: Icon(Icons.menu))
+            onPressed: () {
+              controller.previewPDF();
+            },
+            icon: Icon(Icons.print),
+          ),
+          IconButton(
+            onPressed: () {
+              if (controller.scaffoldKey.currentState == null) return;
+              controller.scaffoldKey.currentState!.openEndDrawer();
+            },
+            icon: Icon(Icons.menu),
+          ),
         ],
       ),
       endDrawer: Drawer(
@@ -78,20 +74,23 @@ class ContentToImageScreenScaffold extends StatelessWidget {
               subtitle: Row(
                 children: [
                   IconButton(
-                      onPressed: () {
-                        controller.changeCounter(1);
-                      },
-                      icon: Icon(Icons.refresh)),
+                    onPressed: () {
+                      controller.changeCounter(1);
+                    },
+                    icon: Icon(Icons.refresh),
+                  ),
                   IconButton(
-                      onPressed: () {
-                        controller.changeCounter(controller.counter - 1);
-                      },
-                      icon: Icon(Icons.remove)),
+                    onPressed: () {
+                      controller.changeCounter(controller.counter - 1);
+                    },
+                    icon: Icon(Icons.remove),
+                  ),
                   IconButton(
-                      onPressed: () {
-                        controller.changeCounter(controller.counter + 1);
-                      },
-                      icon: Icon(Icons.add)),
+                    onPressed: () {
+                      controller.changeCounter(controller.counter + 1);
+                    },
+                    icon: Icon(Icons.add),
+                  ),
                 ],
               ),
             ),
@@ -131,8 +130,9 @@ class ContentToImageScreenScaffold extends StatelessWidget {
                         Container(
                           width: 400,
                           alignment: Alignment.topCenter,
-                          child:
-                              Image.memory(controller.file!.readAsBytesSync()),
+                          child: Image.memory(
+                            controller.file!.readAsBytesSync(),
+                          ),
                         ),
                       if (controller.file != null) Divider(),
                       if (controller.bytes?.isNotEmpty == true)
@@ -140,9 +140,10 @@ class ContentToImageScreenScaffold extends StatelessWidget {
                           width: 400,
                           alignment: Alignment.topCenter,
                           decoration: BoxDecoration(
-                              border: Border.all(color: Colors.blue)),
+                            border: Border.all(color: Colors.blue),
+                          ),
                           child: Image.memory(controller.bytes!),
-                        )
+                        ),
                     ],
                   ),
                 ),

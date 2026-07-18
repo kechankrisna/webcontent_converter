@@ -52,7 +52,6 @@ class ContentPDFScreenController extends ChangeNotifier {
       margins: counter.isEven
           ? PdfMargins.inches(top: 0.00, bottom: 0.00, right: 0.00, left: 0.00)
           : PdfMargins.inches(top: 0.25, bottom: 0.25, right: 0.25, left: 0.25),
-      executablePath: WebViewHelper.executablePath(),
     );
 
     counter += 1;

@@ -1,6 +1,9 @@
 import 'dart:developer';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:webcontent_converter/webcontent_converter.dart';
+import 'package:webcontent_converter_example/services/demo.dart';
 import 'package:window_manager/window_manager.dart';
 import 'route.dart';
 
@@ -10,19 +13,8 @@ void main() async {
 
   if (WebViewHelper.isDesktop) {
     await windowManager.ensureInitialized();
-
-    /// ensure brower is initialized
-    final started = DateTime.now();
-    WebcontentConverter.logger.info("${started.toIso8601String()} Initializing webcontent converter...");
-    var executablePath =
-        await ChromeDesktopDirectoryHelper.ensureChromeExecutable();
-    WebViewHelper.customBrowserPath = [executablePath];
-    final finised = DateTime.now();
-    WebcontentConverter.logger.info("${finised.toIso8601String()} executablePath $executablePath");
-    WebcontentConverter.logger.info(
-        "Webcontent converter initialized in ${finised.difference(started).inMilliseconds} ms");
-    await WebcontentConverter.ensureInitialized(executablePath: executablePath);
   }
+
   runApp(MyApp());
 }
 

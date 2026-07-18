@@ -62,7 +62,6 @@ class _FilePathToPDFScreenState extends State<FilePathToPDFScreen> {
       savedPath: savedPath,
       format: PaperFormat.a4,
       margins: PdfMargins.px(top: 35, bottom: 35, right: 35, left: 35),
-      executablePath: WebViewHelper.executablePath(),
     );
 
     WebcontentConverter.logger.info("completed");

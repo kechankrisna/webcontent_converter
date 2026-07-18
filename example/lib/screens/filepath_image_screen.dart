@@ -67,7 +67,6 @@ class _FilePathToImageScreenState extends State<FilePathToImageScreen> {
     var bytes = await WebcontentConverter.filePathToImage(
       path:
           _counter.isEven ? "assets/short_receipt.html" : "assets/receipt.html",
-      executablePath: WebViewHelper.executablePath(),
     );
     WebcontentConverter.logger
         .info("completed executed in ${stopwatch.elapsed}");
