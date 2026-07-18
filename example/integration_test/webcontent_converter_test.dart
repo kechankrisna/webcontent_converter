@@ -64,6 +64,25 @@ void main() {
       timeout: const Timeout(Duration(minutes: 3)),
     );
   });
+
+  group('contentToPDFImage', () {
+    testWidgets(
+      'returns real PDF bytes through the native plugin on every platform',
+      (tester) async {
+        final bytes = await WebcontentConverter.contentToPDFImage(
+          content: Demo.getShortReceiptContent(),
+          duration: 3000,
+          enableLogger: false,
+        );
+
+        expect(bytes, isNotNull);
+        expect(_looksLikePdf(bytes!), isTrue,
+            reason: 'expected a %PDF- header and non-trivial size, got '
+                '${bytes.length} bytes');
+      },
+      timeout: const Timeout(Duration(minutes: 3)),
+    );
+  });
 }
 
 bool _looksLikePdf(Uint8List bytes) {
