@@ -43,7 +43,6 @@ class _ReproScreenState extends State<ReproScreen> {
         savedPath: savedPath,
         format: PaperFormat.a4,
         margins: PdfMargins.inches(top: 0.25, bottom: 0.25, left: 0.25, right: 0.25),
-        executablePath: WebViewHelper.executablePath(),
       ).then((result) {
         final exists = result != null && File(result).existsSync();
         log("QUEUE REPRO run $i: SUCCESS result=$result exists=$exists");

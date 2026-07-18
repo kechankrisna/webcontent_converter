@@ -47,7 +47,6 @@ class ContentPDFImageScreenController extends ChangeNotifier {
       content: textEditingController.text.isNotEmpty
           ? textEditingController.text
           : defaultContent,
-      executablePath: WebViewHelper.executablePath(),
       args: {
         "format": {
           "width": PaperFormat.a4.width,

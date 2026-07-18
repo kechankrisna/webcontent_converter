@@ -38,7 +38,6 @@ class _ReproScreenState extends State<ReproScreen> {
       try {
         final result = await WebcontentConverter.contentToImage(
           content: Demo.getShortReceiptContent(),
-          executablePath: WebViewHelper.executablePath(),
           args: {"is_html2bitmap": false, "bitmap_width": 300.0},
         );
         log("MIXED REPRO image $i: SUCCESS bytes=${result.length}");
@@ -61,7 +60,6 @@ class _ReproScreenState extends State<ReproScreen> {
         savedPath: savedPath,
         format: PaperFormat.a4,
         margins: PdfMargins.inches(top: 0.25, bottom: 0.25, left: 0.25, right: 0.25),
-        executablePath: WebViewHelper.executablePath(),
       ).then((result) {
         final exists = result != null && File(result).existsSync();
         log("MIXED REPRO pdf $i: SUCCESS result=$result exists=$exists");

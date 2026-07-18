@@ -47,7 +47,6 @@ class _ReproScreenState extends State<ReproScreen> {
             ? PdfMargins.inches(top: 0.05, bottom: 0.05, right: 0.05, left: 0.05)
             : PdfMargins.inches(
                 top: 0.25, bottom: 0.25, right: 0.25, left: 0.25),
-          executablePath: WebViewHelper.executablePath(),
         );
         final exists = result != null && File(result).existsSync();
         log("REPRO run $i: SUCCESS result=$result exists=$exists elapsedMs=${sw.elapsedMilliseconds}");

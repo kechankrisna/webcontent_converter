@@ -40,7 +40,6 @@ class _ReproScreenState extends State<ReproScreen> {
           content: i.isEven
               ? Demo.getShortReceiptContent()
               : Demo.getReceiptContent(),
-          executablePath: WebViewHelper.executablePath(),
           args: {
             "is_html2bitmap": false,
             "bitmap_width": 300.0,

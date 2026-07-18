@@ -44,7 +44,6 @@ class _ReproScreenState extends State<ReproScreen> {
           savedPath: savedPath,
           format: PaperFormat.a4,
           margins: PdfMargins.inches(top: 0.25, bottom: 0.25, left: 0.25, right: 0.25),
-          executablePath: WebViewHelper.executablePath(),
         );
         pdfTimes.add(sw.elapsedMilliseconds);
         log("TIMING pdf $i: ${sw.elapsedMilliseconds}ms");
@@ -62,7 +61,6 @@ class _ReproScreenState extends State<ReproScreen> {
       try {
         await WebcontentConverter.contentToImage(
           content: Demo.getShortReceiptContent(),
-          executablePath: WebViewHelper.executablePath(),
           args: {"is_html2bitmap": false, "bitmap_width": 300.0},
         );
         imageTimes.add(sw.elapsedMilliseconds);

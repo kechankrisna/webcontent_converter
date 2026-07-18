@@ -38,7 +38,6 @@ class _ReproScreenState extends State<ReproScreen> {
           content: Demo.getInvoiceContent(),
           format: PaperFormat.a4,
           margins: PdfMargins.inches(top: 0.25, bottom: 0.25, left: 0.25, right: 0.25),
-          executablePath: WebViewHelper.executablePath(),
         );
         if (result == null) {
           log("PDFIMAGE REPRO call $i: NULL result");

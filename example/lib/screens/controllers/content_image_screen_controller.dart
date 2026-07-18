@@ -47,7 +47,6 @@ class ContentImageScreenController extends ChangeNotifier {
       content: textEditingController.text.isNotEmpty
           ? textEditingController.text
           : defaultContent,
-      executablePath: WebViewHelper.executablePath(),
       args: {
         "is_html2bitmap": false,
         "bitmap_width": 300.0,

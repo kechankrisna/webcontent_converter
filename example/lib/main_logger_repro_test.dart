@@ -36,7 +36,6 @@ class _ReproScreenState extends State<ReproScreen> {
       savedPath: join(dir.path, "logger_repro_pdf_on.pdf"),
       format: PaperFormat.a4,
       margins: PdfMargins.inches(top: 0.25, bottom: 0.25, left: 0.25, right: 0.25),
-      executablePath: WebViewHelper.executablePath(),
       enableLogger: true,
     );
 
@@ -46,14 +45,12 @@ class _ReproScreenState extends State<ReproScreen> {
       savedPath: join(dir.path, "logger_repro_pdf_off.pdf"),
       format: PaperFormat.a4,
       margins: PdfMargins.inches(top: 0.25, bottom: 0.25, left: 0.25, right: 0.25),
-      executablePath: WebViewHelper.executablePath(),
       enableLogger: false,
     );
 
     setState(() => status = "image with enableLogger: true...");
     await WebcontentConverter.contentToImage(
       content: Demo.getShortReceiptContent(),
-      executablePath: WebViewHelper.executablePath(),
       args: {"is_html2bitmap": false, "bitmap_width": 300.0},
       enableLogger: true,
     );
@@ -61,7 +58,6 @@ class _ReproScreenState extends State<ReproScreen> {
     setState(() => status = "image with enableLogger: false...");
     await WebcontentConverter.contentToImage(
       content: Demo.getShortReceiptContent(),
-      executablePath: WebViewHelper.executablePath(),
       args: {"is_html2bitmap": false, "bitmap_width": 300.0},
       enableLogger: false,
     );

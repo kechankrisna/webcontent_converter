@@ -60,7 +60,6 @@ class _WebUriToPDFScreenState extends State<WebUriToPDFScreen> {
     var result = await WebcontentConverter.webUriToPdf(
       uri: "http://127.0.0.1:5500/example/assets/invoice.html",
       savedPath: savedPath,
-      executablePath: WebViewHelper.executablePath(),
     );
     WebcontentConverter.logger.info("completed");
 
