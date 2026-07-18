@@ -31,8 +31,8 @@ class _WebcontentScreenState extends State<WebcontentScreen> {
                 await WebcontentConverter.initWebcontentConverter();
                 WebcontentConverter.logger
                     .info("WebcontentConverter initialized");
-                WebcontentConverter.logger.info(
-                    windowBrower?.isConnected.toString() ?? 'no browser path');
+                // WebcontentConverter.logger.info(
+                //     windowBrower?.isConnected.toString() ?? 'no browser path');
               },
               child: Text("ensureInitialized")),
 
@@ -42,8 +42,8 @@ class _WebcontentScreenState extends State<WebcontentScreen> {
                 await WebcontentConverter.deinitWebcontentConverter();
                 WebcontentConverter.logger
                     .info("WebcontentConverter deinitialized");
-                WebcontentConverter.logger.info(
-                    windowBrower?.isConnected.toString() ?? 'no browser path');
+                // WebcontentConverter.logger.info(
+                //     windowBrower?.isConnected.toString() ?? 'no browser path');
               },
               child: Text("deinitWebcontentConverter")),
 

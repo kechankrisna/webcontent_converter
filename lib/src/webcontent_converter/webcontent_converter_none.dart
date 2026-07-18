@@ -3,11 +3,8 @@ import 'dart:typed_data';
 import 'package:easy_logger/easy_logger.dart';
 import 'package:flutter/services.dart' show MethodChannel;
 import 'package:flutter/widgets.dart';
-import 'package:puppeteer/puppeteer.dart' as pp;
 import '../../page.dart';
 
-pp.Browser? windowBrower;
-pp.Page? windowBrowserPage;
 
 /// [WebcontentConverter] will convert html, html file, web uri, into raw bytes image or pdf file
 class WebcontentConverter {

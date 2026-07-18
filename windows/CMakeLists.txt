@@ -24,6 +24,8 @@ list(APPEND PLUGIN_SOURCES
   "webview2_session.h"
   "pdf_conversion_request.cpp"
   "pdf_conversion_request.h"
+  "print_preview_window.cpp"
+  "print_preview_window.h"
   "image_capture_request.cpp"
   "image_capture_request.h"
   "request_watchdog.cpp"

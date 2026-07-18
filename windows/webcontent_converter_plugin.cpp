@@ -155,6 +155,11 @@ void WebcontentConverterPlugin::HandleMethodCall(
     return;
   }
 
+  if (method_name.compare("printPreview") == 0) {
+    HandlePrintPreview(*args, std::move(result));
+    return;
+  }
+
   result->NotImplemented();
 }
 
@@ -316,6 +321,44 @@ void WebcontentConverterPlugin::HandleContentToImage(
 
     active_image_request_->Start();
   });
+}
+
+void WebcontentConverterPlugin::HandlePrintPreview(
+    const EncodableMap& args,
+    std::unique_ptr<flutter::MethodResult<EncodableValue>> result) {
+  auto content = GetString(args, "content");
+  if (!content) {
+    result->Error("INVALID_ARGUMENT", "content is required");
+    return;
+  }
+
+  // Validate content size to prevent memory exhaustion
+  if (content->size() > kMaxContentSizeBytes) {
+    result->Error("CONTENT_TOO_LARGE",
+                   "Content exceeds maximum size of 100MB");
+    return;
+  }
+
+  double duration_ms = GetDouble(args, "duration", 0.0);
+
+  // PrintPreviewWindow owns its own independent window and WebView2
+  // session (see its class comment) rather than the plugin's shared one,
+  // so unlike contentToPDF/contentToImage this doesn't go through
+  // StartOrQueue -- there's no shared resource here to serialize against.
+  auto* window = new PrintPreviewWindow(
+      Utf8ToWide(*content), duration_ms,
+      [raw_result = result.release()](PrintPreviewWindow*, bool success,
+                                       std::optional<std::string> error) {
+        std::unique_ptr<flutter::MethodResult<EncodableValue>> owned_result(
+            raw_result);
+        if (success) {
+          owned_result->Success(EncodableValue(true));
+        } else {
+          owned_result->Error("PRINT_PREVIEW_FAILED",
+                               error.value_or("Unknown error"));
+        }
+      });
+  window->Start();
 }
 
 void WebcontentConverterPlugin::CleanupOldTempFolders() {

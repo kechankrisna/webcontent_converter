@@ -11,6 +11,7 @@
 
 #include "image_capture_request.h"
 #include "pdf_conversion_request.h"
+#include "print_preview_window.h"
 #include "webview2_session.h"
 
 namespace webcontent_converter {
@@ -36,6 +37,10 @@ class WebcontentConverterPlugin : public flutter::Plugin {
       std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result);
 
   void HandleContentToImage(
+      const flutter::EncodableMap& args,
+      std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result);
+
+  void HandlePrintPreview(
       const flutter::EncodableMap& args,
       std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result);
 
@@ -75,6 +80,9 @@ class WebcontentConverterPlugin : public flutter::Plugin {
   // pending_jobs_ (see StartOrQueue) instead of failing outright. At most
   // one of the two unique_ptrs below is populated at a time; each deletes
   // itself via its completion callback, which also calls OnRequestFinished.
+  // print preview does NOT go through this -- see PrintPreviewWindow's
+  // class comment for why it gets its own independent window/session
+  // instead of contending for this shared one.
   bool request_in_flight_ = false;
   std::deque<std::function<void()>> pending_jobs_;
   std::unique_ptr<PdfConversionRequest> active_pdf_request_;
