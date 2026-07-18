@@ -673,12 +673,14 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                     })
             #endif
             break
-        default:
+        case "getPlatformVersion":
             #if os(iOS)
                 result("iOS " + UIDevice.current.systemVersion)
             #else
                 result("macOS " + ProcessInfo.processInfo.operatingSystemVersionString)
             #endif
+        default:
+            result(FlutterMethodNotImplemented)
         }
 
     }

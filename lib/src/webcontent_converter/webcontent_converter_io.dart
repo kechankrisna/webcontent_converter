@@ -442,50 +442,43 @@ class WebcontentConverter {
     }
     Uint8List? result;
     try {
-      if (io.Platform.isWindows || io.Platform.isMacOS) {
-        // Uses this package's own native contentToPDF (WebView2 PrintToPdf)
-        // rather than flutter_inappwebview's separate HeadlessInAppWebView
-        // wrapper (a second, independent WebView2 integration) or the
-        // Puppeteer fallback that used to sit behind it: contentToPDF's
-        // native Windows implementation is the one hardened this package's
-        // persistent-session, retry, and request-queueing work targets, so
-        // routing through it here instead is both simpler and more
-        // reliable. It only writes to a path, so this generates to a temp
-        // file and reads it back as bytes.
-        if (enableLogger) {
-          WebcontentConverter.logger
-              .info("[contentToPDFImage] Windows: using native contentToPDF");
+      // Uses this package's own native contentToPDF (e.g. WebView2
+      // PrintToPdf on Windows) rather than flutter_inappwebview's separate
+      // HeadlessInAppWebView wrapper (a second, independent WebView2
+      // integration) or the Puppeteer fallback that used to sit behind it:
+      // contentToPDF's native implementation on every platform is the one
+      // hardened this package's persistent-session, retry, and
+      // request-queueing work targets, so routing through it here instead
+      // is both simpler and more reliable. There is no dedicated native
+      // "contentToPDFImage" handler on any platform, so this generates to a
+      // temp file via contentToPDF and reads it back as bytes.
+      if (enableLogger) {
+        WebcontentConverter.logger
+            .info("[contentToPDFImage] using native contentToPDF");
+      }
+      final tempDir = await getTemporaryDirectory();
+      final tempPath = p.join(tempDir.path,
+          "webcontent_converter_${DateTime.now().microsecondsSinceEpoch}.pdf");
+      try {
+        final savedPath = await contentToPDF(
+          content: content,
+          duration: duration,
+          savedPath: tempPath,
+          margins: _margins,
+          format: format,
+          executablePath: executablePath,
+          args: args,
+          ppWaits: ppWaits,
+          enableLogger: enableLogger,
+        );
+        if (savedPath != null) {
+          result = await io.File(savedPath).readAsBytes();
         }
-        final tempDir = await getTemporaryDirectory();
-        final tempPath = p.join(tempDir.path,
-            "webcontent_converter_${DateTime.now().microsecondsSinceEpoch}.pdf");
-        try {
-          final savedPath = await contentToPDF(
-            content: content,
-            duration: duration,
-            savedPath: tempPath,
-            margins: _margins,
-            format: format,
-            executablePath: executablePath,
-            args: args,
-            ppWaits: ppWaits,
-            enableLogger: enableLogger,
-          );
-          if (savedPath != null) {
-            result = await io.File(savedPath).readAsBytes();
-          }
-        } finally {
-          final tempFile = io.File(tempPath);
-          if (await tempFile.exists()) {
-            await tempFile.delete();
-          }
+      } finally {
+        final tempFile = io.File(tempPath);
+        if (await tempFile.exists()) {
+          await tempFile.delete();
         }
-      } else {
-        if (enableLogger) {
-          WebcontentConverter.logger
-              .info("[contentToPDFImage] Mobile: using platform channel");
-        }
-        result = await _channel.invokeMethod('contentToPDFImage', arguments);
       }
       if (enableLogger) {
         WebcontentConverter.logger.info(

@@ -5,11 +5,6 @@
 // code, so it cannot catch a regression inside the Kotlin/Swift/C++
 // implementations themselves — see PAGINATION_TEST_RESULTS.md / the plan
 // follow-up for real per-platform integration coverage.
-//
-// contentToPDFImage's Windows/macOS branch is exercised only when this
-// suite runs on a Windows or macOS host (matching `dart:io Platform`,
-// which isn't injectable); on any other host it exercises the same
-// direct-channel branch Android/iOS use.
 import 'dart:io' as io;
 
 import 'package:flutter/services.dart';
@@ -188,8 +183,6 @@ void main() {
   });
 
   group('contentToPDFImage', () {
-    final isDesktopPdfHost = io.Platform.isWindows || io.Platform.isMacOS;
-
     test(
       'routes through native contentToPDF and reads the temp file back as bytes',
       () async {
@@ -211,27 +204,6 @@ void main() {
         expect(io.File(capturedSavedPath!).existsSync(), isFalse,
             reason: 'temp pdf must be deleted after being read back');
       },
-      skip: isDesktopPdfHost ? false : 'exercises the Windows/macOS-only branch',
-    );
-
-    test(
-      'calls the dedicated native contentToPDFImage method directly',
-      () async {
-        late MethodCall captured;
-        messenger.setMockMethodCallHandler(channel, (call) async {
-          captured = call;
-          return Uint8List.fromList([4, 5, 6]);
-        });
-
-        final result = await WebcontentConverter.contentToPDFImage(
-          content: 'x',
-          enableLogger: false,
-        );
-
-        expect(captured.method, 'contentToPDFImage');
-        expect(result, Uint8List.fromList([4, 5, 6]));
-      },
-      skip: isDesktopPdfHost ? 'exercises the mobile-only branch' : false,
     );
 
     test('propagates a PlatformException raised by the native side', () async {
