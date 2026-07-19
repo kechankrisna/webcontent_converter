@@ -13,9 +13,19 @@ func pxToInches(_ px: Double) -> Double {
     return px / 96.0
 }
 
-/// Convert inches to pixels (96 DPI)
+/// Convert inches to pixels (96 DPI) — the CSS/WebKit convention, used for
+/// sizing/measuring WebView content and frames.
 func inchToPx(_ inches: Double) -> Double {
     return inches * 96.0
+}
+
+/// Convert inches to PDF points (72 DPI) — the fixed unit the PDF spec
+/// requires for physical page geometry (MediaBox, UIPrintPageRenderer's
+/// paperRect/printableRect). Using `inchToPx`'s 96 DPI here instead made
+/// every generated PDF ~1.33x (96/72) larger than the requested physical
+/// size — most obvious on a small custom page (e.g. 1"x1").
+func inchToPt(_ inches: Double) -> Double {
+    return inches * 72.0
 }
 
 /// Convert centimeters to inches

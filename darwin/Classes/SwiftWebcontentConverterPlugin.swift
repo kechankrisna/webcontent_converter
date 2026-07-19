@@ -631,22 +631,36 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                         return
                     }
 
-                    let marginTop = CGFloat(inchToPx(margins?["top"] ?? 0.0))
-                    let marginBottom = CGFloat(inchToPx(margins?["bottom"] ?? 0.0))
-                    let marginLeft = CGFloat(inchToPx(margins?["left"] ?? 0.0))
-                    let marginRight = CGFloat(inchToPx(margins?["right"] ?? 0.0))
                     let formatName = format?["name"] as? String
+
+                    // An explicit format request means the output PDF's page
+                    // geometry (ultimately CGContext's mediaBox in
+                    // mergePdfPageSlices) must be genuine PDF points — 72/inch,
+                    // fixed by the PDF spec — not the WebView's CSS-pixel
+                    // convention (96/inch). Using 96/inch for the *page* here
+                    // made every explicit-format PDF ~1.33x (96/72) larger than
+                    // requested — most obvious on a small custom page (e.g.
+                    // 1"x1"). Auto-detected sizing (no format given, below) has
+                    // no physical-inch contract to honor, so it's left at the
+                    // WebView's native CSS-pixel scale, unchanged.
+                    let hasExplicitFormat = (formatName?.isEmpty == false)
+                    let dpiScale: Double = hasExplicitFormat ? 72.0 : 96.0
+
+                    let marginTop = CGFloat((margins?["top"] ?? 0.0) * dpiScale)
+                    let marginBottom = CGFloat((margins?["bottom"] ?? 0.0) * dpiScale)
+                    let marginLeft = CGFloat((margins?["left"] ?? 0.0) * dpiScale)
+                    let marginRight = CGFloat((margins?["right"] ?? 0.0) * dpiScale)
 
                     let initialFormatWidthPx: Double?
                     let initialFormatHeightPx: Double?
-                    if let formatName = formatName, !formatName.isEmpty {
+                    if hasExplicitFormat {
                         if formatName == "custom" {
-                            initialFormatWidthPx = inchToPx(format!["width"] as? Double ?? 1.0)
-                            initialFormatHeightPx = inchToPx(format!["height"] as? Double ?? 1.0)
+                            initialFormatWidthPx = (format!["width"] as? Double ?? 1.0) * dpiScale
+                            initialFormatHeightPx = (format!["height"] as? Double ?? 1.0) * dpiScale
                         } else {
-                            let paperFormat = PaperFormat.fromString(formatName)
-                            initialFormatWidthPx = Double(paperFormat.widthPixels)
-                            initialFormatHeightPx = Double(paperFormat.heightPixels)
+                            let paperFormat = PaperFormat.fromString(formatName!)
+                            initialFormatWidthPx = paperFormat.width * dpiScale
+                            initialFormatHeightPx = paperFormat.height * dpiScale
                         }
                     } else {
                         initialFormatWidthPx = nil
@@ -1156,12 +1170,19 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
         ) -> String? {
             
             let formatter = self.viewPrintFormatter()
-            let marginTop = CGFloat(inchToPx(margins["top"] ?? 0))
-            let marginBottom = CGFloat(inchToPx(margins["bottom"] ?? 0))
-            let marginLeft = CGFloat(inchToPx(margins["left"] ?? 0))
-            let marginRight = CGFloat(inchToPx(margins["right"] ?? 0))
-            let widthInPixel = CGFloat(inchToPx(format["width"] as? Double ?? PaperFormat.a4.width))
-            let heightInPixel = CGFloat(inchToPx(format["height"] as? Double ?? PaperFormat.a4.height))
+            // paperRect/printableRect below (and UIGraphicsBeginPDFContextToData,
+            // which generatePdfData() calls under the hood) are always in genuine
+            // PDF points — 72/inch, fixed by the PDF spec — never the WebView's
+            // CSS-pixel convention (96/inch, correct for on-screen content sizing
+            // but not for the physical page). Using inchToPx (96/inch) here made
+            // every generated PDF ~1.33x (96/72) larger than requested — most
+            // obvious on a small custom page (e.g. 1"x1").
+            let marginTop = CGFloat(inchToPt(margins["top"] ?? 0))
+            let marginBottom = CGFloat(inchToPt(margins["bottom"] ?? 0))
+            let marginLeft = CGFloat(inchToPt(margins["left"] ?? 0))
+            let marginRight = CGFloat(inchToPt(margins["right"] ?? 0))
+            let widthInPixel = CGFloat(inchToPt(format["width"] as? Double ?? PaperFormat.a4.width))
+            let heightInPixel = CGFloat(inchToPt(format["height"] as? Double ?? PaperFormat.a4.height))
             print("marginTop \(marginTop)")
             print("marginBottom \(marginBottom)")
             print("marginLeft \(marginLeft)")
@@ -1176,9 +1197,9 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                     page = CGRect(x: 0, y: 0, width: widthInPixel,height: heightInPixel)
                 }else{
                     let paperFormat =  PaperFormat.fromString(formatName!);
-                    page = CGRect(x: 0, y: 0, width: CGFloat(paperFormat.widthPixels),height: CGFloat(paperFormat.heightPixels))
+                    page = CGRect(x: 0, y: 0, width: CGFloat(inchToPt(paperFormat.width)),height: CGFloat(inchToPt(paperFormat.height)))
                 }
-               
+
             }
             
             let printable = page.insetBy(dx: 0, dy: 0)
