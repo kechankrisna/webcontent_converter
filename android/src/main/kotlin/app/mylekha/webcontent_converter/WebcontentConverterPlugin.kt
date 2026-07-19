@@ -573,8 +573,8 @@ fun WebView.exportAsPdfFromWebView(
 ) {
     print("\nsavedPath ${savedPath}")
     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-        var width = format["width"] as Double;
-        var height = format["height"] as Double;
+        var width = (format["width"] as Number).toDouble();
+        var height = (format["height"] as Number).toDouble();
         var attributes = PrintAttributes.Builder()
             .setMediaSize(
                 PrintAttributes.MediaSize(
@@ -587,10 +587,10 @@ fun WebView.exportAsPdfFromWebView(
             .setResolution(PrintAttributes.Resolution("pdf", "pdf", 600, 600))
             .setMinMargins(
                 PrintAttributes.Margins(
-                    margins!!["left"]!!.convertFromInchesToInt(),
-                    margins!!["top"]!!.convertFromInchesToInt(),
-                    margins!!["right"]!!.convertFromInchesToInt(),
-                    margins!!["bottom"]!!.convertFromInchesToInt()
+                    (margins!!["left"] as Number).toDouble().convertFromInchesToInt(),
+                    (margins!!["top"] as Number).toDouble().convertFromInchesToInt(),
+                    (margins!!["right"] as Number).toDouble().convertFromInchesToInt(),
+                    (margins!!["bottom"] as Number).toDouble().convertFromInchesToInt()
                 )
             )
             .build()
@@ -634,7 +634,7 @@ fun WebView.toBitmap(offsetWidth: Double, offsetHeight: Double): Bitmap? {
 
 fun WebView.toPDFBitmap(
     format: Map<String, *>,
-    margins: Map<String, Double>?,
+    margins: Map<String, *>?,
     callback: BitmapCallback
 ): Bitmap? {
 
@@ -642,10 +642,10 @@ fun WebView.toPDFBitmap(
     // convert from inche into miles (96 DPI)
     var widthInMile = pageFormat.widthPixels * 1000 / 96; // 1 inches = 1000 miles
     var heightInMile = pageFormat.heightPixels * 1000 / 96;
-    var marginTop = inchToPx(margins?.get("top") ?: 0.5);
-    var marginBottom = inchToPx(margins?.get("bottom") ?: 0.5);
-    var marginLeft = inchToPx(margins?.get("left") ?: 0.5);
-    var marginRight = inchToPx(margins?.get("right") ?: 0.5);
+    var marginTop = inchToPx(if (margins?.get("top") != null) (margins["top"] as Number).toDouble() else 0.5);
+    var marginBottom = inchToPx(if (margins?.get("bottom") != null) (margins["bottom"] as Number).toDouble() else 0.5);
+    var marginLeft = inchToPx(if (margins?.get("left") != null) (margins["left"] as Number).toDouble() else 0.5);
+    var marginRight = inchToPx(if (margins?.get("right") != null) (margins["right"] as Number).toDouble() else 0.5);
 //    println("marginTop ${marginTop}")
 //    println("marginBottom ${marginBottom}")
 //    println("marginLeft ${marginLeft}")
