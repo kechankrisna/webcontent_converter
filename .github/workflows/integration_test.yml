@@ -1,0 +1,83 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+env:
+  FLUTTER_VERSION: "3.41.9"
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+      - run: flutter pub get
+      - run: flutter pub get
+        working-directory: example
+      - name: Run integration tests on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          working-directory: example
+          script: flutter test integration_test/webcontent_converter_test.dart -d emulator-5554
+
+  ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+      - run: flutter pub get
+      - run: flutter pub get
+        working-directory: example
+      - name: Boot an iOS simulator
+        run: |
+          UDID=$(xcrun simctl list devices available iPhone | grep -m1 -Eo '[0-9A-F-]{36}')
+          echo "SIMULATOR_UDID=$UDID" >> "$GITHUB_ENV"
+          xcrun simctl boot "$UDID"
+      - name: Run integration tests on iOS simulator
+        working-directory: example
+        run: flutter test integration_test/webcontent_converter_test.dart -d "$SIMULATOR_UDID"
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+      - run: flutter pub get
+      - run: flutter pub get
+        working-directory: example
+      - name: Run integration tests on macOS
+        working-directory: example
+        run: flutter config --enable-macos-desktop && flutter test integration_test/webcontent_converter_test.dart -d macos
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+      - run: flutter pub get
+      - run: flutter pub get
+        working-directory: example
+      - name: Run integration tests on Windows
+        working-directory: example
+        run: |
+          flutter config --enable-windows-desktop
+          flutter test integration_test/webcontent_converter_test.dart -d windows
