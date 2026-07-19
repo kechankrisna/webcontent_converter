@@ -10,7 +10,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  puppeteer: ^3.25.1
   flutter_inappwebview: ^6.1.5
   dio: ^5.3.2
   easy_logger: ^0.0.2

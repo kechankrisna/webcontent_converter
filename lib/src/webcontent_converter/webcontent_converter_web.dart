@@ -17,11 +17,7 @@ import 'package:easy_logger/easy_logger.dart';
 import 'package:flutter/services.dart' show MethodChannel, rootBundle;
 import 'package:flutter/widgets.dart';
 import 'dart:js_interop';
-import 'package:puppeteer/puppeteer.dart' as pp;
 import '../../page.dart';
-
-pp.Browser? windowBrower;
-pp.Page? windowBrowserPage;
 
 @anonymous
 @JS('html2pdf')
