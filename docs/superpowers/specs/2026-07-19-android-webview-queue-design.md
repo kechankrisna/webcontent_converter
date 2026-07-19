@@ -94,10 +94,10 @@ run while the OS was still mid-print, corrupting that job. Instead,
 `printPreview`'s job creates its own dedicated `WebView` (own
 `PrintPreviewWebView` instance, not `SharedWebViewSession`), still
 serialized through the same `ConversionQueue` for ordering, but this
-dedicated instance is only destroyed once a
-`PrintJob.addOnPrintJobStateChangedListener` (or polling
-`PrintJob.info.isCompleted`/`isFailed`/`isCancelled`) reports a terminal
-state — independent of when the queue slot itself is freed. The queue
+dedicated instance is only destroyed once polling
+`PrintJob.isCompleted`/`isFailed`/`isCancelled` reports a terminal
+state (see "Where this diverges from Windows" below for why polling,
+not a listener) — independent of when the queue slot itself is freed. The queue
 slot frees right after `printManager.print()` is invoked (same as
 `contentToPDF`/`contentToImage` resolve on their own completion), so a
 user leaving the system print dialog open doesn't block other
@@ -165,13 +165,19 @@ construction cost on every call.
 
 ## Risks / things to verify during implementation
 
-- `PrintJob` state listener availability: `addOnPrintJobStateChangedListener`
-  needs verifying against the plugin's `minSdkVersion` (Print Framework is
-  API 19+, but the listener API should be double-checked during
-  implementation); if unavailable at the plugin's floor SDK, a polling
-  fallback (`Handler.postDelayed` checking `PrintJob.info` state) achieves
-  the same "don't destroy the dedicated WebView until the OS is done with
-  it" goal.
+- ~~`PrintJob` state listener availability~~ — resolved during
+  implementation: `android.print.PrintJob` (the class an app gets back
+  from `PrintManager.print()`) has no listener/callback API in the public
+  SDK at all, at any API level — confirmed against the compileSdk 35 stub
+  jar. It only exposes boolean accessors (`isQueued`/`isStarted`/
+  `isBlocked`/`isCompleted`/`isFailed`/`isCancelled`). (The similarly-named
+  `android.printservice.PrintJob` does have callbacks, but that's a
+  different class used only by apps implementing a print *service*, not
+  by apps invoking printing, which is what this plugin does.)
+  `PrintPreviewWebView` uses the polling fallback this section originally
+  flagged as a contingency — a `Handler.postDelayed` loop re-checking the
+  terminal booleans every 500ms — as its only implementation, not a
+  fallback for a narrower SDK-floor case.
 - Real device/emulator check that firing `printPreview` immediately
   followed by another queued `contentToImage`/`contentToPDF` request
   doesn't corrupt either: the print job should still render correctly
