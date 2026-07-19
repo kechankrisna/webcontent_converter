@@ -424,21 +424,10 @@ class WebcontentConverter {
     bool enableLogger = true,
   }) async {
     PdfMargins _margins = margins ?? PdfMargins.zero;
-    final Map<String, dynamic> arguments = {
-      'content': content,
-      'duration': duration,
-      'margins': _margins.toMap(),
-      'format': format.toMap(),
-    };
-
-    ///
-    if (args.isNotEmpty) {
-      arguments.addAll(args);
-    }
     final stopwatch = Stopwatch()..start();
     if (enableLogger) {
       WebcontentConverter.logger.info(
-          "[contentToPDFImage] starting: content=${content.length} chars, margins=${arguments['margins']}, format=${arguments['format']}");
+          "[contentToPDFImage] starting: content=${content.length} chars, margins=${_margins.toMap()}, format=${format.toMap()}");
     }
     Uint8List? result;
     try {

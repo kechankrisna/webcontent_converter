@@ -3,8 +3,9 @@
 // arguments, how it surfaces native results, and how it propagates native
 // failures. It intercepts the platform channel instead of the real native
 // code, so it cannot catch a regression inside the Kotlin/Swift/C++
-// implementations themselves — see PAGINATION_TEST_RESULTS.md / the plan
-// follow-up for real per-platform integration coverage.
+// implementations themselves — see
+// example/integration_test/webcontent_converter_test.dart for real
+// per-platform integration coverage against the actual native code.
 import 'dart:io' as io;
 
 import 'package:flutter/services.dart';
