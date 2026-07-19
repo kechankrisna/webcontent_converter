@@ -47,10 +47,6 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
     private lateinit var channel: MethodChannel
     private lateinit var activity: Activity
     private lateinit var context: Context
-    // Still used by the not-yet-migrated contentToPDF/printPreview cases
-    // until Tasks 6-7 replace them -- removed for good in Task 7 once
-    // nothing references it anymore.
-    private lateinit var webView: WebView
     private val sharedSession = SharedWebViewSession()
     private val conversionQueue = ConversionQueue(MAX_QUEUED_REQUESTS)
 
@@ -173,42 +169,21 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
                 }
             }
             "printPreview" -> {
-                print("\n activity $activity")
-                webView = WebView(this.context)
-                val dwidth = this.activity.window.windowManager.defaultDisplay.width
-                val dheight = this.activity.window.windowManager.defaultDisplay.height
-                print("\ndwidth : $dwidth")
-                print("\ndheight : $dheight")
-                webView.layout(0, 0, dwidth, dheight)
-                webView.loadDataWithBaseURL(null, content, "text/HTML", "UTF-8", null)
-                webView.setInitialScale(1)
-                webView.settings.javaScriptEnabled = true
-                webView.settings.useWideViewPort = true
-                webView.settings.javaScriptCanOpenWindowsAutomatically = true
-                webView.settings.loadWithOverviewMode = true
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-                    print("\n=======> enabled scrolled <=========")
-                    WebView.enableSlowWholeDocumentDraw()
+                if (content.toByteArray(Charsets.UTF_8).size > MAX_CONTENT_SIZE_BYTES) {
+                    result.error("CONTENT_TOO_LARGE", "Content exceeds maximum size of 100MB", null)
+                    return
                 }
-
-                print("\n ///////////////// webview setted /////////////////")
-
-                webView.webViewClient = object : WebViewClient() {
-                    override fun onPageFinished(view: WebView, url: String) {
-                        super.onPageFinished(view, url)
-
-                        Handler().postDelayed({
-                            print("\nOS Version: ${android.os.Build.VERSION.SDK_INT}")
-                            print("\n ================ webview completed ==============")
-                            print("\n scroll delayed ${webView.scrollBarFadeDuration}")
-
-                            createWebPrintJob(webView);
-
-                        }, duration!!.toLong())
-
-                    }
+                if (conversionQueue.isQueueFull()) {
+                    result.error(
+                        "TOO_MANY_REQUESTS",
+                        "Too many queued conversions (limit: $MAX_QUEUED_REQUESTS). Please wait for earlier ones to complete.",
+                        null
+                    )
+                    return
                 }
-
+                conversionQueue.startOrQueue {
+                    runPrintPreviewJob(content, duration!!, result)
+                }
             }
 
             else
@@ -445,6 +420,93 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
         }
     }
 
+    private fun runPrintPreviewJob(content: String, duration: Double, result: Result) {
+        val watchdog = RequestWatchdog()
+        var completed = false
+
+        fun finish(action: () -> Unit) {
+            if (completed) return
+            completed = true
+            watchdog.disarm()
+            conversionQueue.onRequestFinished()
+            action()
+        }
+
+        val printPreview = PrintPreviewWebView(context)
+        val webView = printPreview.create()
+
+        val dwidth = activity.window.windowManager.defaultDisplay.width
+        val dheight = activity.window.windowManager.defaultDisplay.height
+        webView.layout(0, 0, dwidth, dheight)
+        webView.setInitialScale(1)
+
+        watchdog.arm(requestTimeoutMs(duration)) {
+            printPreview.destroy()
+            finish { result.error("TIMEOUT", "printPreview timed out", null) }
+        }
+
+        webView.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView, url: String) {
+                super.onPageFinished(view, url)
+                Handler(Looper.getMainLooper()).postDelayed({
+                    if (completed) return@postDelayed
+                    val printManager = activity.getSystemService(Context.PRINT_SERVICE) as? PrintManager
+                    if (printManager == null) {
+                        printPreview.destroy()
+                        finish { result.error("PRINT_UNAVAILABLE", "PrintManager unavailable", null) }
+                        return@postDelayed
+                    }
+                    val jobName = "${activity.applicationContext.applicationInfo.name} print preview"
+                    try {
+                        printPreview.startPrintJob(printManager, jobName)
+                        // Resolve at hand-off to the OS print flow, not at
+                        // print completion -- matches the Windows plugin,
+                        // which also resolves here. printPreview.destroy()
+                        // for this successful case happens later, from
+                        // PrintPreviewWebView's own PrintJob listener once
+                        // the OS reports a terminal state.
+                        finish { result.success(true) }
+                    } catch (e: Exception) {
+                        printPreview.destroy()
+                        finish { result.error("PRINT_PREVIEW_FAILED", e.message, null) }
+                    }
+                }, duration.toLong())
+            }
+
+            @Suppress("OVERRIDE_DEPRECATION")
+            override fun onReceivedError(
+                view: WebView,
+                errorCode: Int,
+                description: String?,
+                failingUrl: String?
+            ) {
+                super.onReceivedError(view, errorCode, description, failingUrl)
+                printPreview.destroy()
+                finish { result.error("WEBVIEW_LOAD_ERROR", description ?: "WebView failed to load content", null) }
+            }
+
+            override fun onReceivedError(
+                view: WebView,
+                request: WebResourceRequest,
+                error: WebResourceError
+            ) {
+                super.onReceivedError(view, request, error)
+                if (request.isForMainFrame) {
+                    printPreview.destroy()
+                    finish {
+                        result.error(
+                            "WEBVIEW_LOAD_ERROR",
+                            error.description?.toString() ?: "WebView failed to load content",
+                            null
+                        )
+                    }
+                }
+            }
+        }
+
+        webView.loadDataWithBaseURL(null, content, "text/HTML", "UTF-8", null)
+    }
+
     // getCurrentWebViewPackage() (API 26+) returns null when no WebView
     // provider is installed on the device; below that, WebView still exists
     // as a bundled system component, so a failed WebView() construction
@@ -473,11 +535,8 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
     }
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
-        print("onAttachedToActivity")
         activity = binding.activity
-        webView = WebView(activity.applicationContext)
-        webView.minimumHeight = 1
-        webView.minimumWidth = 1
+        sharedSession.ensure(context)
     }
 
     override fun onDetachedFromActivityForConfigChanges() {
@@ -499,31 +558,9 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
 
     override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
         channel.setMethodCallHandler(null)
+        sharedSession.destroy()
     }
 
-    private fun createWebPrintJob(webView: WebView) {
-
-        // Get a PrintManager instance
-        (activity?.getSystemService(Context.PRINT_SERVICE) as? PrintManager)?.let { printManager ->
-            val applicationName = activity.applicationContext.applicationInfo.name;
-            val jobName = "$applicationName print preview"
-
-            // Get a print adapter instance
-            val printAdapter = webView.createPrintDocumentAdapter(jobName)
-            var printAttributes =
-                PrintAttributes.Builder().setMediaSize(PrintAttributes.MediaSize.ISO_A4).build();
-            // Create a print job with name and adapter instance
-            printManager.print(
-                jobName,
-                printAdapter,
-                printAttributes
-            ).also { printJob ->
-
-                // Save the job object for later status checking
-//                printJobs += printJob
-            }
-        }
-    }
 }
 
 fun WebView.exportAsPdfFromWebView(
