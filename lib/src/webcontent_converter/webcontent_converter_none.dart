@@ -16,6 +16,11 @@ class WebcontentConverter {
     return version;
   }
 
+  static Future<bool> isWebviewAvailable() async {
+    UnimplementedError('isWebviewAvailable');
+    return false;
+  }
+
   /// ## `WebcontentConverter.logger`
   /// `allow to pretty text`
   /// #### Example:

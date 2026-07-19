@@ -218,4 +218,46 @@ void main() {
       );
     });
   });
+
+  group('isWebviewAvailable', () {
+    test('invokes the native channel with no arguments and returns its bool result', () async {
+      late MethodCall captured;
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        captured = call;
+        return true;
+      });
+
+      final result = await WebcontentConverter.isWebviewAvailable();
+
+      expect(captured.method, 'isWebviewAvailable');
+      expect(result, isTrue);
+    });
+
+    test('surfaces a native false result', () async {
+      messenger.setMockMethodCallHandler(channel, (call) async => false);
+
+      final result = await WebcontentConverter.isWebviewAvailable();
+
+      expect(result, isFalse);
+    });
+
+    test('treats a null native result as unavailable', () async {
+      messenger.setMockMethodCallHandler(channel, (call) async => null);
+
+      final result = await WebcontentConverter.isWebviewAvailable();
+
+      expect(result, isFalse);
+    });
+
+    test('propagates a PlatformException raised by the native side', () async {
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        throw PlatformException(code: 'CHECK_FAILED', message: 'native failure');
+      });
+
+      expect(
+        () => WebcontentConverter.isWebviewAvailable(),
+        throwsA(isA<PlatformException>()),
+      );
+    });
+  });
 }

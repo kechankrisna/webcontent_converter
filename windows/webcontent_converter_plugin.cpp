@@ -139,6 +139,20 @@ void WebcontentConverterPlugin::HandleMethodCall(
     return;
   }
 
+  if (method_name.compare("isWebviewAvailable") == 0) {
+    // Checks the installed Evergreen WebView2 Runtime rather than the
+    // vendored loader/headers this plugin ships with -- the SDK being
+    // linked in doesn't mean the runtime is present on this machine.
+    LPWSTR version_info = nullptr;
+    HRESULT hr = GetAvailableCoreWebView2BrowserVersionString(nullptr, &version_info);
+    bool available = SUCCEEDED(hr) && version_info != nullptr;
+    if (version_info) {
+      ::CoTaskMemFree(version_info);
+    }
+    result->Success(EncodableValue(available));
+    return;
+  }
+
   const auto* args = std::get_if<EncodableMap>(method_call.arguments());
   if (!args) {
     result->Error("INVALID_ARGUMENT", "Arguments must be a map");

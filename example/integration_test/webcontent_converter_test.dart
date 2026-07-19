@@ -83,6 +83,20 @@ void main() {
       timeout: const Timeout(Duration(minutes: 3)),
     );
   });
+
+  group('isWebviewAvailable', () {
+    testWidgets(
+      'reports the real native webview as available on this device',
+      (tester) async {
+        final available = await WebcontentConverter.isWebviewAvailable();
+
+        expect(available, isTrue,
+            reason: 'this device/emulator/simulator is expected to have a '
+                'working native webview (WebView2/WKWebView/WebView)');
+      },
+      timeout: const Timeout(Duration(minutes: 1)),
+    );
+  });
 }
 
 bool _looksLikePdf(Uint8List bytes) {

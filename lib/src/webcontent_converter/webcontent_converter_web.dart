@@ -44,6 +44,10 @@ class WebcontentConverter {
     return version;
   }
 
+  /// The web target runs inside the browser itself, so there's no separate
+  /// native webview whose availability could vary -- always true.
+  static Future<bool> isWebviewAvailable() async => true;
+
   /// ## `WebcontentConverter.logger`
   /// `allow to pretty text`
   /// #### Example:

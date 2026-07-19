@@ -27,6 +27,16 @@ class WebcontentConverter {
     return version;
   }
 
+  /// ## `WebcontentConverter.isWebviewAvailable`
+  /// `Checks whether this platform's native webview is actually usable`
+  /// `right now: WebView2 Runtime on Windows, WKWebView on macOS/iOS,`
+  /// `android.webkit.WebView on Android.`
+  static Future<bool> isWebviewAvailable() async {
+    final bool? available =
+        await _channel.invokeMethod('isWebviewAvailable');
+    return available ?? false;
+  }
+
   static Future<void> ensureInitialized({
     String? executablePath,
     String? content,

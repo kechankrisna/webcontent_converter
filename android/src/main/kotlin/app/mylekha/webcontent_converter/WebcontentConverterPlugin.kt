@@ -62,6 +62,14 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
     @RequiresApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
     override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
         val method = call.method
+
+        // Handled before the arguments-map cast below: this call carries no
+        // "content" argument, and that cast is not null-safe.
+        if (method == "isWebviewAvailable") {
+            result.success(isWebViewAvailable())
+            return
+        }
+
         val arguments = call.arguments as Map<*, *>
         val content = arguments["content"] as String
         var duration = arguments["duration"] as Double?
@@ -343,6 +351,25 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
 
             else
                 -> result.notImplemented()
+        }
+    }
+
+    // getCurrentWebViewPackage() (API 26+) returns null when no WebView
+    // provider is installed on the device; below that, WebView still exists
+    // as a bundled system component, so a failed WebView() construction
+    // (e.g. MissingWebViewPackageException on OEM builds without it) is the
+    // only signal available.
+    private fun isWebViewAvailable(): Boolean {
+        return try {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                WebView.getCurrentWebViewPackage() != null
+            } else {
+                WebView(this.context)
+                true
+            }
+        } catch (e: Throwable) {
+            Log.w("webcontent_converter", "WebView unavailable: ${e.message}")
+            false
         }
     }
 

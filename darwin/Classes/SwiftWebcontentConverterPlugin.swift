@@ -38,6 +38,14 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
 
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         let method = call.method
+
+        // Handled before the arguments force-unwrap below: this call
+        // carries no "content" argument, and `arguments!` crashes on nil.
+        if method == "isWebviewAvailable" {
+            result(NSClassFromString("WKWebView") != nil)
+            return
+        }
+
         let arguments = call.arguments as? [String: Any]
         let content = arguments!["content"] as? String
         var duration = arguments!["duration"] as? Double
