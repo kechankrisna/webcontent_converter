@@ -1,7 +1,6 @@
 package app.mylekha.webcontent_converter
 
 import android.content.Context
-import android.os.Build
 import android.webkit.WebView
 import android.webkit.WebViewClient
 
@@ -33,9 +32,6 @@ class SharedWebViewSession {
         created.settings.useWideViewPort = true
         created.settings.javaScriptCanOpenWindowsAutomatically = true
         created.settings.loadWithOverviewMode = true
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            WebView.enableSlowWholeDocumentDraw()
-        }
         webView = created
         return created
     }

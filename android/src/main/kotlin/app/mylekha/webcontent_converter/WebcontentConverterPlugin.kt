@@ -53,6 +53,24 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
     companion object {
         private const val MAX_CONTENT_SIZE_BYTES = 100L * 1024 * 1024
         private const val MAX_QUEUED_REQUESTS = 32
+
+        init {
+            // Must run before ANY WebView is constructed anywhere in this process, or it's a
+            // silent no-op (Android platform requirement) -- a companion `init` block is the
+            // earliest hook this plugin has, firing when this class is loaded during Flutter's
+            // plugin registration, before SharedWebViewSession/FLNativeViewFactory/
+            // PrintPreviewWebView get a chance to construct their own WebViews.
+            // Without it, WebView.draw(canvas) only rasters the tiles Chromium has already
+            // composited for the visible viewport + a small overscan buffer, so screenshotting
+            // content taller than roughly one screen leaves the remainder blank/white --
+            // exactly the "bottom half is blank" symptom for long content.
+            // If the host app creates a WebView earlier still (e.g. another plugin's own init,
+            // or a custom Application.onCreate), this is already too late and the same call
+            // must be made there instead.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                WebView.enableSlowWholeDocumentDraw()
+            }
+        }
     }
 
     private fun requestTimeoutMs(durationMs: Double): Long =
@@ -611,21 +629,33 @@ fun Double.convertFromInchesToInt(): Int {
     return this.toInt()
 }
 
+// Conservative cap well under the common 8192px GPU texture ceiling: bitmaps taller/wider than
+// this fail to decode on the Flutter/Android side with ImageDecoder "unimplemented" errors.
+private const val MAX_BITMAP_DIMENSION = 4096
+
 fun WebView.toBitmap(offsetWidth: Double, offsetHeight: Double): Bitmap? {
     if (offsetHeight > 0 && offsetWidth > 0) {
-//        print("\noffsetWidth() $offsetWidth")
-//        print("\noffsetHeight() $offsetHeight")
-//        print("\nthis.scale ${this.scale}")
-        val width = (offsetWidth * this.scale).absoluteValue.toInt()
-        val height = (offsetHeight * this.scale).absoluteValue.toInt()
-        print("\nwidth $width")
-        print("\nheight $height")
+        val rawWidth = (offsetWidth * this.scale).absoluteValue.toInt()
+        val rawHeight = (offsetHeight * this.scale).absoluteValue.toInt()
+
+        val shrink = minOf(
+            1.0,
+            MAX_BITMAP_DIMENSION.toDouble() / rawWidth,
+            MAX_BITMAP_DIMENSION.toDouble() / rawHeight
+        )
+        val width = (rawWidth * shrink).toInt().coerceAtLeast(1)
+        val height = (rawHeight * shrink).toInt().coerceAtLeast(1)
+        print("\nwidth $width (raw $rawWidth)")
+        print("\nheight $height (raw $rawHeight)")
         this.measure(
             View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
             View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
         );
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
+        if (shrink < 1.0) {
+            canvas.scale(shrink.toFloat(), shrink.toFloat())
+        }
         this.draw(canvas)
         return bitmap
     }
