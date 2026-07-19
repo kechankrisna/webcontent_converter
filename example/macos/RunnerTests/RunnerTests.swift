@@ -4,6 +4,179 @@ import XCTest
 import PDFKit
 import webcontent_converter
 
+class ConversionQueueTests: XCTestCase {
+
+    func testFifoOrdering() {
+        let queue = ConversionQueue(maxQueuedRequests: 3)
+        var order: [Int] = []
+
+        // First job starts immediately (no busy slot)
+        let exp1 = expectation(description: "job1")
+        queue.startOrQueue {
+            order.append(1)
+            exp1.fulfill()
+        }
+        XCTAssertTrue(queue.requestInFlight)
+
+        // Second and third jobs are queued
+        let exp2 = expectation(description: "job2")
+        let exp3 = expectation(description: "job3")
+        queue.startOrQueue {
+            order.append(2)
+            exp2.fulfill()
+        }
+        queue.startOrQueue {
+            order.append(3)
+            exp3.fulfill()
+        }
+        XCTAssertFalse(queue.isQueueFull())
+
+        // Complete job 1, job 2 should auto-start
+        queue.onRequestFinished()
+        wait(for: [exp2], timeout: 1.0)
+        XCTAssertEqual(order, [1, 2])
+
+        // Complete job 2, job 3 should auto-start
+        queue.onRequestFinished()
+        wait(for: [exp3], timeout: 1.0)
+        XCTAssertEqual(order, [1, 2, 3])
+
+        // After last job finishes, queue is idle
+        queue.onRequestFinished()
+        XCTAssertFalse(queue.requestInFlight)
+
+        wait(for: [exp1], timeout: 0.1)
+    }
+
+    func testBusySlotSerialization_onlyOneJobRunsAtATime() {
+        let queue = ConversionQueue(maxQueuedRequests: 5)
+        var concurrentCount = 0
+        var maxConcurrent = 0
+
+        for i in 0..<3 {
+            queue.startOrQueue {
+                concurrentCount += 1
+                maxConcurrent = max(maxConcurrent, concurrentCount)
+                // Simulate work
+                Thread.sleep(forTimeInterval: 0.05)
+                concurrentCount -= 1
+                queue.onRequestFinished()
+            }
+        }
+
+        // After all jobs complete, verify only one was ever in flight
+        XCTAssertEqual(maxConcurrent, 1)
+    }
+
+    func testIsQueueFull_boundary() {
+        let queue = ConversionQueue(maxQueuedRequests: 2)
+        XCTAssertFalse(queue.isQueueFull())
+
+        // First job goes in-flight, queue is empty
+        queue.startOrQueue { /* in-flight */ }
+        XCTAssertFalse(queue.isQueueFull())
+
+        // Two queued jobs = full
+        queue.startOrQueue {}
+        queue.startOrQueue {}
+        XCTAssertTrue(queue.isQueueFull())
+
+        // Complete in-flight job -> one queued job promoted -> queue slot opens
+        queue.onRequestFinished()
+        XCTAssertFalse(queue.isQueueFull())
+    }
+
+    func testStartOrQueue_runsImmediatelyWhenIdle() {
+        let queue = ConversionQueue(maxQueuedRequests: 10)
+        let exp = expectation(description: "runs")
+
+        queue.startOrQueue {
+            exp.fulfill()
+        }
+
+        wait(for: [exp], timeout: 1.0)
+    }
+
+    func testOnRequestFinished_withEmptyQueue_staysIdle() {
+        let queue = ConversionQueue(maxQueuedRequests: 10)
+        queue.startOrQueue {}
+        queue.onRequestFinished()
+        XCTAssertFalse(queue.requestInFlight)
+
+        // Multiple finishes on empty queue are harmless
+        queue.onRequestFinished()
+        XCTAssertFalse(queue.requestInFlight)
+    }
+}
+
+class RequestWatchdogTests: XCTestCase {
+
+    func testWatchdogFiresAfterTimeout() {
+        let watchdog = RequestWatchdog()
+        let exp = expectation(description: "timeout")
+
+        watchdog.arm(timeoutMs: 100) {
+            exp.fulfill()
+        }
+
+        wait(for: [exp], timeout: 1.0)
+    }
+
+    func testDisarmPreventsStaleFire() {
+        let watchdog = RequestWatchdog()
+        let exp = expectation(description: "disarmed")
+        exp.isInverted = true  // Should NOT fire
+
+        watchdog.arm(timeoutMs: 100) {
+            exp.fulfill()
+        }
+        watchdog.disarm()
+
+        wait(for: [exp], timeout: 0.5)
+    }
+
+    func testRearmingCancelsPreviousTimer() {
+        let watchdog = RequestWatchdog()
+        let firstExp = expectation(description: "first")
+        firstExp.isInverted = true  // Should NOT fire (overridden by second arm)
+        let secondExp = expectation(description: "second")
+
+        watchdog.arm(timeoutMs: 100) {
+            firstExp.fulfill()
+        }
+        // Re-arm with shorter timeout
+        watchdog.arm(timeoutMs: 50) {
+            secondExp.fulfill()
+        }
+
+        wait(for: [secondExp], timeout: 1.0)
+        wait(for: [firstExp], timeout: 0.2)
+    }
+
+    func testDisarmOnDeinit() {
+        let exp = expectation(description: "deinit")
+        exp.isInverted = true
+
+        var watchdog: RequestWatchdog? = RequestWatchdog()
+        watchdog?.arm(timeoutMs: 50) {
+            exp.fulfill()
+        }
+        watchdog = nil  // deinit should disarm
+
+        wait(for: [exp], timeout: 0.3)
+    }
+
+    func testMultipleArms_usesLatestTimeout() {
+        let watchdog = RequestWatchdog()
+        let exp = expectation(description: "latest")
+
+        watchdog.arm(timeoutMs: 1000) { XCTFail("old timer should be cancelled") }
+        watchdog.arm(timeoutMs: 10) { exp.fulfill() }
+
+        wait(for: [exp], timeout: 1.0)
+    }
+}
+
 class RunnerTests: XCTestCase {
 
   func testExample() {

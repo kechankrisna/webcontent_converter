@@ -9,9 +9,54 @@ import WebKit
     import PDFKit
 #endif
 
+/// Per-job WKNavigationDelegate. Each conversion job gets its own instance
+/// rather than sharing one delegate/handler-pair across every job: a job
+/// abandoned via watchdog timeout doesn't stop its WKWebView's callbacks
+/// from eventually firing, and with a single shared delegate + shared
+/// `pendingDidFinishHandler`, a stale job's late callback would invoke
+/// whichever *different* job happens to be current by then — the exact
+/// "second call's field reassignment corrupts the first call's still-
+/// pending completion" race the queue was built to prevent, reintroduced
+/// one level down inside a single job's async chain. Retained via
+/// `SwiftWebcontentConverterPlugin.activeDelegates` for the job's lifetime
+/// since `WKWebView.navigationDelegate` is weak.
+private final class JobNavigationDelegate: NSObject, WKNavigationDelegate {
+    var onFinish: (() -> Void)?
+    var onError: ((Error) -> Void)?
+
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        onFinish?()
+    }
+
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        onError?(error)
+    }
+
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        onError?(error)
+    }
+
+    // If the WebView's renderer process crashes (plausible with very large
+    // content), neither didFinish nor didFail fires — without this, the job
+    // was only ever recovered by the watchdog, 30+ seconds later.
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        onError?(
+            NSError(
+                domain: "WebcontentConverter", code: -1,
+                userInfo: [NSLocalizedDescriptionKey: "WebView content process terminated"]))
+    }
+}
+
 public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
-    var webView: WKWebView!
-    var urlObservation: NSKeyValueObservation?
+    let conversionQueue = ConversionQueue(maxQueuedRequests: 32)
+
+    // Strong retention for the currently in-flight job's (WKWebView,
+    // JobNavigationDelegate) pair — navigationDelegate is weak, so without
+    // this the delegate (and transitively the WKWebView it captures) would
+    // be deallocated as soon as the job closure that created them returns.
+    // Removed in `finish()`/`dispose(_:)` once the job completes.
+    private var activeDelegates: [JobNavigationDelegate] = []
+
     public static func register(with registrar: FlutterPluginRegistrar) {
         #if os(iOS)
             let channel = FlutterMethodChannel(
@@ -50,6 +95,7 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
         let content = arguments!["content"] as? String
         var duration = arguments!["duration"] as? Double
         if duration == nil { duration = 2000.0 }
+
         switch method {
         case "contentToImage":
             guard let content = content else {
@@ -58,360 +104,472 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                         code: "INVALID_ARGUMENT", message: "Content is required", details: nil))
                 return
             }
-            
-//            var width = arguments!["width"] as? Double
-//            var height = arguments!["height"] as? Double
+
+            if conversionQueue.isQueueFull() {
+                result(
+                    FlutterError(
+                        code: "TOO_MANY_REQUESTS",
+                        message: "Too many pending conversion requests",
+                        details: nil))
+                return
+            }
+
             let format = arguments!["format"] as? [String: Any]
             let margins = arguments!["margins"] as? [String: Double]
-            
-//            print("width \(String(describing: width))")
-//            print("height \(String(describing: height))")
-            print("format \(String(describing: format))")
-            print("margins \(String(describing: margins))")
+            let durationMs = Int64(duration!)
 
-            #if os(iOS)
-                self.webView = WKWebView()
-                self.webView.isHidden = true
-                self.webView.tag = 100
-                self.webView.loadHTMLString(content, baseURL: Bundle.main.resourceURL)
-            #else
-                // For macOS, create a properly sized WebView to prevent GPU crashes
-                let frame = CGRect(x: 0, y: 0, width: 800, height: 300)
-                let configuration = WKWebViewConfiguration()
-                configuration.suppressesIncrementalRendering = false
-                configuration.preferences.javaScriptEnabled = true
+            conversionQueue.startOrQueue { [weak self] in
+                guard let self = self else { return }
 
-                self.webView = WKWebView(frame: frame, configuration: configuration)
-                self.webView.wantsLayer = true
-                self.webView.viewWithTag(100)
+                var completed = false
+                let watchdog = RequestWatchdog()
+                let timeoutMs = max(30_000, durationMs + 30_000)
 
-                if let layer = self.webView.layer {
-                    layer.backgroundColor = NSColor.white.cgColor
-                    layer.isOpaque = true
+                // All closures throughout the capture flow use `finish` to
+                // guard against double-resolution (success, fallback, error,
+                // timeout). It disarms the watchdog, fires onRequestFinished
+                // BEFORE resolving the Flutter result, and no-ops if already
+                // completed.
+                func finish(_ action: @escaping () -> Void) {
+                    guard !completed else { return }
+                    completed = true
+                    watchdog.disarm()
+                    self.conversionQueue.onRequestFinished()
+                    action()
                 }
 
-                self.webView.loadHTMLString(content, baseURL: Bundle.main.resourceURL)
-                print("📱 macOS WebView initialized with frame: \(self.webView.frame)")
-            #endif
+                // --- Create WebView + its own navigation delegate first ---
+                // `wv` is captured directly by every closure below instead of
+                // going through `self.webView`: that was a single mutable
+                // property shared across jobs, so once this job is abandoned
+                // (timeout/error) and the *next* job reassigns it, a late-
+                // firing continuation of this job would silently start
+                // operating on the next job's live WebView instead.
+                #if os(iOS)
+                    let wv = WKWebView()
+                    wv.isHidden = true
+                    wv.tag = 100
+                #else
+                    let frame = CGRect(x: 0, y: 0, width: 800, height: 300)
+                    let configuration = WKWebViewConfiguration()
+                    configuration.suppressesIncrementalRendering = false
+                    configuration.preferences.javaScriptEnabled = true
 
-            var bytes = FlutterStandardTypedData.init(bytes: Data())
-            urlObservation = webView.observe(
-                \.isLoading,
-                changeHandler: { (webView, change) in
-                    if !webView.isLoading {
-                        #if os(iOS)
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                print("scrollView.contentSiz.height = \(self.webView.scrollView.contentSize.height)")
-                                print("scrollView.contentSiz.width = \(self.webView.scrollView.contentSize.width)")
-                                if #available(iOS 11.0, *) {                                    
-                                    let configuration = WKSnapshotConfiguration()
-                                    let formatName = format?["name"] as? String
-                                    if(format != nil && formatName != nil) {
-                                        guard let formatName = formatName else {
+                    let wv = WKWebView(frame: frame, configuration: configuration)
+                    wv.wantsLayer = true
+                    wv.viewWithTag(100)
+
+                    if let layer = wv.layer {
+                        layer.backgroundColor = NSColor.white.cgColor
+                        layer.isOpaque = true
+                    }
+                #endif
+
+                let jobDelegate = JobNavigationDelegate()
+                wv.navigationDelegate = jobDelegate
+                self.activeDelegates.append(jobDelegate)
+
+                func teardown() {
+                    self.dispose(wv)
+                    self.activeDelegates.removeAll { $0 === jobDelegate }
+                }
+
+                // --- didFinish handler (replaces KVO on isLoading) ---
+                jobDelegate.onFinish = {
+                    #if os(iOS)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            print("scrollView.contentSiz.height = \(wv.scrollView.contentSize.height)")
+                            print("scrollView.contentSiz.width = \(wv.scrollView.contentSize.width)")
+                            if #available(iOS 11.0, *) {
+                                let configuration = WKSnapshotConfiguration()
+                                let formatName = format?["name"] as? String
+                                if(format != nil && formatName != nil) {
+                                    guard let formatName = formatName else {
+                                        finish {
                                             result(
                                                 FlutterError(
                                                     code: "INVALID_ARGUMENT", message: "Name is invalided", details: nil))
-                                            return
                                         }
-                                        let pageFormat = PaperFormat.fromString(formatName);
-                                        
-                                        print("pageFormat.width = \(pageFormat.width)")
-                                        print("pageFormat.height = \(pageFormat.height)")
-                                        print("pageFormat.widthPixels = \(pageFormat.widthPixels)")
-                                        print("pageFormat.heightPixels = \(pageFormat.heightPixels)")
-                                        let pageWidth = CGFloat(pageFormat.widthPixels)
-                                        let pageHeight = CGFloat(pageFormat.heightPixels)
-                                        
-                                        // ✅ SEAMLESS CONTENT: Use WebView scrollable content directly
-                                        let originalFrame = self.webView// ✅ CONTINUOUS CONTENT: Remove page breaks entirely
-                                        let printFormatter = self.webView.viewPrintFormatter()
-                                        let renderer = UIPrintPageRenderer()
+                                        return
+                                    }
+                                    let pageFormat = PaperFormat.fromString(formatName);
 
-//                                        let pageWidth = width != nil ? CGFloat(width!).toPixel() : 595.0
-//                                        let pageHeight = height != nil ? CGFloat(height!).toPixel() : 842.0
+                                    print("pageFormat.width = \(pageFormat.width)")
+                                    print("pageFormat.height = \(pageFormat.height)")
+                                    print("pageFormat.widthPixels = \(pageFormat.widthPixels)")
+                                    print("pageFormat.heightPixels = \(pageFormat.heightPixels)")
+                                    let pageWidth = CGFloat(pageFormat.widthPixels)
+                                    let pageHeight = CGFloat(pageFormat.heightPixels)
 
-                                        let pageRect = CGRect(x: 0, y: 0, width: pageWidth, height: pageHeight)
-                                        let printableRect = pageRect
+                                    // ✅ SEAMLESS CONTENT: Use WebView scrollable content directly
+                                    let originalFrame = wv // ✅ CONTINUOUS CONTENT: Remove page breaks entirely
+                                    let printFormatter = wv.viewPrintFormatter()
+                                    let renderer = UIPrintPageRenderer()
 
-                                        renderer.setValue(NSValue(cgRect: pageRect), forKey: "paperRect")
-                                        renderer.setValue(NSValue(cgRect: printableRect), forKey: "printableRect")
-                                        renderer.addPrintFormatter(printFormatter, startingAtPageAt: 0)
+                                    let pageRect = CGRect(x: 0, y: 0, width: pageWidth, height: pageHeight)
+                                    let printableRect = pageRect
 
-                                        print("📄 Total pages: \(renderer.numberOfPages)")
+                                    renderer.setValue(NSValue(cgRect: pageRect), forKey: "paperRect")
+                                    renderer.setValue(NSValue(cgRect: printableRect), forKey: "printableRect")
+                                    renderer.addPrintFormatter(printFormatter, startingAtPageAt: 0)
 
-                                        // ✅ SINGLE CONTINUOUS IMAGE: Create one long continuous image
-                                        let renderer_image = UIGraphicsImageRenderer(size: CGSize(width: pageWidth, height: CGFloat(renderer.numberOfPages) * pageHeight))
-                                        let fullImage = renderer_image.image { context in
-                                            // Fill with white background
-                                            UIColor.white.setFill()
-                                            context.fill(CGRect(origin: .zero, size: CGSize(width: pageWidth, height: CGFloat(renderer.numberOfPages) * pageHeight)))
-                                            
-                                            // ✅ CONTINUOUS RENDERING: Draw all pages as one continuous flow
-                                            for pageIndex in 0..<renderer.numberOfPages {
-                                                context.cgContext.saveGState()
-                                                context.cgContext.translateBy(x: 0, y: CGFloat(pageIndex) * pageHeight)
-                                                
-                                                // Draw page content
-                                                renderer.drawPage(at: pageIndex, in: CGRect(origin: .zero, size: CGSize(width: pageWidth, height: pageHeight)))
-                                                
-                                                context.cgContext.restoreGState()
+                                    print("📄 Total pages: \(renderer.numberOfPages)")
+
+                                    // ✅ SINGLE CONTINUOUS IMAGE: Create one long continuous image
+                                    let renderer_image = UIGraphicsImageRenderer(size: CGSize(width: pageWidth, height: CGFloat(renderer.numberOfPages) * pageHeight))
+                                    let fullImage = renderer_image.image { context in
+                                        // Fill with white background
+                                        UIColor.white.setFill()
+                                        context.fill(CGRect(origin: .zero, size: CGSize(width: pageWidth, height: CGFloat(renderer.numberOfPages) * pageHeight)))
+
+                                        // ✅ CONTINUOUS RENDERING: Draw all pages as one continuous flow
+                                        for pageIndex in 0..<renderer.numberOfPages {
+                                            context.cgContext.saveGState()
+                                            context.cgContext.translateBy(x: 0, y: CGFloat(pageIndex) * pageHeight)
+
+                                            // Draw page content
+                                            renderer.drawPage(at: pageIndex, in: CGRect(origin: .zero, size: CGSize(width: pageWidth, height: pageHeight)))
+
+                                            context.cgContext.restoreGState()
+                                        }
+                                    }
+
+                                    // Convert to JPEG and return
+                                    if let data = fullImage.jpegData(compressionQuality: 1.0) {
+                                        let bytes = FlutterStandardTypedData.init(bytes: data)
+                                        finish {
+                                            result(bytes)
+                                            teardown()
+                                        }
+                                        print("✅ Continuous content snapshot successful! Image bytes: \(data.count)")
+                                        return
+                                    }
+
+                                }else{
+                                    var size = wv.scrollView.contentSize
+                                    print("width = \(size.width)")
+                                    print("height = \(size.height)")
+                                    configuration.rect = CGRect(origin: .zero, size: size)
+                                    wv.snapshotView(afterScreenUpdates: false)
+                                }
+
+//
+                                wv.takeSnapshot(with: configuration) {
+                                    (image, error) in
+                                    // Add error handling first
+                                    if let error = error {
+                                        print(
+                                            "❌ iOS Snapshot error: \(error.localizedDescription)"
+                                        )
+                                        // Try iOS fallback method with better size handling
+                                        if let fallbackImage = wv
+                                            .snapshotWithContentSize()
+                                        {
+                                            if let data = fallbackImage.jpegData(
+                                                compressionQuality: 1.0)
+                                            {
+                                                let bytes = FlutterStandardTypedData.init(
+                                                    bytes: data)
+                                                finish {
+                                                    result(bytes)
+                                                    teardown()
+                                                }
+                                                print(
+                                                    "✅ iOS fallback snapshot successful! Image bytes: \(data.count)"
+                                                )
+                                                return
                                             }
                                         }
-
-                                        // Convert to JPEG and return
-                                        if let data = fullImage.jpegData(compressionQuality: 1.0) {
-                                            let bytes = FlutterStandardTypedData.init(bytes: data)
-                                            result(bytes)
-                                            self.dispose()
-                                            print("✅ Continuous content snapshot successful! Image bytes: \(data.count)")
-                                            return
+                                        print("❌ iOS fallback method also failed")
+                                        let emptyBytes = FlutterStandardTypedData.init(bytes: Data())
+                                        finish {
+                                            result(emptyBytes)  // Return empty bytes if all methods fail
+                                            teardown()
                                         }
-
-                                    }else{
-                                        var size = self.webView.scrollView.contentSize
-                                        print("width = \(size.width)")
-                                        print("height = \(size.height)")
-                                        configuration.rect = CGRect(origin: .zero, size: size)
-                                        self.webView.snapshotView(afterScreenUpdates: false)
+                                        return
                                     }
-                                    
-//
-                                    self.webView.takeSnapshot(with: configuration) {
+                                    print("use wv.takeSnapshot")
+
+                                    // Check if image is nil
+                                    guard let image = image else {
+                                        print("❌ No image returned from iOS snapshot")
+                                        // Try fallback method with better size handling
+                                        if let fallbackImage = wv
+                                            .snapshotWithContentSize()
+                                        {
+                                            if let data = fallbackImage.jpegData(
+                                                compressionQuality: 1.0)
+                                            {
+                                                let bytes = FlutterStandardTypedData.init(
+                                                    bytes: data)
+                                                finish {
+                                                    result(bytes)
+                                                    teardown()
+                                                }
+                                                print(
+                                                    "✅ iOS fallback snapshot successful! Image bytes: \(data.count)"
+                                                )
+                                                return
+                                            }
+                                        }
+                                        let emptyBytes = FlutterStandardTypedData.init(bytes: Data())
+                                        finish {
+                                            result(emptyBytes)
+                                            teardown()
+                                        }
+                                        return
+                                    }
+
+                                    // Try to convert to JPEG data
+                                    guard let data = image.jpegData(compressionQuality: 1)
+                                    else {
+                                        print("❌ Could not convert iOS image to JPEG data")
+                                        // Try fallback method with better size handling
+                                        if let fallbackImage = wv
+                                            .snapshotWithContentSize()
+                                        {
+                                            if let fallbackData = fallbackImage.jpegData(
+                                                compressionQuality: 1.0)
+                                            {
+                                                let bytes = FlutterStandardTypedData.init(
+                                                    bytes: fallbackData)
+                                                finish {
+                                                    result(bytes)
+                                                    teardown()
+                                                }
+                                                print(
+                                                    "✅ iOS fallback snapshot successful! Image bytes: \(fallbackData.count)"
+                                                )
+                                                return
+                                            }
+                                        }
+                                        let emptyBytes = FlutterStandardTypedData.init(bytes: Data())
+                                        finish {
+                                            result(emptyBytes)
+                                            teardown()
+                                        }
+                                        return
+                                    }
+
+                                    // Success case
+                                    let bytes = FlutterStandardTypedData.init(bytes: data)
+                                    finish {
+                                        result(bytes)
+                                        teardown()
+                                    }
+                                    print(
+                                        "✅ iOS snapshot successful! Image bytes: \(data.count)")
+                                }
+                            }
+                        }
+                    #else  // macOS
+                        // First, get the actual content size by evaluating JavaScript
+                        wv.evaluateJavaScript(
+                            "Math.max(document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight)"
+                        ) { (height, error) in
+                            wv.evaluateJavaScript(
+                                "Math.max(document.body.scrollWidth, document.body.offsetWidth)"
+                            ) { (width, error) in
+
+                                // 🔧 AUTO HEIGHT & WIDTH - Get actual content dimensions
+                                var contentWidth = width as? Double ?? CGFloat(PaperFormat.a4.widthPixels)  // Fallback to A4 width
+                                var contentHeight = height as? Double ?? CGFloat(PaperFormat.a4.heightPixels)  // Fallback to A4 height
+                                let marginTop = CGFloat(inchToPx(margins?["top"] ?? 0.0))
+                                let marginBottom = CGFloat(inchToPx(margins?["bottom"] ?? 0.0))
+                                let marginLeft = CGFloat(inchToPx(margins?["left"] ?? 0.0))
+                                let marginRight = CGFloat(inchToPx(margins?["right"] ?? 0.0))
+                                let formatName = format?["name"] as? String
+                                if(format != nil && formatName != nil  && ((formatName?.isEmpty) != nil) ) {
+                                  let paperFormat =  PaperFormat.fromString(formatName!);
+                                    contentWidth = CGFloat(paperFormat.widthPixels) + marginLeft + marginRight + 300; // 300 DPI = high-quality print resolution
+                                }
+
+                                print("📏 WebView frame: \(wv.frame)")
+
+                                // Resize the WebView to match content size for full capture
+                                let originalFrame = wv.frame
+                                let fullContentFrame = CGRect(
+                                    x: 0, y: 0, width: contentWidth, height: contentHeight)
+                                wv.frame = fullContentFrame
+
+                                // Wait a moment for the resize to take effect
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                    let configuration = WKSnapshotConfiguration()
+                                    configuration.rect = CGRect(
+                                        origin: .zero, size: fullContentFrame.size)
+
+                                    wv.takeSnapshot(with: configuration) {
                                         (image, error) in
-                                        // Add error handling first
+                                        // Restore original frame
+                                        wv.frame = originalFrame
+
                                         if let error = error {
                                             print(
-                                                "❌ iOS Snapshot error: \(error.localizedDescription)"
+                                                "❌ Snapshot error: \(error.localizedDescription)"
                                             )
-                                            // Try iOS fallback method with better size handling
-                                            if let fallbackImage = self.webView
-                                                .snapshotWithContentSize()
+                                            // Try fallback method
+                                            if let fallbackImage = wv.snapshotMacOS()
                                             {
-                                                if let data = fallbackImage.jpegData(
-                                                    compressionQuality: 1.0)
-                                                {
-                                                    bytes = FlutterStandardTypedData.init(
+                                                if let data = fallbackImage.jpegDataMacOS() {
+                                                    let bytes = FlutterStandardTypedData(
                                                         bytes: data)
-                                                    result(bytes)
-                                                    self.dispose()
-                                                    print(
-                                                        "✅ iOS fallback snapshot successful! Image bytes: \(data.count)"
-                                                    )
-                                                    return
-                                                }
-                                            }
-                                            print("❌ iOS fallback method also failed")
-                                            result(bytes)  // Return empty bytes if all methods fail
-                                            self.dispose()
-                                            return
-                                        }
-                                        print("use self.webView.takeSnapshot")
-
-                                        // Check if image is nil
-                                        guard let image = image else {
-                                            print("❌ No image returned from iOS snapshot")
-                                            // Try fallback method with better size handling
-                                            if let fallbackImage = self.webView
-                                                .snapshotWithContentSize()
-                                            {
-                                                if let data = fallbackImage.jpegData(
-                                                    compressionQuality: 1.0)
-                                                {
-                                                    bytes = FlutterStandardTypedData.init(
-                                                        bytes: data)
-                                                    result(bytes)
-                                                    self.dispose()
-                                                    print(
-                                                        "✅ iOS fallback snapshot successful! Image bytes: \(data.count)"
-                                                    )
-                                                    return
-                                                }
-                                            }
-                                            result(bytes)
-                                            self.dispose()
-                                            return
-                                        }
-
-                                        // Try to convert to JPEG data
-                                        guard let data = image.jpegData(compressionQuality: 1)
-                                        else {
-                                            print("❌ Could not convert iOS image to JPEG data")
-                                            // Try fallback method with better size handling
-                                            if let fallbackImage = self.webView
-                                                .snapshotWithContentSize()
-                                            {
-                                                if let fallbackData = fallbackImage.jpegData(
-                                                    compressionQuality: 1.0)
-                                                {
-                                                    bytes = FlutterStandardTypedData.init(
-                                                        bytes: fallbackData)
-                                                    result(bytes)
-                                                    self.dispose()
-                                                    print(
-                                                        "✅ iOS fallback snapshot successful! Image bytes: \(fallbackData.count)"
-                                                    )
-                                                    return
-                                                }
-                                            }
-                                            result(bytes)
-                                            self.dispose()
-                                            return
-                                        }
-
-                                        // Success case
-                                        bytes = FlutterStandardTypedData.init(bytes: data)
-                                        result(bytes)
-                                        self.dispose()
-                                        print(
-                                            "✅ iOS snapshot successful! Image bytes: \(data.count)")
-                                    }
-                                }
-                            }
-                        #else  // macOS
-
-                            // First, get the actual content size by evaluating JavaScript
-                            self.webView.evaluateJavaScript(
-                                "Math.max(document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight)"
-                            ) { (height, error) in
-                                //                            self.webView.evaluateJavaScript("document.body.scrollWidth") { (result, error) in
-                                //                                print("scrollWidth = \(result)")
-                                //                            }
-                                //                            self.webView.evaluateJavaScript("document.body.offsetWidth") { (result, error) in
-                                //                                print("offsetWidth = \(result)")
-                                //                            }
-                                //                            self.webView.evaluateJavaScript("document.documentElement.clientWidth") { (result, error) in
-                                //                                print("clientWidth = \(result)")
-                                //                            }
-                                //                            self.webView.evaluateJavaScript("document.documentElement.scrollWidth") { (result, error) in
-                                //                                print("scrollWidth = \(result)")
-                                //                            }
-                                //                            self.webView.evaluateJavaScript("document.documentElement.offsetWidth") { (result, error) in
-                                //                                print("offsetWidth = \(result)")
-                                //                            }
-                                self.webView.evaluateJavaScript(
-                                    "Math.max(document.body.scrollWidth, document.body.offsetWidth)"
-                                ) { (width, error) in
-
-                                    // 🔧 AUTO HEIGHT & WIDTH - Get actual content dimensions
-                                    var contentWidth = width as? Double ?? CGFloat(PaperFormat.a4.widthPixels)  // Fallback to A4 width
-                                    var contentHeight = height as? Double ?? CGFloat(PaperFormat.a4.heightPixels)  // Fallback to A4 height
-                                    let marginTop = CGFloat(inchToPx(margins?["top"] ?? 0.0))
-                                    let marginBottom = CGFloat(inchToPx(margins?["bottom"] ?? 0.0))
-                                    let marginLeft = CGFloat(inchToPx(margins?["left"] ?? 0.0))
-                                    let marginRight = CGFloat(inchToPx(margins?["right"] ?? 0.0))
-                                    let formatName = format?["name"] as? String
-                                    if(format != nil && formatName != nil  && ((formatName?.isEmpty) != nil) ) {
-                                      let paperFormat =  PaperFormat.fromString(formatName!);
-                                        contentWidth = CGFloat(paperFormat.widthPixels) + marginLeft + marginRight + 300; // 300 DPI = high-quality print resolution
-    //                                    contentHeight = CGFloat(paperFormat.heightPixels);
-                                    }
-
-                                    print("📏 WebView frame: \(self.webView.frame)")
-
-                                    // Resize the WebView to match content size for full capture
-                                    let originalFrame = self.webView.frame
-                                    let fullContentFrame = CGRect(
-                                        x: 0, y: 0, width: contentWidth, height: contentHeight)
-                                    self.webView.frame = fullContentFrame
-
-                                    // Wait a moment for the resize to take effect
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                        let configuration = WKSnapshotConfiguration()
-                                        configuration.rect = CGRect(
-                                            origin: .zero, size: fullContentFrame.size)
-
-                                        self.webView.takeSnapshot(with: configuration) {
-                                            (image, error) in
-                                            // Restore original frame
-                                            self.webView.frame = originalFrame
-
-                                            if let error = error {
-                                                print(
-                                                    "❌ Snapshot error: \(error.localizedDescription)"
-                                                )
-                                                // Try fallback method
-                                                if let fallbackImage = self.webView.snapshotMacOS()
-                                                {
-                                                    if let data = fallbackImage.jpegDataMacOS() {
-                                                        bytes = FlutterStandardTypedData(
-                                                            bytes: data)
+                                                    finish {
                                                         result(bytes)
-                                                        self.dispose()
-                                                        return
+                                                        teardown()
                                                     }
+                                                    return
                                                 }
-                                                result(bytes)
-                                                self.dispose()
-                                                return
                                             }
-
-                                            guard let image = image else {
-                                                print("❌ No image returned from snapshot")
-                                                result(bytes)
-                                                self.dispose()
-                                                return
+                                            let emptyBytes = FlutterStandardTypedData(bytes: Data())
+                                            finish {
+                                                result(emptyBytes)
+                                                teardown()
                                             }
+                                            return
+                                        }
 
-                                            guard
-                                                let cgImage = image.cgImage(
-                                                    forProposedRect: nil, context: nil, hints: nil)
-                                            else {
-                                                print("❌ Could not get CGImage from NSImage")
-                                                result(bytes)
-                                                self.dispose()
-                                                return
+                                        guard let image = image else {
+                                            print("❌ No image returned from snapshot")
+                                            let emptyBytes = FlutterStandardTypedData(bytes: Data())
+                                            finish {
+                                                result(emptyBytes)
+                                                teardown()
                                             }
+                                            return
+                                        }
 
-                                            let bitmapRep = NSBitmapImageRep(cgImage: cgImage)
-                                            guard
-                                                let data = bitmapRep.representation(
-                                                    using: .jpeg, properties: [:])
-                                            else {
-                                                print("❌ Could not convert to JPEG data")
-                                                result(bytes)
-                                                self.dispose()
-                                                return
+                                        guard
+                                            let cgImage = image.cgImage(
+                                                forProposedRect: nil, context: nil, hints: nil)
+                                        else {
+                                            print("❌ Could not get CGImage from NSImage")
+                                            let emptyBytes = FlutterStandardTypedData(bytes: Data())
+                                            finish {
+                                                result(emptyBytes)
+                                                teardown()
                                             }
+                                            return
+                                        }
 
-                                            print(
-                                                "✅ Successfully captured full content! Image bytes: \(data.count)"
-                                            )
-                                            bytes = FlutterStandardTypedData(bytes: data)
+                                        let bitmapRep = NSBitmapImageRep(cgImage: cgImage)
+                                        guard
+                                            let data = bitmapRep.representation(
+                                                using: .jpeg, properties: [:])
+                                        else {
+                                            print("❌ Could not convert to JPEG data")
+                                            let emptyBytes = FlutterStandardTypedData(bytes: Data())
+                                            finish {
+                                                result(emptyBytes)
+                                                teardown()
+                                            }
+                                            return
+                                        }
+
+                                        print(
+                                            "✅ Successfully captured full content! Image bytes: \(data.count)"
+                                        )
+                                        let bytes = FlutterStandardTypedData(bytes: data)
+                                        finish {
                                             result(bytes)
-                                            self.dispose()
+                                            teardown()
                                         }
                                     }
                                 }
                             }
+                        }
+                    #endif
+                }
 
-                        #endif
+                jobDelegate.onError = { error in
+                    finish {
+                        wv.stopLoading()
+                        result(
+                            FlutterError(
+                                code: "WEBVIEW_LOAD_ERROR",
+                                message: "WebView failed to load: \(error.localizedDescription)",
+                                details: nil))
+                        teardown()
                     }
-                })
+                }
 
-            break
+                // --- Arm watchdog ---
+                watchdog.arm(timeoutMs: timeoutMs) {
+                    finish {
+                        wv.stopLoading()
+                        result(
+                            FlutterError(
+                                code: "TIMEOUT",
+                                message: "Conversion timed out after \(timeoutMs)ms",
+                                details: nil))
+                        teardown()
+                    }
+                }
+
+                // --- Start loading (delegate is already wired) ---
+                wv.loadHTMLString(content, baseURL: Bundle.main.resourceURL)
+                #if os(macOS)
+                    print("📱 macOS WebView initialized with frame: \(wv.frame)")
+                #endif
+            }
+
         case "contentToPDF":
-            #if os(iOS)
-                let path = arguments!["savedPath"] as? String
-                let savedPath = URL.init(string: path!)?.path
-            //  var width = arguments!["width"] as? Double
-            //  var height = arguments!["height"] as? Double
-                let format = arguments!["format"] as? [String: Any]
-                let margins = arguments!["margins"] as? [String: Double]
-                        
-            //  print("width \(String(describing: width))")
-            //  print("height \(String(describing: height))")
-                print("format \(String(describing: format))")
-                print("margins \(String(describing: margins))")
-                self.webView = WKWebView()
-                self.webView.isHidden = false
-                self.webView.tag = 100
-                self.webView.loadHTMLString(content!, baseURL: Bundle.main.resourceURL)  // load html into hidden webview
-                urlObservation = webView.observe(
-                    \.isLoading,
-                    changeHandler: { (webView, change) in
-                        DispatchQueue.main.asyncAfter(deadline: .now() + (duration! / 10000)) {
-                            print("height = \(self.webView.scrollView.contentSize.height)")
-                            print("width = \(self.webView.scrollView.contentSize.width)")
+            if conversionQueue.isQueueFull() {
+                result(
+                    FlutterError(
+                        code: "TOO_MANY_REQUESTS",
+                        message: "Too many pending conversion requests",
+                        details: nil))
+                return
+            }
+
+            let path = arguments!["savedPath"] as? String
+            let format = arguments!["format"] as? [String: Any]
+            let margins = arguments!["margins"] as? [String: Double]
+            let savedPath = URL.init(string: path!)?.path
+            let durationMs = Int64(duration!)
+
+            conversionQueue.startOrQueue { [weak self] in
+                guard let self = self else { return }
+
+                var completed = false
+                let watchdog = RequestWatchdog()
+                let timeoutMs = max(30_000, durationMs + 30_000)
+
+                func finish(_ action: @escaping () -> Void) {
+                    guard !completed else { return }
+                    completed = true
+                    watchdog.disarm()
+                    self.conversionQueue.onRequestFinished()
+                    action()
+                }
+
+                #if os(iOS)
+                    guard let content else {
+                        finish {
+                            result(
+                                FlutterError(
+                                    code: "INVALID_ARGUMENT", message: "Content is required", details: nil))
+                        }
+                        return
+                    }
+
+                    let wv = WKWebView()
+                    wv.isHidden = false
+                    wv.tag = 100
+
+                    let jobDelegate = JobNavigationDelegate()
+                    wv.navigationDelegate = jobDelegate
+                    self.activeDelegates.append(jobDelegate)
+
+                    func teardown() {
+                        self.dispose(wv)
+                        self.activeDelegates.removeAll { $0 === jobDelegate }
+                    }
+
+                    jobDelegate.onFinish = {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + (Double(durationMs) / 10000)) {
+                            print("height = \(wv.scrollView.contentSize.height)")
+                            print("width = \(wv.scrollView.contentSize.width)")
                             if #available(iOS 11.0, *) {
                                 let configuration = WKSnapshotConfiguration()
                                 let formatName = format?["name"] as? String
@@ -420,17 +578,17 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                                         // ✅ CUSTOM: Use width and height from format dictionary
                                         let customWidth = CGFloat(inchToPx(format!["width"] as? Double ?? 1.0))
                                         let customHeight = CGFloat(inchToPx(format!["height"] as? Double ?? 1.0))
-                                        
+
                                         print("📐 Using custom format - width: \(customWidth), height: \(customHeight)")
-                                        
+
                                         configuration.rect = CGRect(x: 0, y: 0, width: customWidth, height: customHeight)
-                                        
+
                                     } else {
                                         // ✅ PREDEFINED: Use standard paper format
                                         let paperFormat = PaperFormat.fromString(formatName!)
-                                        
+
                                         print("📄 Using predefined format: \(formatName!) - \(paperFormat.widthPixels) x \(paperFormat.heightPixels)")
-                                        
+
                                         configuration.rect = CGRect(x: 0, y: 0, width: CGFloat(paperFormat.widthPixels), height: CGFloat(paperFormat.heightPixels))
                                     }
                                 }else{
@@ -438,100 +596,92 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                                         x: 0, y: 0, width: CGFloat( inchToPx(format!["width"] as? Double ?? PaperFormat.a4.width) ),
                                         height: CGFloat(inchToPx(format!["height"] as? Double ?? PaperFormat.a4.height) ))
                                 }
-                                
+
                                 guard
-                                    let path = self.webView.exportAsPdfFromWebView(
+                                    let path = wv.exportAsPdfFromWebView(
                                         savedPath: savedPath!, format: format!, margins: margins!)
                                 else {
-                                    result(nil)
+                                    finish {
+                                        result(nil)
+                                        teardown()
+                                    }
                                     return
                                 }
-                                result(path)
+                                finish {
+                                    result(path)
+                                    teardown()
+                                }
                             } else {
-                                result(nil)
+                                finish {
+                                    result(nil)
+                                    teardown()
+                                }
                             }
-                            //dispose
-                            self.dispose()
                         }
-                    })
-            #else
-                // macOS PDF generation implementation
-                let path = arguments!["savedPath"] as? String
-                let savedPath = URL.init(string: path!)?.path
-                let format = arguments!["format"] as? [String: Any]
-                let margins = arguments!["margins"] as? [String: Double]
-
-                print("format \(String(describing: format))")
-                print("margins \(String(describing: margins))")
-
-                guard let content = content else {
-                    result(
-                        FlutterError(
-                            code: "INVALID_ARGUMENT", message: "Content is required", details: nil))
-                    return
-                }
-
-                let marginTop = CGFloat(inchToPx(margins?["top"] ?? 0.0))
-                let marginBottom = CGFloat(inchToPx(margins?["bottom"] ?? 0.0))
-                let marginLeft = CGFloat(inchToPx(margins?["left"] ?? 0.0))
-                let marginRight = CGFloat(inchToPx(margins?["right"] ?? 0.0))
-                let formatName = format?["name"] as? String
-
-                // Determine the WebView's starting width UP FRONT, before any
-                // content loads, so WebKit's initial layout pass resolves
-                // percentage-based CSS widths (width: 50%, width: 100%, etc.)
-                // against a definite containing block instead of collapsing
-                // them to 0 — see
-                // docs/superpowers/specs/2026-07-15-macos-pdf-zero-width-layout-bug-design.md.
-                // When a PaperFormat is specified this is also the FINAL
-                // render width (fully known from format + margins,
-                // independent of content). In auto-size mode (no format),
-                // there's no content-independent target width yet, so fall
-                // back to the same 800px default contentToImage's macOS
-                // branch and the Puppeteer path already use.
-                let initialFormatWidthPx: Double?
-                let initialFormatHeightPx: Double?
-                if let formatName = formatName, !formatName.isEmpty {
-                    if formatName == "custom" {
-                        initialFormatWidthPx = inchToPx(format!["width"] as? Double ?? 1.0)
-                        initialFormatHeightPx = inchToPx(format!["height"] as? Double ?? 1.0)
-                    } else {
-                        let paperFormat = PaperFormat.fromString(formatName)
-                        initialFormatWidthPx = Double(paperFormat.widthPixels)
-                        initialFormatHeightPx = Double(paperFormat.heightPixels)
                     }
-                } else {
-                    initialFormatWidthPx = nil
-                    initialFormatHeightPx = nil
-                }
 
-                let initialRenderWidth = max(
-                    1.0, (initialFormatWidthPx ?? 800.0) - Double(marginLeft) - Double(marginRight))
+                #else
+                    // macOS PDF generation implementation
+                    guard let content = content else {
+                        finish {
+                            result(
+                                FlutterError(
+                                    code: "INVALID_ARGUMENT", message: "Content is required", details: nil))
+                        }
+                        return
+                    }
 
-                self.webView = WKWebView(
-                    frame: CGRect(x: 0, y: 0, width: initialRenderWidth, height: 10))
-                self.webView.isHidden = false
-                self.webView.loadHTMLString(content, baseURL: Bundle.main.resourceURL)
-                self.webView.viewWithTag(100)
+                    let marginTop = CGFloat(inchToPx(margins?["top"] ?? 0.0))
+                    let marginBottom = CGFloat(inchToPx(margins?["bottom"] ?? 0.0))
+                    let marginLeft = CGFloat(inchToPx(margins?["left"] ?? 0.0))
+                    let marginRight = CGFloat(inchToPx(margins?["right"] ?? 0.0))
+                    let formatName = format?["name"] as? String
 
-                urlObservation = webView.observe(
-                    \.isLoading,
-                    changeHandler: { (webView, change) in
+                    let initialFormatWidthPx: Double?
+                    let initialFormatHeightPx: Double?
+                    if let formatName = formatName, !formatName.isEmpty {
+                        if formatName == "custom" {
+                            initialFormatWidthPx = inchToPx(format!["width"] as? Double ?? 1.0)
+                            initialFormatHeightPx = inchToPx(format!["height"] as? Double ?? 1.0)
+                        } else {
+                            let paperFormat = PaperFormat.fromString(formatName)
+                            initialFormatWidthPx = Double(paperFormat.widthPixels)
+                            initialFormatHeightPx = Double(paperFormat.heightPixels)
+                        }
+                    } else {
+                        initialFormatWidthPx = nil
+                        initialFormatHeightPx = nil
+                    }
+
+                    let initialRenderWidth = max(
+                        1.0, (initialFormatWidthPx ?? 800.0) - Double(marginLeft) - Double(marginRight))
+
+                    let wv = WKWebView(
+                        frame: CGRect(x: 0, y: 0, width: initialRenderWidth, height: 10))
+                    wv.isHidden = false
+                    wv.viewWithTag(100)
+
+                    let jobDelegate = JobNavigationDelegate()
+                    wv.navigationDelegate = jobDelegate
+                    self.activeDelegates.append(jobDelegate)
+
+                    func teardown() {
+                        self.dispose(wv)
+                        self.activeDelegates.removeAll { $0 === jobDelegate }
+                    }
+
+                    jobDelegate.onFinish = {
                         print("macOS WebView finished loading")
 
-                        // First, get the actual content size by evaluating JavaScript
-                        self.webView.evaluateJavaScript(
+                        wv.evaluateJavaScript(
                             "Math.max(document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight)"
                         ) { (height, error) in
 
-                            self.webView.evaluateJavaScript(
+                            wv.evaluateJavaScript(
                                 "Math.max(document.body.scrollWidth, document.body.offsetWidth, document.documentElement.clientWidth, document.documentElement.scrollWidth, document.documentElement.offsetWidth)"
                             ) { (width, error) in
-                                // 🔧 AUTO HEIGHT & WIDTH - Get actual content dimensions
-                                let contentWidth = width as? Double ?? CGFloat(PaperFormat.a4.widthPixels)  // Fallback to A4 width
-                                let contentHeight = height as? Double ?? CGFloat(PaperFormat.a4.heightPixels)  // Fallback to A4 height
-//                                let widthInPixel = CGFloat(inchToPx(format["width"] as? Double ?? PaperFormat.a4.width))
-//                                let heightInPixel = CGFloat(inchToPx(format["height"] as? Double ?? PaperFormat.a4.height))
+                                let contentWidth = width as? Double ?? CGFloat(PaperFormat.a4.widthPixels)
+                                let contentHeight = height as? Double ?? CGFloat(PaperFormat.a4.heightPixels)
 
                                 let pageWidthPx: Double
                                 let pageHeightPx: Double
@@ -540,46 +690,33 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                                     pageWidthPx = formatWidthPx
                                     pageHeightPx = formatHeightPx
                                 } else {
-                                    // No explicit format: preserve the existing "one page,
-                                    // sized to fit all content" behavior instead of paginating
-                                    // against an arbitrary page size. Padding pageHeight by the
-                                    // margins guarantees computePdfPageSlices always returns
-                                    // exactly one slice below.
                                     pageWidthPx = Double(contentWidth) + Double(marginLeft) + Double(marginRight)
                                     pageHeightPx = Double(contentHeight) + Double(marginTop) + Double(marginBottom)
                                 }
 
                                 let renderWidth = max(1.0, pageWidthPx - Double(marginLeft) - Double(marginRight))
 
-                                print("📏 WebView frame: \(self.webView.frame)")
+                                print("📏 WebView frame: \(wv.frame)")
                                 print("📏 Page geometry: \(pageWidthPx) x \(pageHeightPx), render width: \(renderWidth)")
                                 print("marginTop \(marginTop)")
                                 print("marginBottom \(marginBottom)")
                                 print("marginLeft \(marginLeft)")
                                 print("marginRight \(marginRight)")
-//                                print("widthInPixel \(widthInPixel)")
-//                                print("heightInPixel \(heightInPixel)")
 
-                                // Grow the WebView's frame to the full content height at
-                                // the SAME width it was already loaded/laid-out at
-                                // (renderWidth for a formatted request never changes here
-                                // — only height grows to fit content), so every
-                                // Y-coordinate in its frame maps 1:1 to a document
-                                // Y-offset for the page slicing below, and the
-                                // percentage-width layout already resolved correctly
-                                // against the width set before load is undisturbed.
-                                let originalFrame = self.webView.frame
+                                let originalFrame = wv.frame
                                 let fullContentFrame = CGRect(
                                     x: 0, y: 0, width: renderWidth, height: Double(contentHeight))
-                                self.webView.frame = fullContentFrame
+                                wv.frame = fullContentFrame
                                 print("📏 WebView fullContentFrame: \(fullContentFrame)")
 
                                 DispatchQueue.main.asyncAfter(
-                                    deadline: .now() + (duration! / 10000)
+                                    deadline: .now() + (Double(durationMs) / 10000)
                                 ) {
                                     guard #available(macOS 11.0, *) else {
-                                        result(nil)
-                                        self.dispose()
+                                        finish {
+                                            result(nil)
+                                            teardown()
+                                        }
                                         return
                                     }
 
@@ -591,8 +728,8 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                                     )
                                     print("📄 Total pages: \(slices.count)")
 
-                                    self.capturePdfPageSlicesSequentially(slices: slices, pageWidth: renderWidth) { pageDatas in
-                                        self.webView.frame = originalFrame
+                                    self.capturePdfPageSlicesSequentially(webView: wv, slices: slices, pageWidth: renderWidth) { pageDatas in
+                                        wv.frame = originalFrame
 
                                         guard let pageDatas = pageDatas,
                                               let mergedData = mergePdfPageSlices(
@@ -604,8 +741,10 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                                               )
                                         else {
                                             print("❌ PDF page capture or merge failed")
-                                            result(nil)
-                                            self.dispose()
+                                            finish {
+                                                result(nil)
+                                                teardown()
+                                            }
                                             return
                                         }
 
@@ -615,72 +754,174 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                                             print(
                                                 "✅ PDF saved successfully to: \(savedPath!) (\(mergedData.count) bytes, \(pageDatas.count) pages)"
                                             )
-                                            result(savedPath!)
+                                            finish {
+                                                result(savedPath!)
+                                                teardown()
+                                            }
                                         } catch {
                                             print("❌ Failed to save PDF: \(error.localizedDescription)")
-                                            result(nil)
+                                            finish {
+                                                result(nil)
+                                                teardown()
+                                            }
                                         }
-                                        self.dispose()
                                     }
                                 }
                             }
                         }
-                    })
+                    }
+                #endif
 
-            #endif
-            break
+                jobDelegate.onError = { error in
+                    finish {
+                        wv.stopLoading()
+                        result(
+                            FlutterError(
+                                code: "WEBVIEW_LOAD_ERROR",
+                                message: "WebView failed to load: \(error.localizedDescription)",
+                                details: nil))
+                        teardown()
+                    }
+                }
+
+                watchdog.arm(timeoutMs: timeoutMs) {
+                    finish {
+                        wv.stopLoading()
+                        result(
+                            FlutterError(
+                                code: "TIMEOUT",
+                                message: "Conversion timed out after \(timeoutMs)ms",
+                                details: nil))
+                        teardown()
+                    }
+                }
+
+                // --- Start loading (delegate is already wired) ---
+                wv.loadHTMLString(content, baseURL: Bundle.main.resourceURL)
+            }
 
         case "printPreview":
-            #if os(iOS)
-                let url = arguments!["url"] as? String?
-                let margins = arguments!["margins"] as? [String: Double]
-                let baseURL = url != nil ? URL(string: url!!) : Bundle.main.resourceURL
-                self.webView = WKWebView()
-                self.webView.isHidden = true
-                self.webView.tag = 100
-                self.webView.loadHTMLString(content!, baseURL: baseURL)  // load html into hidden webview
-                urlObservation = webView.observe(
-                    \.isLoading,
-                    changeHandler: { (webView, change) in
-                        DispatchQueue.main.asyncAfter(deadline: .now() + (duration! / 10000)) {
-                            print("height = \(self.webView.scrollView.contentSize.height)")
-                            print("width = \(self.webView.scrollView.contentSize.width)")
-                            self.createWebPrintJob(webView: webView)
-                            result(nil)
-                            //dispose
-                            self.dispose()
-                        }
-                    })
-            #else
-                // macOS print preview implementation
-                let url = arguments!["url"] as? String?
-                let margins = arguments!["margins"] as? [String: Double]
-                let baseURL = url != nil ? URL(string: url!!) : Bundle.main.resourceURL
+            if conversionQueue.isQueueFull() {
+                result(
+                    FlutterError(
+                        code: "TOO_MANY_REQUESTS",
+                        message: "Too many pending conversion requests",
+                        details: nil))
+                return
+            }
 
-                // Create WebView for print preview
-                let frame = CGRect(x: 0, y: 0, width: 800, height: 600)
-                let configuration = WKWebViewConfiguration()
-                configuration.suppressesIncrementalRendering = false
-                configuration.preferences.javaScriptEnabled = true
+            let urlArg = arguments!["url"] as? String?
+            let margins = arguments!["margins"] as? [String: Double]
+            let durationMs = Int64(duration!)
 
-                self.webView = WKWebView(frame: frame, configuration: configuration)
-                self.webView.wantsLayer = true
+            conversionQueue.startOrQueue { [weak self] in
+                guard let self = self else { return }
 
-                self.webView.loadHTMLString(content!, baseURL: baseURL)
+                var completed = false
+                let watchdog = RequestWatchdog()
+                let timeoutMs = max(30_000, durationMs + 30_000)
 
-                urlObservation = webView.observe(
-                    \.isLoading,
-                    changeHandler: { (webView, change) in
-                        if !webView.isLoading {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + (duration! / 1000)) {
-                                self.createWebPrintJobMacOS(webView: webView, margins: margins)
+                func finish(_ action: @escaping () -> Void) {
+                    guard !completed else { return }
+                    completed = true
+                    watchdog.disarm()
+                    self.conversionQueue.onRequestFinished()
+                    action()
+                }
+
+                #if os(iOS)
+                    let baseURL = urlArg != nil ? URL(string: urlArg!!) : Bundle.main.resourceURL
+
+                    let wv = WKWebView()
+                    wv.isHidden = true
+                    wv.tag = 100
+
+                    let jobDelegate = JobNavigationDelegate()
+                    wv.navigationDelegate = jobDelegate
+                    self.activeDelegates.append(jobDelegate)
+
+                    func teardown() {
+                        self.dispose(wv)
+                        self.activeDelegates.removeAll { $0 === jobDelegate }
+                    }
+
+                    jobDelegate.onFinish = {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + (Double(durationMs) / 10000)) {
+                            print("height = \(wv.scrollView.contentSize.height)")
+                            print("width = \(wv.scrollView.contentSize.width)")
+                            self.createWebPrintJob(webView: wv)
+                            finish {
                                 result(nil)
-                                self.dispose()
+                                teardown()
                             }
                         }
-                    })
-            #endif
-            break
+                    }
+                #else
+                    let baseURL = urlArg != nil ? URL(string: urlArg!!) : Bundle.main.resourceURL
+
+                    let frame = CGRect(x: 0, y: 0, width: 800, height: 600)
+                    let configuration = WKWebViewConfiguration()
+                    configuration.suppressesIncrementalRendering = false
+                    configuration.preferences.javaScriptEnabled = true
+
+                    let wv = WKWebView(frame: frame, configuration: configuration)
+                    wv.wantsLayer = true
+
+                    let jobDelegate = JobNavigationDelegate()
+                    wv.navigationDelegate = jobDelegate
+                    self.activeDelegates.append(jobDelegate)
+
+                    func teardown() {
+                        self.dispose(wv)
+                        self.activeDelegates.removeAll { $0 === jobDelegate }
+                    }
+
+                    jobDelegate.onFinish = {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + (Double(durationMs) / 1000)) {
+                            // On macOS, NSPrintOperation.run() runs its own nested
+                            // event loop and blocks until the user dismisses the print
+                            // panel. The watchdog is disarmed BEFORE run() so it
+                            // doesn't false-positive TIMEOUT during normal user
+                            // interaction with the system print dialog.
+                            watchdog.disarm()
+                            self.createWebPrintJobMacOS(webView: wv, margins: margins)
+                            // After the dialog closes, free the queue slot.
+                            finish {
+                                result(nil)
+                                teardown()
+                            }
+                        }
+                    }
+                #endif
+
+                jobDelegate.onError = { error in
+                    finish {
+                        wv.stopLoading()
+                        result(
+                            FlutterError(
+                                code: "WEBVIEW_LOAD_ERROR",
+                                message: "WebView failed to load: \(error.localizedDescription)",
+                                details: nil))
+                        teardown()
+                    }
+                }
+
+                watchdog.arm(timeoutMs: timeoutMs) {
+                    finish {
+                        wv.stopLoading()
+                        result(
+                            FlutterError(
+                                code: "TIMEOUT",
+                                message: "Conversion timed out after \(timeoutMs)ms",
+                                details: nil))
+                        teardown()
+                    }
+                }
+
+                // --- Start loading (delegate is already wired) ---
+                wv.loadHTMLString(content!, baseURL: baseURL)
+            }
+
         case "getPlatformVersion":
             #if os(iOS)
                 result("iOS " + UIDevice.current.systemVersion)
@@ -690,7 +931,6 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
         default:
             result(FlutterMethodNotImplemented)
         }
-
     }
 
     #if os(iOS)
@@ -748,6 +988,7 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
     #if os(macOS)
         @available(macOS 11.0, *)
         private func capturePdfPageSlicesSequentially(
+            webView: WKWebView,
             slices: [PdfPageSlice],
             pageWidth: Double,
             index: Int = 0,
@@ -764,10 +1005,11 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
             configuration.rect = CGRect(
                 x: 0, y: slice.sourceY, width: pageWidth, height: slice.sourceHeight)
 
-            self.webView.createPDF(configuration: configuration) { pdfResult in
+            webView.createPDF(configuration: configuration) { pdfResult in
                 switch pdfResult {
                 case .success(let data):
                     self.capturePdfPageSlicesSequentially(
+                        webView: webView,
                         slices: slices,
                         pageWidth: pageWidth,
                         index: index + 1,
@@ -782,15 +1024,18 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
         }
     #endif
 
-    func dispose() {
-        //dispose
+    // Operates on the specific `webView` passed in — never a shared class
+    // property — so disposing one job's WebView can never tear down a
+    // *different*, currently in-flight job's WebView that happens to be
+    // referenced by a stale/shared field at the moment this runs.
+    func dispose(_ webView: WKWebView) {
         #if os(iOS)
-            if let viewWithTag = self.webView.viewWithTag(100) {
+            if let viewWithTag = webView.viewWithTag(100) {
                 viewWithTag.removeFromSuperview()  // remove hidden webview when pdf is generated
             }
         #else
             // On macOS, just remove the webView from its parent if it has one
-            self.webView.removeFromSuperview()
+            webView.removeFromSuperview()
         #endif
 
         // clear WKWebView cache (available on both platforms)
@@ -804,7 +1049,6 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                 }
             }
         }
-        self.webView = nil
     }
 
     func getPath() -> String {
@@ -934,7 +1178,7 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                     let paperFormat =  PaperFormat.fromString(formatName!);
                     page = CGRect(x: 0, y: 0, width: CGFloat(paperFormat.widthPixels),height: CGFloat(paperFormat.heightPixels))
                 }
-              
+               
             }
             
             let printable = page.insetBy(dx: 0, dy: 0)
