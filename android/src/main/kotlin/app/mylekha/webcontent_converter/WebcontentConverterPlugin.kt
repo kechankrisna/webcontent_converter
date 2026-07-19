@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.os.AsyncTask
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -16,6 +15,8 @@ import android.print.PrintAttributes
 import android.print.PrintManager
 import android.util.Log
 import android.view.View
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.annotation.NonNull
@@ -33,6 +34,7 @@ import io.flutter.plugin.common.MethodChannel.Result
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -42,14 +44,23 @@ import kotlin.math.absoluteValue
 
 /** WebcontentConverterPlugin */
 class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
-    /// The MethodChannel that will the communication between Flutter and native Android
-    ///
-    /// This local reference serves to register the plugin with the Flutter Engine and unregister it
-    /// when the Flutter Engine is detached from the Activity
     private lateinit var channel: MethodChannel
     private lateinit var activity: Activity
     private lateinit var context: Context
+    // Still used by the not-yet-migrated contentToPDF/printPreview cases
+    // until Tasks 6-7 replace them -- removed for good in Task 7 once
+    // nothing references it anymore.
     private lateinit var webView: WebView
+    private val sharedSession = SharedWebViewSession()
+    private val conversionQueue = ConversionQueue(MAX_QUEUED_REQUESTS)
+
+    companion object {
+        private const val MAX_CONTENT_SIZE_BYTES = 100L * 1024 * 1024
+        private const val MAX_QUEUED_REQUESTS = 32
+    }
+
+    private fun requestTimeoutMs(durationMs: Double): Long =
+        maxOf(30_000L, durationMs.toLong() + 30_000L)
 
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         val viewID = "webview-view-type"
@@ -113,150 +124,27 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
 
         when (method) {
             "contentToImage" -> {
-                if (is_html2bitmap) {
-                    var bitmap_width = arguments["bitmap_width"] as Double?
-                    val task = object : AsyncTask<Void, Void, Bitmap>() {
-
-                        @Deprecated("Deprecated in Java")
-                        override fun doInBackground(vararg params: Void?): Bitmap? {
-                            Log.e("webview", "is_html2bitmap.doInBackground")
-                            return try {
-                                val html2BitmapBuilder = Html2Bitmap.Builder();
-                                html2BitmapBuilder.setContext(context);
-                                html2BitmapBuilder.setContent(WebViewContent.html(content));
-                                html2BitmapBuilder.setConfigurator(Html2BitmapConfigurator());
-                                if (bitmap_width != null && bitmap_width > 0) {
-                                    html2BitmapBuilder.setBitmapWidth(bitmap_width!!.toInt());
-                                }
-
-                                html2BitmapBuilder.setStrictMode(true)
-                                val html2Bitmap = html2BitmapBuilder.build()
-
-                                var data = html2Bitmap.bitmap
-
-                                return data
-                            } catch (e: Exception) {
-                                result.error("webview.build", e.toString(), e.stackTraceToString())
-                                Log.e("webview", e.stackTraceToString())
-                                null
-                            }
-                        }
-
-                        override fun onPostExecute(data: Bitmap?) {
-                            super.onPostExecute(data)
-                            Log.w("webview", "onPostExecute")
-                            if (data != null) {
-                                val bytes = data.toByteArray()
-                                result.success(bytes)
-                                // Use the generated bitmap here
-//                                result.success(bitmap)
-                            } else {
-                                // Handle the error case
-                                Log.e("HtmlToBitmapTask", "Failed to generate bitmap")
-                            }
-                        }
-                    }.execute()
+                if (content.toByteArray(Charsets.UTF_8).size > MAX_CONTENT_SIZE_BYTES) {
+                    result.error("CONTENT_TOO_LARGE", "Content exceeds maximum size of 100MB", null)
                     return
                 }
-                Log.w(tag, "\n activity $activity")
-                webView = WebView(this.context)
-                val dwidth = this.activity.window.windowManager.defaultDisplay.width
-                val dheight = this.activity.window.windowManager.defaultDisplay.height
-                Log.w(tag, "\ndwidth : $dwidth")
-                Log.w(tag, "\ndheight : $dheight")
-                webView.layout(0, 0, dwidth, dheight)
-                webView.loadDataWithBaseURL(null, content, "text/HTML", "UTF-8", null)
-                webView.setInitialScale(1)
-                webView.settings.javaScriptEnabled = true
-                webView.settings.useWideViewPort = true
-                webView.settings.javaScriptCanOpenWindowsAutomatically = true
-                webView.settings.loadWithOverviewMode = true
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-                    Log.w(tag, "\n=======> enabled scrolled <=========")
-                    WebView.enableSlowWholeDocumentDraw()
+                if (conversionQueue.isQueueFull()) {
+                    result.error(
+                        "TOO_MANY_REQUESTS",
+                        "Too many queued conversions (limit: $MAX_QUEUED_REQUESTS). Please wait for earlier ones to complete.",
+                        null
+                    )
+                    return
                 }
-
-                Log.w(
-                    "webcontent_converter",
-                    "\n ///////////////// webview setted /////////////////"
-                )
-
-                webView.webViewClient = object : WebViewClient() {
-                    override fun onPageFinished(view: WebView, url: String) {
-                        super.onPageFinished(view, url)
-                        Log.e("webview", "scope.doInBackground")
-
-                        val scope = CoroutineScope(Dispatchers.IO)
-                        scope.launch {
-                            Log.w(tag, " scope.launch")
-                            // Perform WebView-to-image conversion on a background thread
-                            var _duration = (dheight / 1000 ).toInt() * 200 ; /// delay 300 ms for every dheight 2000
-                            Log.w(tag, "\n _duration ${_duration}");
-
-                            Handler(Looper.getMainLooper()).postDelayed({
-                                Log.w(tag, "\nOS Version: ${android.os.Build.VERSION.SDK_INT}")
-                                Log.w(tag, "\n ================ webview completed ==============")
-                                Log.w(tag, "\n scroll delayed ${webView.scrollBarFadeDuration}")
-
-
-
-                                if (format != null && format["name"] != null) {
-                                    var pageFormat =
-                                        PaperFormat.fromString((format["name"] as String))
-
-                                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
-                                        webView.toPDFBitmap(
-                                            format,
-                                            margins,
-                                            object : BitmapCallback {
-                                                override fun onSuccess(bitmapBytes: ByteArray) {
-                                                    result.success(bitmapBytes)
-                                                    println("\n Got snapshot")
-                                                }
-
-                                                override fun onFailure() {
-                                                    result.error(
-                                                        "BITMAP_EXPORT_ERROR",
-                                                        "Failed to create bitmap from PDF",
-                                                        null
-                                                    )
-                                                }
-                                            })
-
-                                    }
-
-                                } else {
-                                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
-                                        webView.evaluateJavascript("(function() { return [document.body.offsetWidth, document.body.offsetHeight]; })();") {
-                                            it
-                                            var xy = JSONArray(it)
-                                            var offsetWidth = xy[0].toString();
-                                            var offsetHeight = xy[1].toString();
-                                            Log.w(
-                                                tag,
-                                                "\n width height $it ${it is String} ${xy[0]} ${xy[1]}"
-                                            );
-                                            var data = webView.toBitmap(
-                                                offsetWidth.toDouble(),
-                                                offsetHeight.toDouble()
-                                            )
-                                            if (data != null) {
-                                                val bytes = data.toByteArray()
-                                                //                                      saveWebView(data)
-                                                //ByteArray(0)
-                                                result.success(bytes)
-                                                println("\n Got snapshot")
-                                            }
-                                        }
-                                    }
-                                }
-
-
-                            }, _duration!!.toLong())
-                        }
-
-
+                if (is_html2bitmap) {
+                    val bitmapWidth = arguments["bitmap_width"] as Double?
+                    conversionQueue.startOrQueue {
+                        runHtml2BitmapJob(content, bitmapWidth, duration!!, result)
                     }
+                    return
+                }
+                conversionQueue.startOrQueue {
+                    runContentToImageJob(content, format, margins, duration!!, result)
                 }
             }
 
@@ -351,6 +239,154 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
 
             else
                 -> result.notImplemented()
+        }
+    }
+
+    private fun runContentToImageJob(
+        content: String,
+        format: Map<String, *>?,
+        margins: Map<String, Double>?,
+        duration: Double,
+        result: Result
+    ) {
+        val watchdog = RequestWatchdog()
+        var completed = false
+
+        fun finish(action: () -> Unit) {
+            if (completed) return
+            completed = true
+            watchdog.disarm()
+            conversionQueue.onRequestFinished()
+            action()
+        }
+
+        val webView = sharedSession.ensure(context)
+        sharedSession.resetForNextJob()
+
+        val dwidth = activity.window.windowManager.defaultDisplay.width
+        val dheight = activity.window.windowManager.defaultDisplay.height
+        webView.layout(0, 0, dwidth, dheight)
+        webView.setInitialScale(1)
+
+        watchdog.arm(requestTimeoutMs(duration)) {
+            finish { result.error("TIMEOUT", "contentToImage timed out", null) }
+        }
+
+        webView.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView, url: String) {
+                super.onPageFinished(view, url)
+                val settleMs = (dheight / 1000).toInt() * 200
+                Handler(Looper.getMainLooper()).postDelayed({
+                    if (completed) return@postDelayed
+                    if (format != null && format["name"] != null) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                            view.toPDFBitmap(format, margins, object : BitmapCallback {
+                                override fun onSuccess(bitmapBytes: ByteArray) {
+                                    finish { result.success(bitmapBytes) }
+                                }
+                                override fun onFailure() {
+                                    finish {
+                                        result.error("BITMAP_EXPORT_ERROR", "Failed to create bitmap from PDF", null)
+                                    }
+                                }
+                            })
+                        }
+                    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                        view.evaluateJavascript(
+                            "(function() { return [document.body.offsetWidth, document.body.offsetHeight]; })();"
+                        ) { raw ->
+                            if (completed) return@evaluateJavascript
+                            val xy = JSONArray(raw)
+                            val offsetWidth = xy[0].toString().toDouble()
+                            val offsetHeight = xy[1].toString().toDouble()
+                            val bitmap = view.toBitmap(offsetWidth, offsetHeight)
+                            if (bitmap != null) {
+                                finish { result.success(bitmap.toByteArray()) }
+                            } else {
+                                finish {
+                                    result.error("BITMAP_EXPORT_ERROR", "Failed to measure content for bitmap", null)
+                                }
+                            }
+                        }
+                    }
+                }, settleMs.toLong())
+            }
+
+            @Suppress("OVERRIDE_DEPRECATION")
+            override fun onReceivedError(
+                view: WebView,
+                errorCode: Int,
+                description: String?,
+                failingUrl: String?
+            ) {
+                super.onReceivedError(view, errorCode, description, failingUrl)
+                finish { result.error("WEBVIEW_LOAD_ERROR", description ?: "WebView failed to load content", null) }
+            }
+
+            override fun onReceivedError(
+                view: WebView,
+                request: WebResourceRequest,
+                error: WebResourceError
+            ) {
+                super.onReceivedError(view, request, error)
+                if (request.isForMainFrame) {
+                    finish {
+                        result.error(
+                            "WEBVIEW_LOAD_ERROR",
+                            error.description?.toString() ?: "WebView failed to load content",
+                            null
+                        )
+                    }
+                }
+            }
+        }
+
+        webView.loadDataWithBaseURL(null, content, "text/HTML", "UTF-8", null)
+    }
+
+    private fun runHtml2BitmapJob(
+        content: String,
+        bitmapWidth: Double?,
+        duration: Double,
+        result: Result
+    ) {
+        val watchdog = RequestWatchdog()
+        var completed = false
+
+        fun finish(action: () -> Unit) {
+            if (completed) return
+            completed = true
+            watchdog.disarm()
+            conversionQueue.onRequestFinished()
+            action()
+        }
+
+        watchdog.arm(requestTimeoutMs(duration)) {
+            finish { result.error("TIMEOUT", "contentToImage (html2bitmap) timed out", null) }
+        }
+
+        CoroutineScope(Dispatchers.IO).launch {
+            val bitmap = try {
+                val builder = Html2Bitmap.Builder()
+                builder.setContext(context)
+                builder.setContent(WebViewContent.html(content))
+                builder.setConfigurator(Html2BitmapConfigurator())
+                if (bitmapWidth != null && bitmapWidth > 0) {
+                    builder.setBitmapWidth(bitmapWidth.toInt())
+                }
+                builder.setStrictMode(true)
+                builder.build().bitmap
+            } catch (e: Exception) {
+                Log.e("webcontent_converter", e.stackTraceToString())
+                null
+            }
+            withContext(Dispatchers.Main) {
+                if (bitmap != null) {
+                    finish { result.success(bitmap.toByteArray()) }
+                } else {
+                    finish { result.error("webview.build", "Failed to generate bitmap", null) }
+                }
+            }
         }
     }
 
