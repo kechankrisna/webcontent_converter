@@ -481,6 +481,7 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
                 failingUrl: String?
             ) {
                 super.onReceivedError(view, errorCode, description, failingUrl)
+                if (completed) return
                 printPreview.destroy()
                 finish { result.error("WEBVIEW_LOAD_ERROR", description ?: "WebView failed to load content", null) }
             }
@@ -491,6 +492,7 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
                 error: WebResourceError
             ) {
                 super.onReceivedError(view, request, error)
+                if (completed) return
                 if (request.isForMainFrame) {
                     printPreview.destroy()
                     finish {
