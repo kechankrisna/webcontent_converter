@@ -47,13 +47,20 @@ Split the single Kotlin file into four focused pieces, mirroring the
 Windows file boundaries:
 
 - **`SharedWebViewSession.kt`** — owns the one long-lived `WebView`
-  instance for the plugin's lifetime. `ensure(activity)` lazily creates
-  it; `resetForNextJob()` stops any in-flight load, clears history,
-  installs a fresh `WebViewClient` scoped to the job about to run, and
-  navigates to `about:blank` before the next job's content loads, so no
-  DOM/JS-global/scroll state bleeds from one conversion into the next.
-  `destroy()` runs only from `onDetachedFromActivity` /
-  `onDetachedFromEngine`.
+  instance for the plugin's lifetime. `ensure(context)` lazily creates
+  it; `resetForNextJob()` stops any in-flight load, detaches the previous
+  job's `WebViewClient` (replacing it with a no-op one) so a late
+  callback can't route into a job that already considers itself
+  finished, and clears history. It deliberately does *not* navigate to
+  `about:blank` first: the next job's own `loadDataWithBaseURL` call is
+  itself a full-document navigation, which already gives that job a
+  fresh `Document`/`window` — an intermediate blank-page round trip
+  would add ordering risk (a stale `onPageFinished` firing) for no
+  isolation benefit. `destroy()` runs only from `onDetachedFromEngine`
+  (not on `onDetachedFromActivity`/config-change callbacks, which fire on
+  every rotation — destroying a WebView built from the plugin's
+  application `Context`, not the `Activity`, on every rotation would
+  defeat the point of reusing it).
 - **`RequestWatchdog.kt`** — direct Kotlin port of the Windows class:
   `arm(timeoutMs, onTimeout)` / `disarm()`, backed by
   `Handler(Looper.getMainLooper()).postDelayed` instead of `SetTimer`,
@@ -158,10 +165,6 @@ construction cost on every call.
 
 ## Risks / things to verify during implementation
 
-- `resetForNextJob()`'s `about:blank` navigation must itself not trigger
-  the *new* job's `WebViewClient.onPageFinished` prematurely — needs the
-  fresh client installed only after the blank-page settle, or the blank
-  navigation routed through the *old* (about-to-be-replaced) client.
 - `PrintJob` state listener availability: `addOnPrintJobStateChangedListener`
   needs verifying against the plugin's `minSdkVersion` (Print Framework is
   API 19+, but the listener API should be double-checked during
