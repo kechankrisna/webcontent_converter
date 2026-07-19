@@ -149,54 +149,28 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
             }
 
             "contentToPDF" -> {
-                print("\n activity $activity")
-                webView = WebView(this.context)
-                val dwidth = this.activity.window.windowManager.defaultDisplay.width
-                val dheight = this.activity.window.windowManager.defaultDisplay.height
-                print("\ndwidth : $dwidth")
-                print("\ndheight : $dheight")
-                webView.layout(0, 0, dwidth, dheight)
-                webView.loadDataWithBaseURL(null, content, "text/HTML", "UTF-8", null)
-                webView.setInitialScale(1)
-                webView.settings.javaScriptEnabled = true
-                webView.settings.useWideViewPort = true
-                webView.settings.javaScriptCanOpenWindowsAutomatically = true
-                webView.settings.loadWithOverviewMode = true
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-                    print("\n=======> enabled scrolled <=========")
-                    WebView.enableSlowWholeDocumentDraw()
+                if (content.toByteArray(Charsets.UTF_8).size > MAX_CONTENT_SIZE_BYTES) {
+                    result.error("CONTENT_TOO_LARGE", "Content exceeds maximum size of 100MB", null)
+                    return
                 }
-
-                print("\n ///////////////// webview setted /////////////////")
-
-                webView.webViewClient = object : WebViewClient() {
-                    override fun onPageFinished(view: WebView, url: String) {
-                        super.onPageFinished(view, url)
-
-                        Handler().postDelayed({
-                            print("\nOS Version: ${android.os.Build.VERSION.SDK_INT}")
-                            print("\n ================ webview completed ==============")
-                            print("\n scroll delayed ${webView.scrollBarFadeDuration}")
-
-                            webView.exportAsPdfFromWebView(
-                                savedPath!!,
-                                format!!,
-                                margins!!,
-                                object : PdfPrinter.Callback {
-                                    override fun onSuccess(filePath: String) {
-                                        result.success(filePath)
-                                    }
-
-                                    override fun onFailure() {
-                                        result.success(null)
-                                    }
-                                })
-
-                        }, duration!!.toLong())
-
-                    }
+                if (conversionQueue.isQueueFull()) {
+                    result.error(
+                        "TOO_MANY_REQUESTS",
+                        "Too many queued conversions (limit: $MAX_QUEUED_REQUESTS). Please wait for earlier ones to complete.",
+                        null
+                    )
+                    return
                 }
-
+                val path = savedPath
+                val pdfFormat = format
+                val pdfMargins = margins
+                if (path == null || pdfFormat == null || pdfMargins == null) {
+                    result.error("INVALID_ARGUMENT", "savedPath, format, and margins are required", null)
+                    return
+                }
+                conversionQueue.startOrQueue {
+                    runContentToPdfJob(content, path, pdfFormat, pdfMargins, duration!!, result)
+                }
             }
             "printPreview" -> {
                 print("\n activity $activity")
@@ -310,6 +284,87 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
                         }
                     }
                 }, settleMs.toLong())
+            }
+
+            @Suppress("OVERRIDE_DEPRECATION")
+            override fun onReceivedError(
+                view: WebView,
+                errorCode: Int,
+                description: String?,
+                failingUrl: String?
+            ) {
+                super.onReceivedError(view, errorCode, description, failingUrl)
+                finish { result.error("WEBVIEW_LOAD_ERROR", description ?: "WebView failed to load content", null) }
+            }
+
+            override fun onReceivedError(
+                view: WebView,
+                request: WebResourceRequest,
+                error: WebResourceError
+            ) {
+                super.onReceivedError(view, request, error)
+                if (request.isForMainFrame) {
+                    finish {
+                        result.error(
+                            "WEBVIEW_LOAD_ERROR",
+                            error.description?.toString() ?: "WebView failed to load content",
+                            null
+                        )
+                    }
+                }
+            }
+        }
+
+        webView.loadDataWithBaseURL(null, content, "text/HTML", "UTF-8", null)
+    }
+
+    private fun runContentToPdfJob(
+        content: String,
+        savedPath: String,
+        format: Map<String, *>,
+        margins: Map<String, Double>,
+        duration: Double,
+        result: Result
+    ) {
+        val watchdog = RequestWatchdog()
+        var completed = false
+
+        fun finish(action: () -> Unit) {
+            if (completed) return
+            completed = true
+            watchdog.disarm()
+            conversionQueue.onRequestFinished()
+            action()
+        }
+
+        val webView = sharedSession.ensure(context)
+        sharedSession.resetForNextJob()
+
+        val dwidth = activity.window.windowManager.defaultDisplay.width
+        val dheight = activity.window.windowManager.defaultDisplay.height
+        webView.layout(0, 0, dwidth, dheight)
+        webView.setInitialScale(1)
+
+        watchdog.arm(requestTimeoutMs(duration)) {
+            finish { result.error("TIMEOUT", "contentToPDF timed out", null) }
+        }
+
+        webView.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView, url: String) {
+                super.onPageFinished(view, url)
+                Handler(Looper.getMainLooper()).postDelayed({
+                    if (completed) return@postDelayed
+                    view.exportAsPdfFromWebView(savedPath, format, margins, object : PdfPrinter.Callback {
+                        override fun onSuccess(filePath: String) {
+                            finish { result.success(filePath) }
+                        }
+                        override fun onFailure() {
+                            // Matches the pre-existing contract: failure resolves
+                            // with a null path rather than a PlatformException.
+                            finish { result.success(null) }
+                        }
+                    })
+                }, duration.toLong())
             }
 
             @Suppress("OVERRIDE_DEPRECATION")
