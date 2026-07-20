@@ -274,4 +274,108 @@ class RunnerTests: XCTestCase {
       XCTAssertEqual(Double(bounds.height), 1000, accuracy: 0.5)
     }
   }
+
+  /// Builds a test PDF page that is white except for a small red square
+  /// marker centered exactly in the middle of its own MediaBox — used to
+  /// distinguish "content drawn scaled" from "content drawn unscaled and
+  /// merely clipped by the smaller output MediaBox" (which a uniform fill
+  /// can't distinguish, since clipped-but-unscaled content still reads as
+  /// solid color everywhere inside the visible page).
+  private func makeTestPdfPageWithCenterMarker(width: CGFloat, height: CGFloat, markerSize: CGFloat) -> Data {
+    let pdfData = NSMutableData()
+    var mediaBox = CGRect(x: 0, y: 0, width: width, height: height)
+    guard let consumer = CGDataConsumer(data: pdfData as CFMutableData),
+          let context = CGContext(consumer: consumer, mediaBox: &mediaBox, nil) else {
+      fatalError("failed to create test PDF context")
+    }
+    context.beginPDFPage(nil)
+    context.setFillColor(NSColor.white.cgColor)
+    context.fill(mediaBox)
+    context.setFillColor(NSColor.red.cgColor)
+    context.fill(CGRect(
+      x: width / 2 - markerSize / 2, y: height / 2 - markerSize / 2,
+      width: markerSize, height: markerSize))
+    context.endPDFPage()
+    context.closePDF()
+    return pdfData as Data
+  }
+
+  /// Samples the pixel color at a fractional (x, y) point within `page`'s
+  /// MediaBox, where (0, 0) is the bottom-left and (1, 1) is the top-right
+  /// (PDF's native coordinate space) — used to prove *where* drawn content
+  /// actually lands, not just the page's own reported size.
+  private func samplePixel(of page: PDFPage, at point: CGPoint) -> NSColor? {
+    let size = CGSize(width: 60, height: 60)
+    guard let thumbnail = page.thumbnail(of: size, for: .mediaBox).cgImage(
+      forProposedRect: nil, context: nil, hints: nil) else { return nil }
+    let bitmap = NSBitmapImageRep(cgImage: thumbnail)
+    let px = Int(point.x * CGFloat(bitmap.pixelsWide))
+    // thumbnail's Y axis runs top-down in bitmap space; PDF's point.y is
+    // bottom-up, so flip.
+    let py = Int((1 - point.y) * CGFloat(bitmap.pixelsHigh))
+    return bitmap.colorAt(x: min(max(px, 0), bitmap.pixelsWide - 1),
+                           y: min(max(py, 0), bitmap.pixelsHigh - 1))
+  }
+
+  func testMergePdfPageSlices_contentScale_scalesContentRatherThanJustClippingIt() {
+    // Slice captured at content-space (96dpi): 816x1056 (Letter @ 96dpi),
+    // with a marker at its exact center — mirrors a WKWebView snapshot
+    // rendered at its native CSS-pixel width.
+    let slice = makeTestPdfPageWithCenterMarker(width: 816, height: 1056, markerSize: 80)
+    let scale = 72.0 / 96.0
+
+    // Output page requested at genuine PDF points (72dpi): 612x792 (Letter).
+    let merged = mergePdfPageSlices(
+      pageDatas: [slice],
+      pageWidth: 612, pageHeight: 792, marginTop: 0, marginLeft: 0,
+      contentScale: scale
+    )
+
+    XCTAssertNotNil(merged)
+    let document = PDFDocument(data: merged!)
+    let page = document!.page(at: 0)!
+    let bounds = page.bounds(for: .mediaBox)
+    XCTAssertEqual(Double(bounds.width), 612, accuracy: 0.5)
+    XCTAssertEqual(Double(bounds.height), 792, accuracy: 0.5)
+
+    // If the slice is genuinely scaled (not just translated and clipped by
+    // the smaller MediaBox), a marker at the slice's own center must land
+    // at the *output* page's center too. Without `context.scaleBy` in
+    // mergePdfPageSlices, the marker keeps its absolute content-space
+    // position (408, 528) translated by (0, originY) — landing at output
+    // fraction (408/612, 528/792) ≈ (0.67, 0.67), not (0.5, 0.5). A page
+    // filled with one uniform color can't tell these apart (both read as
+    // solid everywhere visible); this marker can.
+    guard let centerColor = samplePixel(of: page, at: CGPoint(x: 0.5, y: 0.5))?
+      .usingColorSpace(.deviceRGB) else {
+      XCTFail("failed to sample center pixel")
+      return
+    }
+    XCTAssertGreaterThan(centerColor.redComponent, 0.7, "expected scaled marker at output center, got \(centerColor)")
+    XCTAssertLessThan(centerColor.greenComponent, 0.3, "expected scaled marker at output center, got \(centerColor)")
+
+    guard let unscaledSpotColor = samplePixel(of: page, at: CGPoint(x: 2.0 / 3.0, y: 2.0 / 3.0))?
+      .usingColorSpace(.deviceRGB) else {
+      XCTFail("failed to sample unscaled-position pixel")
+      return
+    }
+    XCTAssertGreaterThan(unscaledSpotColor.greenComponent, 0.7, "marker should NOT appear at its unscaled content-space position, got \(unscaledSpotColor)")
+  }
+
+  func testMergePdfPageSlices_defaultContentScale_isUnscaled() {
+    // Omitting contentScale must behave exactly as scale == 1.0 (the
+    // auto-detected-sizing path, which has no physical-inch contract and
+    // should draw content-space slices straight through unscaled).
+    let slice = makeTestPdfPageData(width: 700, height: 900)
+
+    let merged = mergePdfPageSlices(
+      pageDatas: [slice], pageWidth: 800, pageHeight: 1000, marginTop: 50, marginLeft: 50
+    )
+
+    XCTAssertNotNil(merged)
+    let document = PDFDocument(data: merged!)
+    let bounds = document!.page(at: 0)!.bounds(for: .mediaBox)
+    XCTAssertEqual(Double(bounds.width), 800, accuracy: 0.5)
+    XCTAssertEqual(Double(bounds.height), 1000, accuracy: 0.5)
+  }
 }

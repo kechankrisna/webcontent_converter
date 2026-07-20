@@ -632,40 +632,47 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                     }
 
                     let formatName = format?["name"] as? String
-
-                    // An explicit format request means the output PDF's page
-                    // geometry (ultimately CGContext's mediaBox in
-                    // mergePdfPageSlices) must be genuine PDF points — 72/inch,
-                    // fixed by the PDF spec — not the WebView's CSS-pixel
-                    // convention (96/inch). Using 96/inch for the *page* here
-                    // made every explicit-format PDF ~1.33x (96/72) larger than
-                    // requested — most obvious on a small custom page (e.g.
-                    // 1"x1"). Auto-detected sizing (no format given, below) has
-                    // no physical-inch contract to honor, so it's left at the
-                    // WebView's native CSS-pixel scale, unchanged.
                     let hasExplicitFormat = (formatName?.isEmpty == false)
-                    let dpiScale: Double = hasExplicitFormat ? 72.0 : 96.0
 
-                    let marginTop = CGFloat((margins?["top"] ?? 0.0) * dpiScale)
-                    let marginBottom = CGFloat((margins?["bottom"] ?? 0.0) * dpiScale)
-                    let marginLeft = CGFloat((margins?["left"] ?? 0.0) * dpiScale)
-                    let marginRight = CGFloat((margins?["right"] ?? 0.0) * dpiScale)
+                    // Content-space geometry is always the WebView's native
+                    // CSS-pixel convention (96/inch). It drives the WKWebView's
+                    // own frame/layout width, so HTML lays out exactly as a
+                    // normal browser would for the requested physical size.
+                    // It must NOT be pulled to 72/inch here — the WebView has
+                    // no notion of "PDF points"; shrinking its frame to
+                    // 72/inch shrinks the usable layout width by 25% and makes
+                    // content reflow/scale wrong. The requested physical size
+                    // is honored separately, by scaling this content down into
+                    // genuine 72/inch PDF points only at the final
+                    // mergePdfPageSlices draw step — see `contentScale` below.
+                    let marginTop = CGFloat(inchToPx(margins?["top"] ?? 0.0))
+                    let marginBottom = CGFloat(inchToPx(margins?["bottom"] ?? 0.0))
+                    let marginLeft = CGFloat(inchToPx(margins?["left"] ?? 0.0))
+                    let marginRight = CGFloat(inchToPx(margins?["right"] ?? 0.0))
 
                     let initialFormatWidthPx: Double?
                     let initialFormatHeightPx: Double?
                     if hasExplicitFormat {
                         if formatName == "custom" {
-                            initialFormatWidthPx = (format!["width"] as? Double ?? 1.0) * dpiScale
-                            initialFormatHeightPx = (format!["height"] as? Double ?? 1.0) * dpiScale
+                            initialFormatWidthPx = inchToPx(format!["width"] as? Double ?? 1.0)
+                            initialFormatHeightPx = inchToPx(format!["height"] as? Double ?? 1.0)
                         } else {
                             let paperFormat = PaperFormat.fromString(formatName!)
-                            initialFormatWidthPx = paperFormat.width * dpiScale
-                            initialFormatHeightPx = paperFormat.height * dpiScale
+                            initialFormatWidthPx = inchToPx(paperFormat.width)
+                            initialFormatHeightPx = inchToPx(paperFormat.height)
                         }
                     } else {
                         initialFormatWidthPx = nil
                         initialFormatHeightPx = nil
                     }
+
+                    // Output PDF page geometry: genuine PDF points (72/inch,
+                    // fixed by the PDF spec) for MediaBox — only when an
+                    // explicit format was requested. Auto-detected sizing (no
+                    // format given) has no physical-inch contract to honor, so
+                    // it stays at the content's native 96dpi scale
+                    // (contentScale == 1.0, a no-op passthrough).
+                    let contentScale: Double = hasExplicitFormat ? (72.0 / 96.0) : 1.0
 
                     let initialRenderWidth = max(
                         1.0, (initialFormatWidthPx ?? 800.0) - Double(marginLeft) - Double(marginRight))
@@ -745,13 +752,20 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                                     self.capturePdfPageSlicesSequentially(webView: wv, slices: slices, pageWidth: renderWidth) { pageDatas in
                                         wv.frame = originalFrame
 
+                                        // Slices were captured in content-space
+                                        // (96dpi); scale them down into the
+                                        // output page's 72dpi geometry here so
+                                        // the physical page size matches the
+                                        // request without having laid out the
+                                        // HTML in a narrower-than-normal viewport.
                                         guard let pageDatas = pageDatas,
                                               let mergedData = mergePdfPageSlices(
                                                 pageDatas: pageDatas,
-                                                pageWidth: pageWidthPx,
-                                                pageHeight: pageHeightPx,
-                                                marginTop: Double(marginTop),
-                                                marginLeft: Double(marginLeft)
+                                                pageWidth: pageWidthPx * contentScale,
+                                                pageHeight: pageHeightPx * contentScale,
+                                                marginTop: Double(marginTop) * contentScale,
+                                                marginLeft: Double(marginLeft) * contentScale,
+                                                contentScale: contentScale
                                               )
                                         else {
                                             print("❌ PDF page capture or merge failed")
