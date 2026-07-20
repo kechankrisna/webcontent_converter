@@ -67,6 +67,7 @@ class FLNativeView: NSObject, FlutterPlatformView {
         _view!.clipsToBounds = true
         let configuration = WKWebViewConfiguration()
         _webView = WKWebView(frame: _view!.bounds, configuration: configuration)
+        _webView!.enableInspectorInDebugBuilds()
         _webView!.tag = 100
         _webView!.scrollView.bounces = true
         
@@ -189,9 +190,10 @@ class FLNativeView: NSView {
         
         // Create WebView with full bounds
         _webView = WKWebView(frame: self.bounds, configuration: configuration)
-        
+
         guard let webView = _webView else { return }
-        
+        webView.enableInspectorInDebugBuilds()
+
         // ✅ SCROLLBAR: Configure WebView for scrolling with visible scrollbars
         webView.wantsLayer = true
         webView.layer?.isOpaque = true

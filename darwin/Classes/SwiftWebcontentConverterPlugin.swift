@@ -57,6 +57,15 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
     // Removed in `finish()`/`dispose(_:)` once the job completes.
     private var activeDelegates: [JobNavigationDelegate] = []
 
+    #if os(macOS)
+        // Strong retention for open print preview windows — each owns its
+        // own NSWindow/WKWebView independent of the shared conversionQueue
+        // (see PrintPreviewWindowMacOS's class comment), so nothing else
+        // keeps them alive. Removed via `onWindowClosed` once the user
+        // closes the window.
+        private var activePrintPreviewWindows: [PrintPreviewWindowMacOS] = []
+    #endif
+
     public static func register(with registrar: FlutterPluginRegistrar) {
         #if os(iOS)
             let channel = FlutterMethodChannel(
@@ -147,6 +156,7 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                 // operating on the next job's live WebView instead.
                 #if os(iOS)
                     let wv = WKWebView()
+                    wv.enableInspectorInDebugBuilds()
                     wv.isHidden = true
                     wv.tag = 100
                 #else
@@ -156,6 +166,7 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                     configuration.preferences.javaScriptEnabled = true
 
                     let wv = WKWebView(frame: frame, configuration: configuration)
+                    wv.enableInspectorInDebugBuilds()
                     wv.wantsLayer = true
                     wv.viewWithTag(100)
 
@@ -554,6 +565,7 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                     }
 
                     let wv = WKWebView()
+                    wv.enableInspectorInDebugBuilds()
                     wv.isHidden = false
                     wv.tag = 100
 
@@ -679,6 +691,7 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
 
                     let wv = WKWebView(
                         frame: CGRect(x: 0, y: 0, width: initialRenderWidth, height: 10))
+                    wv.enableInspectorInDebugBuilds()
                     wv.isHidden = false
                     wv.viewWithTag(100)
 
@@ -829,15 +842,6 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
             }
 
         case "printPreview":
-            if conversionQueue.isQueueFull() {
-                result(
-                    FlutterError(
-                        code: "TOO_MANY_REQUESTS",
-                        message: "Too many pending conversion requests",
-                        details: nil))
-                return
-            }
-
             guard let content = content else {
                 result(
                     FlutterError(
@@ -848,23 +852,61 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
             let format = arguments!["format"] as? [String: Any]
             let durationMs = Int64(duration!)
 
-            conversionQueue.startOrQueue { [weak self] in
-                guard let self = self else { return }
-
-                var completed = false
-                let watchdog = RequestWatchdog()
-                let timeoutMs = max(30_000, durationMs + 30_000)
-
-                func finish(_ action: @escaping () -> Void) {
-                    guard !completed else { return }
-                    completed = true
-                    watchdog.disarm()
-                    self.conversionQueue.onRequestFinished()
-                    action()
+            #if os(macOS)
+                // A genuine standalone window + WKWebView, matching the
+                // Windows implementation's PrintPreviewWindow (its own
+                // popup window, its own WebView2 session, then
+                // ShowPrintUI — WebView2's window.print() equivalent). See
+                // PrintPreviewWindowMacOS's class comment.
+                //
+                // Deliberately bypasses conversionQueue, also matching
+                // Windows: this window owns its own independent WebView
+                // rather than the plugin's shared one, so there's no
+                // shared resource here to serialize against.
+                let previewWindow = PrintPreviewWindowMacOS(
+                    content: content, durationMs: durationMs, margins: margins, format: format
+                ) { success, error in
+                    if success {
+                        result(nil)
+                    } else {
+                        result(
+                            FlutterError(
+                                code: "PRINT_PREVIEW_FAILED", message: error ?? "Unknown error",
+                                details: nil))
+                    }
+                }
+                self.activePrintPreviewWindows.append(previewWindow)
+                previewWindow.onWindowClosed = { [weak self] in
+                    self?.activePrintPreviewWindows.removeAll { $0 === previewWindow }
+                }
+                previewWindow.start()
+            #else
+                if conversionQueue.isQueueFull() {
+                    result(
+                        FlutterError(
+                            code: "TOO_MANY_REQUESTS",
+                            message: "Too many pending conversion requests",
+                            details: nil))
+                    return
                 }
 
-                #if os(iOS)
+                conversionQueue.startOrQueue { [weak self] in
+                    guard let self = self else { return }
+
+                    var completed = false
+                    let watchdog = RequestWatchdog()
+                    let timeoutMs = max(30_000, durationMs + 30_000)
+
+                    func finish(_ action: @escaping () -> Void) {
+                        guard !completed else { return }
+                        completed = true
+                        watchdog.disarm()
+                        self.conversionQueue.onRequestFinished()
+                        action()
+                    }
+
                     let wv = WKWebView()
+                    wv.enableInspectorInDebugBuilds()
                     wv.isHidden = true
                     wv.tag = 100
 
@@ -888,81 +930,35 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                             }
                         }
                     }
-                #else
-                    // macOS: use a reasonable fixed frame for initial page
-                    // rendering only; printOperation(with:) uses WebKit's own
-                    // print pipeline which sizes content for the paper/margins
-                    // described by NSPrintInfo, independent of the on-screen frame.
-                    let frame = CGRect(x: 0, y: 0, width: 800, height: 600)
-                    let configuration = WKWebViewConfiguration()
-                    configuration.suppressesIncrementalRendering = false
-                    configuration.preferences.javaScriptEnabled = true
 
-                    let wv = WKWebView(frame: frame, configuration: configuration)
-                    wv.wantsLayer = true
-
-                    let jobDelegate = JobNavigationDelegate()
-                    wv.navigationDelegate = jobDelegate
-                    self.activeDelegates.append(jobDelegate)
-
-                    func teardown() {
-                        self.dispose(wv)
-                        self.activeDelegates.removeAll { $0 === jobDelegate }
-                    }
-
-                    jobDelegate.onFinish = {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + (Double(durationMs) / 1000)) {
-                            // On macOS, printOperation.run() runs its own nested
-                            // event loop and blocks until the user dismisses the print
-                            // panel. The watchdog is disarmed BEFORE run() so it
-                            // doesn't false-positive TIMEOUT during normal user
-                            // interaction with the system print dialog.
-                            watchdog.disarm()
-                            guard #available(macOS 11.0, *) else {
-                                print("❌ Print preview requires macOS 11.0 or newer")
-                                finish {
-                                    result(nil)
-                                    teardown()
-                                }
-                                return
-                            }
-                            self.createWebPrintJobMacOS(webView: wv, margins: margins, format: format)
-                            // After the dialog closes, free the queue slot.
-                            finish {
-                                result(nil)
-                                teardown()
-                            }
+                    jobDelegate.onError = { error in
+                        finish {
+                            wv.stopLoading()
+                            result(
+                                FlutterError(
+                                    code: "WEBVIEW_LOAD_ERROR",
+                                    message: "WebView failed to load: \(error.localizedDescription)",
+                                    details: nil))
+                            teardown()
                         }
                     }
-                #endif
 
-                jobDelegate.onError = { error in
-                    finish {
-                        wv.stopLoading()
-                        result(
-                            FlutterError(
-                                code: "WEBVIEW_LOAD_ERROR",
-                                message: "WebView failed to load: \(error.localizedDescription)",
-                                details: nil))
-                        teardown()
+                    watchdog.arm(timeoutMs: timeoutMs) {
+                        finish {
+                            wv.stopLoading()
+                            result(
+                                FlutterError(
+                                    code: "TIMEOUT",
+                                    message: "Conversion timed out after \(timeoutMs)ms",
+                                    details: nil))
+                            teardown()
+                        }
                     }
-                }
 
-                watchdog.arm(timeoutMs: timeoutMs) {
-                    finish {
-                        wv.stopLoading()
-                        result(
-                            FlutterError(
-                                code: "TIMEOUT",
-                                message: "Conversion timed out after \(timeoutMs)ms",
-                                details: nil))
-                        teardown()
-                    }
+                    // --- Start loading (delegate is already wired) ---
+                    wv.loadHTMLString(content, baseURL: Bundle.main.resourceURL)
                 }
-
-                // --- Start loading (delegate is already wired) ---
-                wv.loadHTMLString(content, baseURL: Bundle.main.resourceURL)
-            }
+            #endif
 
         case "getPlatformVersion":
             #if os(iOS)
@@ -995,63 +991,6 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                 completionHandler: { (data, response, error) in
                     ///Ï
                 })
-        }
-    #endif
-
-    #if os(macOS)
-        @available(macOS 11.0, *)
-        private func createWebPrintJobMacOS(webView: WKWebView, margins: [String: Double]?, format: [String: Any]?) {
-            print("🖨️ Creating macOS print job...")
-
-            // Use a dedicated NSPrintInfo rather than .shared to avoid
-            // mutating global state (e.g. default printer, shared margins).
-            let printInfo = NSPrintInfo()
-
-            // --- Parse format (inches → points, same pattern as contentToPDF) ---
-            let formatName = format?["name"] as? String
-            let hasExplicitFormat = (formatName?.isEmpty == false)
-            if hasExplicitFormat {
-                let paperWidthIn: Double
-                let paperHeightIn: Double
-                if formatName == "custom" {
-                    paperWidthIn = format?["width"] as? Double ?? 1.0
-                    paperHeightIn = format?["height"] as? Double ?? 1.0
-                } else {
-                    let paperFormat = PaperFormat.fromString(formatName!)
-                    paperWidthIn = paperFormat.width
-                    paperHeightIn = paperFormat.height
-                }
-                printInfo.paperSize = NSSize(
-                    width: CGFloat(paperWidthIn * 72.0),
-                    height: CGFloat(paperHeightIn * 72.0))
-            }
-
-            // --- Parse margins (inches → points directly, no /96.0 factor) ---
-            // PdfMargins.toMap() always sends inches, so the conversion is simply ×72.
-            if let margins = margins {
-                printInfo.topMargin = CGFloat((margins["top"] ?? 0.0) * 72.0)
-                printInfo.bottomMargin = CGFloat((margins["bottom"] ?? 0.0) * 72.0)
-                printInfo.leftMargin = CGFloat((margins["left"] ?? 0.0) * 72.0)
-                printInfo.rightMargin = CGFloat((margins["right"] ?? 0.0) * 72.0)
-            }
-
-            // --- Leave jobDisposition at its default (spool) so showsPrintPanel
-            //     below actually shows the standard system print panel with its
-            //     built-in preview — consistent with Windows' ShowPrintUI. ---
-            let appName = Bundle.main.infoDictionary?["CFBundleName"] as? String ?? "WebView"
-
-            // --- Use WKWebView.printOperation(with:) (macOS 11.0+). This hands
-            //     printing off to WebKit's own print pipeline: content is laid
-            //     out for the paper size / margins in printInfo, independent of
-            //     the WebView's on-screen frame — the same way Safari prints. ---
-            let printOperation = webView.printOperation(with: printInfo)
-            printOperation.showsPrintPanel = true
-            printOperation.showsProgressPanel = true
-            printOperation.jobTitle = "\(appName) Print Preview"
-
-            // Run the print operation (blocks in a nested event loop until
-            // the user dismisses the panel — watchdog is already disarmed).
-            printOperation.run()
         }
     #endif
 
