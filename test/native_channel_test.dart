@@ -219,6 +219,95 @@ void main() {
     });
   });
 
+  group('printPreview', () {
+    test('invokes the native channel with content, margins, and format', () async {
+      late MethodCall captured;
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        captured = call;
+        return null;
+      });
+
+      await WebcontentConverter.printPreview(
+        content: '<h1>print</h1>',
+        margins: PdfMargins.inches(top: 0.5, bottom: 0.5, left: 0.75, right: 0.75),
+        format: PaperFormat.letter,
+      );
+
+      expect(captured.method, 'printPreview');
+      expect(captured.arguments['content'], '<h1>print</h1>');
+      final margins = Map<String, dynamic>.from(
+          captured.arguments['margins'] as Map);
+      expect(margins['top'], 0.5);
+      expect(margins['bottom'], 0.5);
+      expect(margins['left'], 0.75);
+      expect(margins['right'], 0.75);
+      final format = Map<String, dynamic>.from(
+          captured.arguments['format'] as Map);
+      expect(format['name'], 'letter');
+      expect(format['width'], PaperFormat.letter.width);
+      expect(format['height'], PaperFormat.letter.height);
+    });
+
+    test('uses default margins and format when not supplied', () async {
+      late MethodCall captured;
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        captured = call;
+        return null;
+      });
+
+      await WebcontentConverter.printPreview(
+        content: '<h1>print</h1>',
+      );
+
+      expect(captured.arguments['margins'], PdfMargins.zero.toMap());
+      final format =
+          Map<String, dynamic>.from(captured.arguments['format'] as Map);
+      expect(format['name'], 'a4');
+    });
+
+    test('sends the payload via the native channel when args are provided', () async {
+      late MethodCall captured;
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        captured = call;
+        return null;
+      });
+
+      // On desktop (macOS, Windows) the platform branch builds its own
+      // invokeMethod map and doesn't forward extra args; on mobile the
+      // full merged arguments map is passed through. Regardless,
+      // printPreview still sends the method channel call successfully.
+      await WebcontentConverter.printPreview(
+        content: '<h1>print</h1>',
+        args: {'custom': 'extra'},
+      );
+
+      // Core arguments always present regardless of platform branch.
+      expect(captured.method, 'printPreview');
+      expect(captured.arguments['content'], isNotNull);
+    });
+
+    test('propagates a PlatformException raised by the native side', () async {
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        throw PlatformException(code: 'PRINT_FAILED', message: 'native failure');
+      });
+
+      expect(
+        () => WebcontentConverter.printPreview(content: '<h1>print</h1>'),
+        throwsA(isA<PlatformException>()),
+      );
+    });
+
+    test('returns true on success', () async {
+      messenger.setMockMethodCallHandler(channel, (call) async => null);
+
+      final result = await WebcontentConverter.printPreview(
+        content: '<h1>print</h1>',
+      );
+
+      expect(result, isTrue);
+    });
+  });
+
   group('isWebviewAvailable', () {
     test('invokes the native channel with no arguments and returns its bool result', () async {
       late MethodCall captured;

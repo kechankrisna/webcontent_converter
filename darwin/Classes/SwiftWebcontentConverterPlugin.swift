@@ -824,8 +824,14 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                 return
             }
 
-            let urlArg = arguments!["url"] as? String?
+            guard let content = content else {
+                result(
+                    FlutterError(
+                        code: "INVALID_ARGUMENT", message: "Content is required", details: nil))
+                return
+            }
             let margins = arguments!["margins"] as? [String: Double]
+            let format = arguments!["format"] as? [String: Any]
             let durationMs = Int64(duration!)
 
             conversionQueue.startOrQueue { [weak self] in
@@ -844,8 +850,6 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                 }
 
                 #if os(iOS)
-                    let baseURL = urlArg != nil ? URL(string: urlArg!!) : Bundle.main.resourceURL
-
                     let wv = WKWebView()
                     wv.isHidden = true
                     wv.tag = 100
@@ -871,8 +875,10 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                         }
                     }
                 #else
-                    let baseURL = urlArg != nil ? URL(string: urlArg!!) : Bundle.main.resourceURL
-
+                    // macOS: use a reasonable fixed frame for initial page
+                    // rendering only; printOperation(with:) uses WebKit's own
+                    // print pipeline which sizes content for the paper/margins
+                    // described by NSPrintInfo, independent of the on-screen frame.
                     let frame = CGRect(x: 0, y: 0, width: 800, height: 600)
                     let configuration = WKWebViewConfiguration()
                     configuration.suppressesIncrementalRendering = false
@@ -892,13 +898,21 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
 
                     jobDelegate.onFinish = {
                         DispatchQueue.main.asyncAfter(deadline: .now() + (Double(durationMs) / 1000)) {
-                            // On macOS, NSPrintOperation.run() runs its own nested
+                            // On macOS, printOperation.run() runs its own nested
                             // event loop and blocks until the user dismisses the print
                             // panel. The watchdog is disarmed BEFORE run() so it
                             // doesn't false-positive TIMEOUT during normal user
                             // interaction with the system print dialog.
                             watchdog.disarm()
-                            self.createWebPrintJobMacOS(webView: wv, margins: margins)
+                            guard #available(macOS 11.0, *) else {
+                                print("❌ Print preview requires macOS 11.0 or newer")
+                                finish {
+                                    result(nil)
+                                    teardown()
+                                }
+                                return
+                            }
+                            self.createWebPrintJobMacOS(webView: wv, margins: margins, format: format)
                             // After the dialog closes, free the queue slot.
                             finish {
                                 result(nil)
@@ -933,7 +947,7 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                 }
 
                 // --- Start loading (delegate is already wired) ---
-                wv.loadHTMLString(content!, baseURL: baseURL)
+                wv.loadHTMLString(content, baseURL: Bundle.main.resourceURL)
             }
 
         case "getPlatformVersion":
@@ -971,30 +985,58 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
     #endif
 
     #if os(macOS)
-        private func createWebPrintJobMacOS(webView: WKWebView, margins: [String: Double]?) {
+        @available(macOS 11.0, *)
+        private func createWebPrintJobMacOS(webView: WKWebView, margins: [String: Double]?, format: [String: Any]?) {
             print("🖨️ Creating macOS print job...")
 
-            let printInfo = NSPrintInfo.shared
+            // Use a dedicated NSPrintInfo rather than .shared to avoid
+            // mutating global state (e.g. default printer, shared margins).
+            let printInfo = NSPrintInfo()
 
-            // Set up print info
-            let appName = Bundle.main.infoDictionary?["CFBundleName"] as? String ?? "WebView"
-            printInfo.jobDisposition = .preview  // This shows the print preview
-
-            // Set margins if provided
-            if let margins = margins {
-                printInfo.leftMargin = CGFloat(margins["left"] ?? 0.0) * 72.0 / 96.0
-                printInfo.rightMargin = CGFloat(margins["right"] ?? 0.0) * 72.0 / 96.0
-                printInfo.topMargin = CGFloat(margins["top"] ?? 0.0) * 72.0 / 96.0
-                printInfo.bottomMargin = CGFloat(margins["bottom"] ?? 0.0) * 72.0 / 96.0
+            // --- Parse format (inches → points, same pattern as contentToPDF) ---
+            let formatName = format?["name"] as? String
+            let hasExplicitFormat = (formatName?.isEmpty == false)
+            if hasExplicitFormat {
+                let paperWidthIn: Double
+                let paperHeightIn: Double
+                if formatName == "custom" {
+                    paperWidthIn = format?["width"] as? Double ?? 1.0
+                    paperHeightIn = format?["height"] as? Double ?? 1.0
+                } else {
+                    let paperFormat = PaperFormat.fromString(formatName!)
+                    paperWidthIn = paperFormat.width
+                    paperHeightIn = paperFormat.height
+                }
+                printInfo.paperSize = NSSize(
+                    width: CGFloat(paperWidthIn * 72.0),
+                    height: CGFloat(paperHeightIn * 72.0))
             }
 
-            // Create print operation
-            let printOperation = NSPrintOperation(view: webView, printInfo: printInfo)
-            printOperation.showsPrintPanel = true  // Show print dialog
+            // --- Parse margins (inches → points directly, no /96.0 factor) ---
+            // PdfMargins.toMap() always sends inches, so the conversion is simply ×72.
+            if let margins = margins {
+                printInfo.topMargin = CGFloat((margins["top"] ?? 0.0) * 72.0)
+                printInfo.bottomMargin = CGFloat((margins["bottom"] ?? 0.0) * 72.0)
+                printInfo.leftMargin = CGFloat((margins["left"] ?? 0.0) * 72.0)
+                printInfo.rightMargin = CGFloat((margins["right"] ?? 0.0) * 72.0)
+            }
+
+            // --- Leave jobDisposition at its default (spool) so showsPrintPanel
+            //     below actually shows the standard system print panel with its
+            //     built-in preview — consistent with Windows' ShowPrintUI. ---
+            let appName = Bundle.main.infoDictionary?["CFBundleName"] as? String ?? "WebView"
+
+            // --- Use WKWebView.printOperation(with:) (macOS 11.0+). This hands
+            //     printing off to WebKit's own print pipeline: content is laid
+            //     out for the paper size / margins in printInfo, independent of
+            //     the WebView's on-screen frame — the same way Safari prints. ---
+            let printOperation = webView.printOperation(with: printInfo)
+            printOperation.showsPrintPanel = true
             printOperation.showsProgressPanel = true
             printOperation.jobTitle = "\(appName) Print Preview"
 
-            // Run the print operation
+            // Run the print operation (blocks in a nested event loop until
+            // the user dismisses the panel — watchdog is already disarmed).
             printOperation.run()
         }
     #endif

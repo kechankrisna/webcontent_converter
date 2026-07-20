@@ -9,7 +9,6 @@ import 'package:flutter/widgets.dart';
 import 'package:dio/dio.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart' as iaw;
 
 import '../../demo.dart';
 import '../../page.dart';
@@ -630,19 +629,22 @@ class WebcontentConverter {
         });
         return true;
       } else if (io.Platform.isMacOS) {
-        // printCurrentPage IS officially implemented on macOS
-        // (WKWebView.printOperation on 11.0+), so flutter_inappwebview
-        // works fine here.
         WebcontentConverter.logger
-            .info("[printPreview] macOS: using flutter_inappwebview");
-        await _printPreviewViaInAppWebView(
-          url: url,
-          content: content,
-          margins: _margins,
-          format: format,
-          duration: duration,
-          autoClose: autoClose,
-        );
+            .info("[printPreview] macOS: using native WKWebView print dialog");
+        String? resolvedContent = content;
+        if (resolvedContent == null && url != null) {
+          final response = await Dio().get(url);
+          resolvedContent = response.data.toString();
+        }
+        if (resolvedContent == null) {
+          throw ArgumentError('printPreview requires either a url or content');
+        }
+        await _channel.invokeMethod('printPreview', {
+          'content': resolvedContent,
+          'duration': duration ?? 0,
+          'margins': _margins.toMap(),
+          'format': format.toMap(),
+        });
         return true;
       } else {
         //mobile method
@@ -657,76 +659,4 @@ class WebcontentConverter {
     }
   }
 
-  static Future<void> _printPreviewViaInAppWebView({
-    String? url,
-    String? content,
-    required PdfMargins margins,
-    required PaperFormat format,
-    double? duration,
-    bool autoClose = true,
-  }) async {
-    if (url == null && content == null) {
-      throw ArgumentError('printPreview requires either a url or content');
-    }
-
-    final marginCss = _buildMarginCss(margins);
-    final loadCompleter = Completer<void>();
-
-    final headlessWebView = iaw.HeadlessInAppWebView(
-      initialSize: _buildInAppWebViewSize(format),
-      initialUrlRequest:
-          url != null ? iaw.URLRequest(url: iaw.WebUri(url)) : null,
-      initialData: content != null
-          ? iaw.InAppWebViewInitialData(
-              data: '<style>$marginCss</style>\n$content')
-          : null,
-      onLoadStop: (controller, loadedUrl) async {
-        if (!loadCompleter.isCompleted) loadCompleter.complete();
-      },
-      onReceivedError: (controller, request, error) {
-        if (!loadCompleter.isCompleted) {
-          loadCompleter.completeError(
-            Exception('[printPreview] load error: ${error.description}'),
-          );
-        }
-      },
-    );
-
-    try {
-      await headlessWebView.run();
-      await loadCompleter.future.timeout(
-        const Duration(seconds: 30),
-        onTimeout: () => throw TimeoutException(
-            '[printPreview] page load timed out after 30s'),
-      );
-
-      final controller = headlessWebView.webViewController!;
-      // Content already carries the margin CSS in its initial markup; a
-      // navigated-to url doesn't, so it's injected after load instead.
-      if (url != null) {
-        await controller.injectCSSCode(source: marginCss);
-      }
-      if (duration != null && duration > 0) {
-        await Future.delayed(Duration(milliseconds: duration.toInt()));
-      }
-      await controller.printCurrentPage();
-    } finally {
-      if (autoClose) {
-        await headlessWebView.dispose();
-      }
-    }
-  }
 }
-
-String _buildMarginCss(PdfMargins margins) {
-  return '@page { margin: ${margins.top}in ${margins.right}in '
-      '${margins.bottom}in ${margins.left}in; }';
-}
-
-Size _buildInAppWebViewSize(PaperFormat format) {
-  return Size(format.width * 96, format.height * 96);
-}
-
-// Test-only exports — top-level functions wrapping private helpers for unit testing.
-String buildMarginCssForTest(PdfMargins m) => _buildMarginCss(m);
-Size buildInAppWebViewSizeForTest(PaperFormat f) => _buildInAppWebViewSize(f);
