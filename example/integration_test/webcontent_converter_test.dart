@@ -33,6 +33,79 @@ void main() {
     );
   });
 
+  group('contentToImage with format (Windows PDF-rasterized path)', () {
+    testWidgets(
+      'produces an A4-sized PNG for single-page content',
+      (tester) async {
+        final bytes = await WebcontentConverter.contentToImage(
+          content: Demo.getShortReceiptContent(),
+          duration: 3000,
+          enableLogger: false,
+          args: {
+            'format': {
+              'width': PaperFormat.a4.width,
+              'height': PaperFormat.a4.height,
+              'name': PaperFormat.a4.name,
+            },
+          },
+        );
+
+        expect(bytes, isNotEmpty);
+
+        final codec = await ui.instantiateImageCodec(bytes);
+        final frame = await codec.getNextFrame();
+        final expectedWidth = (PaperFormat.a4.width * 96).round();
+        final expectedHeight = (PaperFormat.a4.height * 96).round();
+
+        expect(frame.image.width, expectedWidth);
+        expect(frame.image.height % expectedHeight, 0,
+            reason:
+                'height should be an exact multiple of one A4 page height');
+      },
+      timeout: const Timeout(Duration(minutes: 3)),
+    );
+
+    testWidgets(
+      'stitches a longer letter-format invoice into a multi-page PNG',
+      (tester) async {
+        final bytes = await WebcontentConverter.contentToImage(
+          content: Demo.getInvoiceContent(),
+          duration: 3000,
+          enableLogger: false,
+          args: {
+            'format': {
+              'width': PaperFormat.letter.width,
+              'height': PaperFormat.letter.height,
+              'name': PaperFormat.letter.name,
+            },
+            'margins': {
+              'top': 0.25,
+              'bottom': 0.25,
+              'right': 0.25,
+              'left': 0.25,
+            },
+          },
+        );
+
+        expect(bytes, isNotEmpty);
+
+        final codec = await ui.instantiateImageCodec(bytes);
+        final frame = await codec.getNextFrame();
+        final expectedWidth = (PaperFormat.letter.width * 96).round();
+        final expectedHeight = (PaperFormat.letter.height * 96).round();
+
+        expect(frame.image.width, expectedWidth);
+        expect(frame.image.height % expectedHeight, 0,
+            reason: 'height should be an exact multiple of one letter '
+                'page height');
+        expect(frame.image.height ~/ expectedHeight, greaterThan(1),
+            reason: 'this invoice content is expected to span more than '
+                'one page');
+      },
+      timeout: const Timeout(Duration(minutes: 3)),
+    );
+  });
+
   group('contentToPDF', () {
     testWidgets(
       'writes a real, well-formed PDF file through the native plugin',

@@ -290,11 +290,68 @@ void WebcontentConverterPlugin::HandleContentToImage(
 
   double duration_ms = GetDouble(args, "duration", 0.0);
 
+  // `format` (paper size) routes through PdfImageCaptureRequest instead --
+  // see its class comment. Without `format`, behavior is unchanged: a
+  // natural-size screenshot via ImageCaptureRequest.
+  const EncodableMap* format = GetMap(args, "format");
+  const EncodableMap* margins = GetMap(args, "margins");
+
   // The MethodResult must outlive HandleContentToImage -- it's fulfilled
   // asynchronously, possibly after sitting in the queue for a while -- so
   // it's released into the job/completion callback below and rewrapped
   // there.
   auto* raw_result = result.release();
+
+  if (format) {
+    PdfConversionRequest::PageSettings settings{};
+    // Defaults match PaperFormat.a4 / PdfMargins.zero on the Dart side,
+    // same as HandleContentToPdf.
+    settings.page_width_in = GetDouble(*format, "width", 8.27);
+    settings.page_height_in = GetDouble(*format, "height", 11.7);
+    settings.margin_top_in = margins ? GetDouble(*margins, "top", 0.0) : 0.0;
+    settings.margin_bottom_in =
+        margins ? GetDouble(*margins, "bottom", 0.0) : 0.0;
+    settings.margin_left_in =
+        margins ? GetDouble(*margins, "left", 0.0) : 0.0;
+    settings.margin_right_in =
+        margins ? GetDouble(*margins, "right", 0.0) : 0.0;
+
+    StartOrQueue([this, content_wide = Utf8ToWide(*content), duration_ms,
+                  settings, raw_result]() {
+      HWND parent_window = registrar_->GetView()->GetNativeWindow();
+      WebView2Session* session = EnsureSession(parent_window);
+
+      active_pdf_image_request_ = std::make_unique<PdfImageCaptureRequest>(
+          session, content_wide, duration_ms, settings,
+          [this, raw_result](PdfImageCaptureRequest* self,
+                              std::optional<std::vector<uint8_t>> image_bytes,
+                              std::optional<std::string> error) {
+            std::vector<uint8_t> moved_bytes;
+            bool has_bytes = false;
+            if (image_bytes) {
+              moved_bytes = std::move(*image_bytes);
+              has_bytes = true;
+            }
+
+            if (active_pdf_image_request_.get() == self) {
+              active_pdf_image_request_.reset();
+            }
+            OnRequestFinished();
+
+            std::unique_ptr<flutter::MethodResult<EncodableValue>>
+                owned_result(raw_result);
+            if (has_bytes) {
+              owned_result->Success(EncodableValue(std::move(moved_bytes)));
+            } else {
+              owned_result->Error("CONTENT_TO_IMAGE_FAILED",
+                                   error.value_or("Unknown error"));
+            }
+          });
+
+      active_pdf_image_request_->Start();
+    });
+    return;
+  }
 
   StartOrQueue([this, content_wide = Utf8ToWide(*content), duration_ms,
                 raw_result]() {

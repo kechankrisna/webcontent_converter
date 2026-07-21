@@ -14,8 +14,6 @@ using Microsoft::WRL::ComPtr;
 
 namespace webcontent_converter {
 
-namespace {
-
 void EnsureGdiplusStarted() {
   static std::once_flag once;
   std::call_once(once, [] {
@@ -27,6 +25,8 @@ void EnsureGdiplusStarted() {
     // reliable single point to shut GDI+ down before process exit.
   });
 }
+
+namespace {
 
 bool GetPngEncoderClsid(CLSID* clsid) {
   UINT num_encoders = 0;

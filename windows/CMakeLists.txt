@@ -24,6 +24,8 @@ list(APPEND PLUGIN_SOURCES
   "webview2_session.h"
   "pdf_conversion_request.cpp"
   "pdf_conversion_request.h"
+  "pdf_image_capture_request.cpp"
+  "pdf_image_capture_request.h"
   "print_preview_window.cpp"
   "print_preview_window.h"
   "image_capture_request.cpp"
@@ -82,6 +84,23 @@ target_link_libraries(${PLUGIN_NAME} PRIVATE flutter flutter_wrapper_plugin)
 # encode the PrintWindow-captured bitmap in memory); Gdiplus does that PNG
 # encoding for contentToImage.
 target_link_libraries(${PLUGIN_NAME} PRIVATE "Shlwapi.lib" "Ole32.lib" "Gdiplus.lib" "Crypt32.lib")
+
+# contentToImage's format-aware path (PdfImageCaptureRequest) rasterizes a
+# generated PDF via the WinRT Windows.Data.Pdf API rather than teaching a
+# browser-hosted PDF viewer to render at an exact, known pixel size (tried
+# first; abandoned after WebView2's built-in PDF viewer proved to apply its
+# own uncontrollable auto-zoom -- see
+# docs/superpowers/specs/2026-07-21-windows-content-to-image-paper-format-design.md).
+# That needs C++/WinRT's coroutine support, scoped to *this target only* via
+# target_compile_features (CMake computes the highest standard requested
+# across all such calls for a target, so this raises only this plugin to
+# C++20 without affecting the Runner exe or other plugins, which keep the
+# app-wide C++17 from apply_standard_settings). WindowsApp.lib is the
+# umbrella import lib Win32 (non-UWP-packaged) apps link to call WinRT APIs
+# like this one -- a well-supported, documented pattern, not something
+# requiring UWP packaging.
+target_compile_features(${PLUGIN_NAME} PRIVATE cxx_std_20)
+target_link_libraries(${PLUGIN_NAME} PRIVATE "WindowsApp.lib")
 
 # List of absolute paths to libraries that should be bundled with the plugin.
 # This list could contain prebuilt libraries, or libraries created by an

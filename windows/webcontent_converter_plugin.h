@@ -11,6 +11,7 @@
 
 #include "image_capture_request.h"
 #include "pdf_conversion_request.h"
+#include "pdf_image_capture_request.h"
 #include "print_preview_window.h"
 #include "webview2_session.h"
 
@@ -87,6 +88,12 @@ class WebcontentConverterPlugin : public flutter::Plugin {
   std::deque<std::function<void()>> pending_jobs_;
   std::unique_ptr<PdfConversionRequest> active_pdf_request_;
   std::unique_ptr<ImageCaptureRequest> active_image_request_;
+
+  // Populated instead of active_image_request_ when contentToImage is
+  // called with a `format` (paper size) -- see PdfImageCaptureRequest's
+  // class comment for why that needs a different pipeline than a plain
+  // natural-size screenshot.
+  std::unique_ptr<PdfImageCaptureRequest> active_pdf_image_request_;
 };
 
 }  // namespace webcontent_converter
