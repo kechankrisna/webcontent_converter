@@ -587,33 +587,9 @@ class WebcontentConverter {
       final double windowHeight =
           (arguments['height'] as num?)?.toDouble() ?? 0.0;
 
-      if (io.Platform.isWindows) {
-        // flutter_inappwebview_windows (0.6.0) declares printCurrentPage on
-        // its Dart controller but doesn't actually implement the native
-        // method channel handler for it (MissingPluginException at
-        // runtime), so Windows goes through this package's own native
-        // WebView2 plugin (ShowPrintUI) instead, the same way contentToPDF/
-        // contentToImage already do.
-        WebcontentConverter.logger.info(
-            "[printPreview] Windows: using native WebView2 print dialog");
-        String? resolvedContent = content;
-        if (resolvedContent == null && url != null) {
-          final response = await Dio().get(url);
-          resolvedContent = response.data.toString();
-        }
-        if (resolvedContent == null) {
-          throw ArgumentError('printPreview requires either a url or content');
-        }
-        await _channel.invokeMethod('printPreview', {
-          'content': resolvedContent,
-          'duration': duration ?? 0,
-          'width': windowWidth,
-          'height': windowHeight,
-        });
-        return true;
-      } else if (io.Platform.isMacOS) {
+      if (io.Platform.isWindows || io.Platform.isMacOS) {
         WebcontentConverter.logger
-            .info("[printPreview] macOS: using native WKWebView print dialog");
+            .info("[printPreview] Windows/macOS: using native WebView2/WKWebView print dialog");
         String? resolvedContent = content;
         if (resolvedContent == null && url != null) {
           final response = await Dio().get(url);
