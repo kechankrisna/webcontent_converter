@@ -64,9 +64,32 @@ class PrintPreviewWindow {
   void OnReady(ICoreWebView2Environment* environment, ICoreWebView2* webview);
   void OnResize(int width, int height);
   void OnWindowClosed();
+  void OnCommand(int command_id);
+
+  // Paints one of the owner-drawn toolbar buttons -- see CreateToolbarButtons
+  // for why they're owner-drawn rather than plain BS_PUSHBUTTON.
+  void OnDrawItem(DRAWITEMSTRUCT* draw_item);
 
   void Succeed();
   void Fail(const std::string& message);
+
+  // Toolbar (Reload / Print), mirroring PrintPreviewWindowMacOS's toolbar --
+  // see that class's comment for why Reload/Print are exposed as explicit
+  // buttons rather than a right-click context menu (WebView2, like WKWebView,
+  // doesn't expose one through a stable public API here).
+  void CreateToolbarButtons();
+  void PositionToolbarButtons(int width);
+
+  // Re-requests the same content_ from OnWebResourceRequested's in-memory
+  // handler (see webview2_session.cpp) by reloading the fixed synthetic URL
+  // -- no re-navigation plumbing needed since that handler already serves
+  // whatever content the session was last given.
+  void ReloadWebView();
+
+  // Re-invokes ShowPrintUI on demand; used both for the initial auto-print
+  // once the page settles and for the toolbar's Print button. Returns
+  // whether the print UI was successfully requested.
+  bool ShowPrintDialog();
 
   std::wstring content_;
   double duration_ms_;
@@ -75,7 +98,14 @@ class PrintPreviewWindow {
   bool completed_ = false;
 
   HWND hwnd_ = nullptr;
+  HWND reload_button_ = nullptr;
+  HWND print_button_ = nullptr;
+  HFONT icon_font_ = nullptr;
   std::unique_ptr<WebView2Session> session_;
+
+  // Cached from OnReady so the Print toolbar button can re-invoke ShowPrintUI
+  // without re-querying the interface each time.
+  Microsoft::WRL::ComPtr<ICoreWebView2_16> webview16_;
 
   // Covers window/environment/controller creation through the ShowPrintUI
   // call itself -- not the user's time spent with the preview open
