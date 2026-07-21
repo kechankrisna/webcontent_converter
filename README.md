@@ -1,16 +1,16 @@
 # webcontent_converter
 
-This plugin was made for developer to convert any webcontent, web uri to image bitmap or pdf file. This plugin use WebView on android, WKWebView on Ios and chromium for desktop support. This plugin was test for android, ios and desktop. 
+This plugin was made for developer to convert any webcontent, web uri to image bitmap or pdf file. It uses each platform's native webview directly: `WebView` on Android, `WKWebView` on iOS/macOS, and `WebView2` on Windows. No bundled/downloaded Chrome or Puppeteer is required on any platform.
 
 ## Support :
 
 - &check; Android Minimum SDK Version: 21
 - &check; IOS minimum target Version: 11
-- &check; Deskop linux, windows, macos
+- &check; Desktop: windows, macos
 
-| Android | IOS | Desktop|
-| --- | --- | --- |
-|  WebView | WkWebView | Puppeteer |
+| Android | iOS | macOS | Windows |
+| --- | --- | --- | --- |
+| WebView | WKWebView | WKWebView | WebView2 |
 
 
 ## Methods
@@ -101,23 +101,14 @@ var result = await WebcontentConverter.contentToPDF(
 `*** Purpose: The three above functions will help developer to get pdf printed file of html content as. It will return a savedPath when saved successful otherwise null`
 
 
-### Desktop top
-```
-    flutter pub run webcontent_converter:install_desktop download
-```
-This cli will download the chrome version base on your current operating system and save into path assets/.local-chromium/ directory as a zip file
+### Desktop (Windows/macOS)
 
-```
-    flutter pub run webcontent_converter:install_desktop extract
-```
-This cli will extract the chrome zip file based on your current operating system and save into path assets/.local-chromium/ directory
+Windows and macOS work out of the box through `WebView2` and `WKWebView` respectively -- there's no Chrome/Chromium to download, bundle, or point the plugin at. Just call `ensureInitialized()` (or any convert method) directly:
 
-
-add this code into your flutter app will help you to ship chromium zip in asset directory into production build for desktop deployment
 ```dart
-var executablePath = await ChromeDesktopDirectoryHelper.saveChromeFromAssetToApp();
-WebViewHelper.customBrowserPath = [executablePath];
 await WebcontentConverter.ensureInitialized();
 ```
+
+> Older versions of this plugin (pre-0.0.11) shipped a Puppeteer-based fallback for desktop that required downloading a Chrome binary via `flutter pub run webcontent_converter:install_desktop` and pointing `WebViewHelper.customBrowserPath` at it. That code path has no effect on the current native `WebView2`/`WKWebView` implementation and should no longer be used.
 
 ![Invoice screenshot](screenshots/invoice.pdf?raw=true "Invoice")
