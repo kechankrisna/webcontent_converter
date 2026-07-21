@@ -1,3 +1,7 @@
+## 0.0.11
+
+- **BREAKING**: removed the `executablePath` and `ppWaits` parameters from every `WebcontentConverter` method (`contentToImage`, `contentToPDF`, `contentToPDFImage`, `printPreview`, `filePathToImage`, `webUriToImage`, `filePathToPdf`, `webUriToPdf`, `ensureInitialized`, `initWebcontentConverter`). Both were leftovers from the old Puppeteer-based implementation (a Chrome executable path and page-load wait conditions) and had no effect on any platform's current native WebView-based implementation. Callers passing either by name will need to remove them.
+
 ## 0.0.10+7
 
 - feat: macOS now uses `flutter_inappwebview` `HeadlessInAppWebView` for PDF generation (no Chrome required)

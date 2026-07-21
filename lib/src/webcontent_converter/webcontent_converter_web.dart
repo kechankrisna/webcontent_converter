@@ -66,7 +66,6 @@ class WebcontentConverter {
   );
 
   static Future<void> ensureInitialized({
-    String? executablePath,
     String? content,
   }) async {
     if (!checkHtml2PdfInstallation()) {
@@ -78,7 +77,6 @@ class WebcontentConverter {
   }
 
   static Future<void> initWebcontentConverter({
-    String? executablePath,
     String? content,
   }) async {
     if (!checkHtml2PdfInstallation()) {
@@ -99,7 +97,6 @@ class WebcontentConverter {
   static Future<Uint8List> filePathToImage({
     required String path,
     double duration = 2000,
-    String? executablePath,
     bool autoClosePage = true,
     int scale = 3,
     Map<String, dynamic> args = const {},
@@ -112,7 +109,6 @@ class WebcontentConverter {
       result = await contentToImage(
         content: content,
         duration: duration,
-        executablePath: executablePath,
         scale: scale,
         args: args,
         enableLogger: enableLogger,
@@ -129,7 +125,6 @@ class WebcontentConverter {
   static Future<Uint8List> webUriToImage({
     required String uri,
     double duration = 2000,
-    String? executablePath,
     bool autoClosePage = true,
     int scale = 3,
     Map<String, dynamic> args = const {},
@@ -142,7 +137,6 @@ class WebcontentConverter {
       result = await contentToImage(
         content: content,
         duration: duration,
-        executablePath: executablePath,
         scale: scale,
         args: args,
         enableLogger: enableLogger,
@@ -159,7 +153,6 @@ class WebcontentConverter {
   static Future<Uint8List> contentToImage({
     required String content,
     double duration = 2000,
-    String? executablePath,
     bool autoClosePage = true,
     int scale = 3,
     Map<String, dynamic> args = const {},
@@ -216,7 +209,6 @@ class WebcontentConverter {
     required String savedPath,
     PdfMargins? margins,
     PaperFormat format = PaperFormat.a4,
-    String? executablePath,
     Map<String, dynamic> args = const {},
     bool enableLogger = true,
   }) async {
@@ -229,7 +221,6 @@ class WebcontentConverter {
         savedPath: savedPath,
         margins: margins,
         format: format,
-        executablePath: executablePath,
         enableLogger: enableLogger,
       );
     } on Exception catch (e) {
@@ -247,7 +238,6 @@ class WebcontentConverter {
     required String savedPath,
     PdfMargins? margins,
     PaperFormat format = PaperFormat.a4,
-    String? executablePath,
     Map<String, dynamic> args = const {},
     bool enableLogger = true,
   }) async {
@@ -261,7 +251,6 @@ class WebcontentConverter {
         savedPath: savedPath,
         margins: margins,
         format: format,
-        executablePath: executablePath,
         args: args,
         enableLogger: enableLogger,
       );
@@ -280,7 +269,6 @@ class WebcontentConverter {
     required String savedPath,
     PdfMargins? margins,
     PaperFormat format = PaperFormat.a4,
-    String? executablePath,
     bool autoClosePage = true,
     Map<String, dynamic> args = const {},
     bool enableLogger = true,
@@ -330,7 +318,6 @@ class WebcontentConverter {
     double duration = 2000,
     PdfMargins? margins,
     PaperFormat format = PaperFormat.a4,
-    String? executablePath,
     bool autoClosePage = true,
     Map<String, dynamic> args = const {},
     bool enableLogger = true,
@@ -431,7 +418,6 @@ class WebcontentConverter {
     double? duration,
     PdfMargins? margins,
     PaperFormat format = PaperFormat.a4,
-    String? executablePath,
     Map<String, dynamic> args = const {},
   }) async {
     try {

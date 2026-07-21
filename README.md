@@ -117,7 +117,7 @@ add this code into your flutter app will help you to ship chromium zip in asset 
 ```dart
 var executablePath = await ChromeDesktopDirectoryHelper.saveChromeFromAssetToApp();
 WebViewHelper.customBrowserPath = [executablePath];
-await WebcontentConverter.ensureInitialized(executablePath: executablePath);
+await WebcontentConverter.ensureInitialized();
 ```
 
 ![Invoice screenshot](screenshots/invoice.pdf?raw=true "Invoice")

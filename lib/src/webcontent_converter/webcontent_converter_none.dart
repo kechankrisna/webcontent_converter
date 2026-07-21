@@ -43,14 +43,12 @@ class WebcontentConverter {
   );
 
   static Future<void> ensureInitialized({
-    String? executablePath,
     String? content,
   }) async {
     UnimplementedError('ensureInitialized');
   }
 
   static Future<void> initWebcontentConverter({
-    String? executablePath,
     String? content,
   }) async {
     UnimplementedError('initWebcontentConverter');
@@ -66,11 +64,9 @@ class WebcontentConverter {
   static Future<Uint8List> filePathToImage({
     required String path,
     double duration = 2000,
-    String? executablePath,
     bool autoClosePage = true,
     int scale = 3,
     Map<String, dynamic> args = const {},
-    List<String> ppWaits = const ["load", "domContentLoaded"],
     bool enableLogger = true,
   }) async {
     UnimplementedError('filePathToImage');
@@ -80,11 +76,9 @@ class WebcontentConverter {
   static Future<Uint8List> webUriToImage({
     required String uri,
     double duration = 2000,
-    String? executablePath,
     bool autoClosePage = true,
     int scale = 3,
     Map<String, dynamic> args = const {},
-    List<String> ppWaits = const ["load", "domContentLoaded"],
     bool enableLogger = true,
   }) async {
     UnimplementedError('webUriToImage');
@@ -94,11 +88,9 @@ class WebcontentConverter {
   static Future<Uint8List> contentToImage({
     required String content,
     double duration = 2000,
-    String? executablePath,
     bool autoClosePage = true,
     int scale = 3,
     Map<String, dynamic> args = const {},
-    List<String> ppWaits = const ["load", "domContentLoaded"],
     bool enableLogger = true,
   }) async {
     UnimplementedError('contentToImage');
@@ -111,9 +103,7 @@ class WebcontentConverter {
     required String savedPath,
     PdfMargins? margins,
     PaperFormat format = PaperFormat.a4,
-    String? executablePath,
     Map<String, dynamic> args = const {},
-    List<String> ppWaits = const ["load", "domContentLoaded"],
     bool enableLogger = true,
   }) async {
     UnimplementedError('filePathToPdf');
@@ -126,9 +116,7 @@ class WebcontentConverter {
     required String savedPath,
     PdfMargins? margins,
     PaperFormat format = PaperFormat.a4,
-    String? executablePath,
     Map<String, dynamic> args = const {},
-    List<String> ppWaits = const ["load", "domContentLoaded"],
     bool enableLogger = true,
   }) async {
     UnimplementedError('webUriToPdf');
@@ -141,25 +129,21 @@ class WebcontentConverter {
     required String savedPath,
     PdfMargins? margins,
     PaperFormat format = PaperFormat.a4,
-    String? executablePath,
     bool autoClosePage = true,
     Map<String, dynamic> args = const {},
-    List<String> ppWaits = const ["load", "domContentLoaded"],
     bool enableLogger = true,
   }) async {
     UnimplementedError('contentToPDF');
     return null;
   }
-  
+
   static Future<Uint8List?> contentToPDFImage({
     required String content,
     double duration = 2000,
     PdfMargins? margins,
     PaperFormat format = PaperFormat.a4,
-    String? executablePath,
     bool autoClosePage = true,
     Map<String, dynamic> args = const {},
-    List<String> ppWaits = const ["load", "domContentLoaded"],
     bool enableLogger = true,
   }) async {
     UnimplementedError('contentToPDFImage');
@@ -185,9 +169,7 @@ class WebcontentConverter {
     double? duration,
     PdfMargins? margins,
     PaperFormat format = PaperFormat.a4,
-    String? executablePath,
     Map<String, dynamic> args = const {},
-    List<String> ppWaits = const ["load", "domContentLoaded"],
   }) {
     UnimplementedError('printPreview');
     return Future.value(false);

@@ -37,17 +37,14 @@ class WebcontentConverter {
   }
 
   static Future<void> ensureInitialized({
-    String? executablePath,
     String? content,
   }) async {
     if (preloadBytes.isEmpty) {
-      await WebcontentConverter.initWebcontentConverter(
-          executablePath: executablePath, content: content);
+      await WebcontentConverter.initWebcontentConverter(content: content);
     }
   }
 
   static Future<void> initWebcontentConverter({
-    String? executablePath,
     String? content,
   }) async {
     preloadBytes =
@@ -106,10 +103,8 @@ class WebcontentConverter {
   static Future<Uint8List> filePathToImage({
     required String path,
     double duration = 2000,
-    String? executablePath,
     int scale = 3,
     Map<String, dynamic> args = const {},
-    List<String> ppWaits = const ["load", "domContentLoaded"],
     bool enableLogger = true,
   }) async {
     Uint8List result = Uint8List.fromList([]);
@@ -119,10 +114,8 @@ class WebcontentConverter {
       result = await contentToImage(
         content: content,
         duration: duration,
-        executablePath: executablePath,
         scale: scale,
         args: args,
-        ppWaits: ppWaits,
         enableLogger: enableLogger,
       );
     } on Exception catch (e) {
@@ -149,10 +142,8 @@ class WebcontentConverter {
   static Future<Uint8List> webUriToImage({
     required String uri,
     double duration = 2000,
-    String? executablePath,
     int scale = 3,
     Map<String, dynamic> args = const {},
-    List<String> ppWaits = const ["load", "domContentLoaded"],
     bool enableLogger = true,
   }) async {
     Uint8List result = Uint8List.fromList([]);
@@ -162,10 +153,8 @@ class WebcontentConverter {
       result = await contentToImage(
         content: content,
         duration: duration,
-        executablePath: executablePath,
         scale: scale,
         args: args,
-        ppWaits: ppWaits,
         enableLogger: enableLogger,
       );
     } on Exception catch (e) {
@@ -194,10 +183,8 @@ class WebcontentConverter {
   static Future<Uint8List> contentToImage({
     required String content,
     double duration = 2000,
-    String? executablePath,
     int scale = 3,
     Map<String, dynamic> args = const {},
-    List<String> ppWaits = const ["load", "domContentLoaded"],
     bool enableLogger = true,
   }) async {
     final Map<String, dynamic> arguments = {
@@ -266,9 +253,7 @@ class WebcontentConverter {
     required String savedPath,
     PdfMargins? margins,
     PaperFormat format = PaperFormat.a4,
-    String? executablePath,
     Map<String, dynamic> args = const {},
-    List<String> ppWaits = const ["load", "domContentLoaded"],
     bool enableLogger = true,
   }) async {
     var result;
@@ -280,9 +265,7 @@ class WebcontentConverter {
         savedPath: savedPath,
         margins: margins,
         format: format,
-        executablePath: executablePath,
         args: args,
-        ppWaits: ppWaits,
         enableLogger: enableLogger,
       );
     } on Exception catch (e, stackTrace) {
@@ -312,9 +295,7 @@ class WebcontentConverter {
     required String savedPath,
     PdfMargins? margins,
     PaperFormat format = PaperFormat.a4,
-    String? executablePath,
     Map<String, dynamic> args = const {},
-    List<String> ppWaits = const ["load", "domContentLoaded"],
     bool enableLogger = true,
   }) async {
     var result;
@@ -327,9 +308,7 @@ class WebcontentConverter {
         savedPath: savedPath,
         margins: margins,
         format: format,
-        executablePath: executablePath,
         args: args,
-        ppWaits: ppWaits,
         enableLogger: enableLogger,
       );
     } on Exception catch (e, stackTrace) {
@@ -362,9 +341,7 @@ class WebcontentConverter {
     required String savedPath,
     PdfMargins? margins,
     PaperFormat format = PaperFormat.a4,
-    String? executablePath,
     Map<String, dynamic> args = const {},
-    List<String> ppWaits = const ["load", "domContentLoaded"],
     bool enableLogger = true,
   }) async {
     PdfMargins _margins = margins ?? PdfMargins.zero;
@@ -427,9 +404,7 @@ class WebcontentConverter {
     double duration = 2000,
     PdfMargins? margins,
     PaperFormat format = PaperFormat.a4,
-    String? executablePath,
     Map<String, dynamic> args = const {},
-    List<String> ppWaits = const ["load", "domContentLoaded"],
     bool enableLogger = true,
   }) async {
     PdfMargins _margins = margins ?? PdfMargins.zero;
@@ -464,9 +439,7 @@ class WebcontentConverter {
           savedPath: tempPath,
           margins: _margins,
           format: format,
-          executablePath: executablePath,
           args: args,
-          ppWaits: ppWaits,
           enableLogger: enableLogger,
         );
         if (savedPath != null) {
@@ -585,9 +558,7 @@ class WebcontentConverter {
     double? duration,
     PdfMargins? margins,
     PaperFormat format = PaperFormat.a4,
-    String? executablePath,
     Map<String, dynamic> args = const {},
-    List<String> ppWaits = const ["load", "domContentLoaded"],
   }) async {
     try {
       PdfMargins _margins = margins ?? PdfMargins.zero;
