@@ -606,6 +606,16 @@ class WebcontentConverter {
       }
       WebcontentConverter.logger.info(arguments['margins']);
       WebcontentConverter.logger.info(arguments['format']);
+
+      // Preview window size (native popup window on Windows/macOS, ignored
+      // elsewhere); overridable via args: {'width': ..., 'height': ...}.
+      // 0 means "not specified" -- the native side then sizes the window
+      // to fit the screen instead of using a flat fallback size.
+      final double windowWidth =
+          (arguments['width'] as num?)?.toDouble() ?? 0.0;
+      final double windowHeight =
+          (arguments['height'] as num?)?.toDouble() ?? 0.0;
+
       if (io.Platform.isWindows) {
         // flutter_inappwebview_windows (0.6.0) declares printCurrentPage on
         // its Dart controller but doesn't actually implement the native
@@ -626,6 +636,8 @@ class WebcontentConverter {
         await _channel.invokeMethod('printPreview', {
           'content': resolvedContent,
           'duration': duration ?? 0,
+          'width': windowWidth,
+          'height': windowHeight,
         });
         return true;
       } else if (io.Platform.isMacOS) {
@@ -644,6 +656,8 @@ class WebcontentConverter {
           'duration': duration ?? 0,
           'margins': _margins.toMap(),
           'format': format.toMap(),
+          'width': windowWidth,
+          'height': windowHeight,
         });
         return true;
       } else {

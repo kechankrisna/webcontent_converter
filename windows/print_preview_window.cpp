@@ -15,6 +15,25 @@ constexpr wchar_t kWindowClassName[] = L"webcontent_converter_print_preview";
 // afterward, which isn't observable (see class comment).
 constexpr UINT kRequestTimeoutMs = 15000;
 
+// width_/height_ <= 0 means the caller didn't request a specific size (see
+// HandlePrintPreview); ComputeDefaultSize fills in the primary monitor's
+// full work area size in that case, falling back to a fixed size only if
+// screen info is ever unavailable.
+constexpr double kFallbackWidth = 1200.0;
+constexpr double kFallbackHeight = 1100.0;
+constexpr double kScreenFitRatio = 1.0;
+
+void ComputeDefaultSize(double* width, double* height) {
+  RECT work_area{};
+  if (::SystemParametersInfoW(SPI_GETWORKAREA, 0, &work_area, 0)) {
+    *width = (work_area.right - work_area.left) * kScreenFitRatio;
+    *height = (work_area.bottom - work_area.top) * kScreenFitRatio;
+    return;
+  }
+  *width = kFallbackWidth;
+  *height = kFallbackHeight;
+}
+
 // Toolbar strip reserved at the top of the window for the Reload/Print
 // buttons; the WebView2 controller's bounds start below it instead of at
 // y=0, mirroring PrintPreviewWindowMacOS's NSToolbar (which occupies its own
@@ -141,11 +160,13 @@ LRESULT CALLBACK ToolbarButtonProc(HWND hwnd, UINT msg, WPARAM wparam,
 }  // namespace
 
 PrintPreviewWindow::PrintPreviewWindow(
-    std::wstring content, double duration_ms,
+    std::wstring content, double duration_ms, double width, double height,
     std::function<void(PrintPreviewWindow*, bool, std::optional<std::string>)>
         on_complete)
     : content_(std::move(content)),
       duration_ms_(duration_ms),
+      width_(width),
+      height_(height),
       on_complete_(std::move(on_complete)) {}
 
 PrintPreviewWindow::~PrintPreviewWindow() { *alive_ = false; }
@@ -153,9 +174,16 @@ PrintPreviewWindow::~PrintPreviewWindow() { *alive_ = false; }
 void PrintPreviewWindow::Start() {
   EnsureWindowClassRegistered();
 
+  double effective_width = width_;
+  double effective_height = height_;
+  if (effective_width <= 0 || effective_height <= 0) {
+    ComputeDefaultSize(&effective_width, &effective_height);
+  }
+
   hwnd_ = ::CreateWindowExW(
       0, kWindowClassName, L"Print Preview", WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, CW_USEDEFAULT, 900, 1100, nullptr, nullptr,
+      CW_USEDEFAULT, CW_USEDEFAULT, static_cast<int>(effective_width),
+      static_cast<int>(effective_height), nullptr, nullptr,
       ::GetModuleHandleW(nullptr), this);
 
   if (!hwnd_) {

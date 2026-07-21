@@ -851,6 +851,11 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
             let margins = arguments!["margins"] as? [String: Double]
             let format = arguments!["format"] as? [String: Any]
             let durationMs = Int64(duration!)
+            // 0 means "not specified" -- PrintPreviewWindowMacOS.start()
+            // then sizes the window to fit the screen instead of using a
+            // flat fallback size.
+            let width = (arguments!["width"] as? Double) ?? 0.0
+            let height = (arguments!["height"] as? Double) ?? 0.0
 
             #if os(macOS)
                 // A genuine standalone window + WKWebView, matching the
@@ -864,7 +869,8 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
                 // rather than the plugin's shared one, so there's no
                 // shared resource here to serialize against.
                 let previewWindow = PrintPreviewWindowMacOS(
-                    content: content, durationMs: durationMs, margins: margins, format: format
+                    content: content, durationMs: durationMs, margins: margins, format: format,
+                    width: width, height: height
                 ) { success, error in
                     if success {
                         result(nil)

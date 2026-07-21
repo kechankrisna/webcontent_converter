@@ -43,8 +43,12 @@ namespace webcontent_converter {
 // Start(); never delete manually.
 class PrintPreviewWindow {
  public:
+  // `width`/`height` <= 0 means "not specified" -- Start() then sizes the
+  // window to match the primary monitor's full work area instead (falling
+  // back to a fixed 1200x1100 only if that's ever unavailable), rather than
+  // a flat default that could overflow a smaller/laptop-sized screen.
   PrintPreviewWindow(
-      std::wstring content, double duration_ms,
+      std::wstring content, double duration_ms, double width, double height,
       std::function<void(PrintPreviewWindow* self, bool success,
                           std::optional<std::string> error)>
           on_complete);
@@ -93,6 +97,8 @@ class PrintPreviewWindow {
 
   std::wstring content_;
   double duration_ms_;
+  double width_;
+  double height_;
   std::function<void(PrintPreviewWindow*, bool, std::optional<std::string>)>
       on_complete_;
   bool completed_ = false;

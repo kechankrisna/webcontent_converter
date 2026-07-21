@@ -411,13 +411,18 @@ void WebcontentConverterPlugin::HandlePrintPreview(
   }
 
   double duration_ms = GetDouble(args, "duration", 0.0);
+  // 0 means "not specified" -- PrintPreviewWindow::Start() computes a
+  // screen-fit default in that case rather than a flat 1200x1100 that could
+  // overflow a smaller screen.
+  double width = GetDouble(args, "width", 0.0);
+  double height = GetDouble(args, "height", 0.0);
 
   // PrintPreviewWindow owns its own independent window and WebView2
   // session (see its class comment) rather than the plugin's shared one,
   // so unlike contentToPDF/contentToImage this doesn't go through
   // StartOrQueue -- there's no shared resource here to serialize against.
   auto* window = new PrintPreviewWindow(
-      Utf8ToWide(*content), duration_ms,
+      Utf8ToWide(*content), duration_ms, width, height,
       [raw_result = result.release()](PrintPreviewWindow*, bool success,
                                        std::optional<std::string> error) {
         std::unique_ptr<flutter::MethodResult<EncodableValue>> owned_result(

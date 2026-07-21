@@ -55,6 +55,8 @@
         private let durationMs: Int64
         private let margins: [String: Double]?
         private let format: [String: Any]?
+        private let width: Double
+        private let height: Double
         private var onComplete: ((Bool, String?) -> Void)?
         var onWindowClosed: (() -> Void)?
 
@@ -74,20 +76,44 @@
         // window open afterward, which isn't observable (see class comment).
         private let watchdog = RequestWatchdog()
 
+        // width/height <= 0 means "not specified" -- start() then sizes the
+        // window to match the main screen's full visible frame instead
+        // (falling back to a fixed 1200x1100 only if that's ever
+        // unavailable), rather than a flat default that could overflow a
+        // smaller screen.
         init(
             content: String, durationMs: Int64, margins: [String: Double]?, format: [String: Any]?,
+            width: Double = 0, height: Double = 0,
             onComplete: @escaping (Bool, String?) -> Void
         ) {
             self.content = content
             self.durationMs = durationMs
             self.margins = margins
             self.format = format
+            self.width = width
+            self.height = height
             self.onComplete = onComplete
             super.init()
         }
 
+        private static let fallbackWidth: CGFloat = 1200
+        private static let fallbackHeight: CGFloat = 1100
+        private static let screenFitRatio: CGFloat = 1.0
+
+        private static func computeDefaultSize() -> (width: CGFloat, height: CGFloat) {
+            guard let visibleFrame = NSScreen.main?.visibleFrame else {
+                return (fallbackWidth, fallbackHeight)
+            }
+            return (visibleFrame.width * screenFitRatio, visibleFrame.height * screenFitRatio)
+        }
+
         func start() {
-            let frame = NSRect(x: 0, y: 0, width: 900, height: 1100)
+            var effectiveWidth = CGFloat(width)
+            var effectiveHeight = CGFloat(height)
+            if effectiveWidth <= 0 || effectiveHeight <= 0 {
+                (effectiveWidth, effectiveHeight) = Self.computeDefaultSize()
+            }
+            let frame = NSRect(x: 0, y: 0, width: effectiveWidth, height: effectiveHeight)
             let window = NSWindow(
                 contentRect: frame,
                 styleMask: [.titled, .closable, .resizable, .miniaturizable],
