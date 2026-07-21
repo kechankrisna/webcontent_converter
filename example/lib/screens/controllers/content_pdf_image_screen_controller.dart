@@ -32,10 +32,14 @@ class ContentPDFImageScreenController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> convert() async {
-    final defaultContent = counter.isEven
-        ? Demo.getShortReceiptContent()
-        : Demo.getReceiptContent();
+  Future<void> convert({bool isReceipt = true}) async {
+    final defaultContent = isReceipt
+        ? (counter.isEven
+            ? Demo.getShortReceiptContent()
+            : Demo.getReceiptContent())
+        : (counter.isEven
+            ? Demo.getInvoiceContent()
+            : Demo.getInvoiceContent());
 
     var savedPath = "sample_${DateTime.now().millisecondsSinceEpoch}.pdf";
     if (!kIsWeb) {
@@ -48,12 +52,12 @@ class ContentPDFImageScreenController extends ChangeNotifier {
           ? textEditingController.text
           : defaultContent,
       args: {
-        "format": {
+        "format": isReceipt ? null: {
           "width": PaperFormat.a4.width,
           "height": PaperFormat.a4.height,
           "name": PaperFormat.a4.name,
         },
-        "margins": {'top': 0.25, 'bottom': 0.25, 'right': 0.25, 'left': 0.25},
+        "margins": isReceipt ? null: {'top': 0.25, 'bottom': 0.25, 'right': 0.25, 'left': 0.25},
         // "landscape": false,
         // "printBackground": true,
         // "scale": 1.0,
@@ -75,14 +79,18 @@ class ContentPDFImageScreenController extends ChangeNotifier {
     if (!kIsWeb) file = io.File(savedPath);
 
     bytes != null && file != null ? await file!.writeAsBytes(bytes!) : null;
-    WebcontentConverter.logger.info(result ?? '');
+    WebcontentConverter.logger.info(result.length ?? '');
     notifyListeners();
   }
 
-  previewPDF() async {
-    final defaultContent = counter.isEven
-        ? Demo.getShortReceiptContent()
-        : Demo.getReceiptContent();
+  previewPDF({bool isReceipt = true}) async {
+    final defaultContent = isReceipt
+        ? (counter.isEven
+            ? Demo.getShortReceiptContent()
+            : Demo.getReceiptContent())
+        : (counter.isEven
+            ? Demo.getInvoiceContent()
+            : Demo.getInvoiceContent());
     WebcontentConverter.printPreview(
       content: textEditingController.text.isNotEmpty
           ? textEditingController.text

@@ -43,11 +43,23 @@ class ContentToPDFImageScreenScaffold extends StatelessWidget {
         actions: [
           IconButton(
             icon: Icon(Icons.picture_as_pdf),
-            onPressed: controller.convert,
+            onPressed: ()=> controller.convert(),
+            tooltip: "convert to receipt PDF Image",
           ),
           IconButton(
             icon: Icon(Icons.chrome_reader_mode),
-            onPressed: controller.previewPDF,
+            onPressed: () => controller.previewPDF(),
+            tooltip: "convert to receipt PDF Image",
+          ),
+          IconButton(
+            icon: Icon(Icons.picture_as_pdf),
+            onPressed: ()=> controller.convert(isReceipt: false),
+            tooltip: "convert to invoice PDF Image",
+          ),
+          IconButton(
+            icon: Icon(Icons.chrome_reader_mode),
+            onPressed: () => controller.previewPDF(isReceipt: false),
+            tooltip: "convert to invoice PDF Image",
           ),
         ],
       ),
