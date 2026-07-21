@@ -18,20 +18,29 @@ constexpr UINT kRequestTimeoutMs = 15000;
 // width_/height_ <= 0 means the caller didn't request a specific size (see
 // HandlePrintPreview); ComputeDefaultSize fills in the primary monitor's
 // full work area size in that case, falling back to a fixed size only if
-// screen info is ever unavailable.
+// screen info is ever unavailable. The same work area is also used to
+// center the window (see Start()) -- CW_USEDEFAULT's cascading placement
+// otherwise gives a different, non-deterministic position each time a
+// window is created, which combined with a screen-sized window can push
+// part of it off-screen.
 constexpr double kFallbackWidth = 1200.0;
 constexpr double kFallbackHeight = 1100.0;
 constexpr double kScreenFitRatio = 1.0;
 
-void ComputeDefaultSize(double* width, double* height) {
+RECT GetWorkAreaRect() {
   RECT work_area{};
-  if (::SystemParametersInfoW(SPI_GETWORKAREA, 0, &work_area, 0)) {
-    *width = (work_area.right - work_area.left) * kScreenFitRatio;
-    *height = (work_area.bottom - work_area.top) * kScreenFitRatio;
-    return;
+  if (::SystemParametersInfoW(SPI_GETWORKAREA, 0, &work_area, 0) &&
+      work_area.right > work_area.left && work_area.bottom > work_area.top) {
+    return work_area;
   }
-  *width = kFallbackWidth;
-  *height = kFallbackHeight;
+  return RECT{0, 0, static_cast<LONG>(kFallbackWidth),
+              static_cast<LONG>(kFallbackHeight)};
+}
+
+void ComputeDefaultSize(const RECT& work_area, double* width,
+                         double* height) {
+  *width = (work_area.right - work_area.left) * kScreenFitRatio;
+  *height = (work_area.bottom - work_area.top) * kScreenFitRatio;
 }
 
 // Toolbar strip reserved at the top of the window for the Reload/Print
@@ -174,17 +183,30 @@ PrintPreviewWindow::~PrintPreviewWindow() { *alive_ = false; }
 void PrintPreviewWindow::Start() {
   EnsureWindowClassRegistered();
 
+  RECT work_area = GetWorkAreaRect();
+
   double effective_width = width_;
   double effective_height = height_;
   if (effective_width <= 0 || effective_height <= 0) {
-    ComputeDefaultSize(&effective_width, &effective_height);
+    ComputeDefaultSize(work_area, &effective_width, &effective_height);
   }
 
+  // Centered on the work area rather than CW_USEDEFAULT: that cascades a
+  // different offset per window instance, which combined with a
+  // screen-sized window can leave part of it off-screen -- see
+  // GetWorkAreaRect's comment. Matches PrintPreviewWindowMacOS's
+  // window.center() for the same consistent, deterministic placement.
+  int work_width = work_area.right - work_area.left;
+  int work_height = work_area.bottom - work_area.top;
+  int x = work_area.left +
+          (work_width - static_cast<int>(effective_width)) / 2;
+  int y = work_area.top +
+          (work_height - static_cast<int>(effective_height)) / 2;
+
   hwnd_ = ::CreateWindowExW(
-      0, kWindowClassName, L"Print Preview", WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, CW_USEDEFAULT, static_cast<int>(effective_width),
-      static_cast<int>(effective_height), nullptr, nullptr,
-      ::GetModuleHandleW(nullptr), this);
+      0, kWindowClassName, L"Print Preview", WS_OVERLAPPEDWINDOW, x, y,
+      static_cast<int>(effective_width), static_cast<int>(effective_height),
+      nullptr, nullptr, ::GetModuleHandleW(nullptr), this);
 
   if (!hwnd_) {
     Fail("Failed to create print preview window");
