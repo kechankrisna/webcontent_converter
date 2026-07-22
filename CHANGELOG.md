@@ -1,3 +1,7 @@
+## 0.0.12
+
+- feat: raised the default content-size guard on Windows and Android from 100MB to 1GB (`kMaxContentSizeBytes` / `MAX_CONTENT_SIZE_BYTES`), and added a new optional `maximumContentSize` parameter (in MB) to `contentToImage`, `contentToPDF`, `contentToPDFImage`, and `printPreview` (plus their `filePath*`/`webUri*` wrappers) to override it per call. macOS/iOS have no such guard and are unaffected.
+
 ## 0.0.11
 
 - **BREAKING**: removed the `executablePath` and `ppWaits` parameters from every `WebcontentConverter` method (`contentToImage`, `contentToPDF`, `contentToPDFImage`, `printPreview`, `filePathToImage`, `webUriToImage`, `filePathToPdf`, `webUriToPdf`, `ensureInitialized`, `initWebcontentConverter`). Both were leftovers from the old Puppeteer-based implementation (a Chrome executable path and page-load wait conditions) and had no effect on any platform's current native WebView-based implementation. Callers passing either by name will need to remove them.

@@ -67,6 +67,7 @@ class WebcontentConverter {
     bool autoClosePage = true,
     int scale = 3,
     Map<String, dynamic> args = const {},
+    int? maximumContentSize,
     bool enableLogger = true,
   }) async {
     UnimplementedError('filePathToImage');
@@ -79,6 +80,7 @@ class WebcontentConverter {
     bool autoClosePage = true,
     int scale = 3,
     Map<String, dynamic> args = const {},
+    int? maximumContentSize,
     bool enableLogger = true,
   }) async {
     UnimplementedError('webUriToImage');
@@ -91,6 +93,7 @@ class WebcontentConverter {
     bool autoClosePage = true,
     int scale = 3,
     Map<String, dynamic> args = const {},
+    int? maximumContentSize,
     bool enableLogger = true,
   }) async {
     UnimplementedError('contentToImage');
@@ -104,6 +107,7 @@ class WebcontentConverter {
     PdfMargins? margins,
     PaperFormat format = PaperFormat.a4,
     Map<String, dynamic> args = const {},
+    int? maximumContentSize,
     bool enableLogger = true,
   }) async {
     UnimplementedError('filePathToPdf');
@@ -117,6 +121,7 @@ class WebcontentConverter {
     PdfMargins? margins,
     PaperFormat format = PaperFormat.a4,
     Map<String, dynamic> args = const {},
+    int? maximumContentSize,
     bool enableLogger = true,
   }) async {
     UnimplementedError('webUriToPdf');
@@ -131,6 +136,7 @@ class WebcontentConverter {
     PaperFormat format = PaperFormat.a4,
     bool autoClosePage = true,
     Map<String, dynamic> args = const {},
+    int? maximumContentSize,
     bool enableLogger = true,
   }) async {
     UnimplementedError('contentToPDF');
@@ -144,6 +150,7 @@ class WebcontentConverter {
     PaperFormat format = PaperFormat.a4,
     bool autoClosePage = true,
     Map<String, dynamic> args = const {},
+    int? maximumContentSize,
     bool enableLogger = true,
   }) async {
     UnimplementedError('contentToPDFImage');
@@ -170,6 +177,7 @@ class WebcontentConverter {
     PdfMargins? margins,
     PaperFormat format = PaperFormat.a4,
     Map<String, dynamic> args = const {},
+    int? maximumContentSize,
   }) {
     UnimplementedError('printPreview');
     return Future.value(false);

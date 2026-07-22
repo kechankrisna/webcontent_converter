@@ -51,7 +51,11 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
     private val conversionQueue = ConversionQueue(MAX_QUEUED_REQUESTS)
 
     companion object {
-        private const val MAX_CONTENT_SIZE_BYTES = 100L * 1024 * 1024
+        // Matches Windows' own default (see webcontent_converter_plugin.cpp)
+        // -- there's no shared config between platforms, so kept in sync
+        // manually. Overridable per-call via `maximumContentSize` (in MB) --
+        // see resolveMaxContentSizeBytes.
+        private const val MAX_CONTENT_SIZE_BYTES = 1024L * 1024 * 1024
         private const val MAX_QUEUED_REQUESTS = 32
 
         init {
@@ -75,6 +79,17 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
 
     private fun requestTimeoutMs(durationMs: Double): Long =
         maxOf(30_000L, durationMs.toLong() + 30_000L)
+
+    // `maximumContentSize` (in MB) overrides MAX_CONTENT_SIZE_BYTES for a
+    // single call, mirroring Windows' GetMaxContentSizeBytes.
+    private fun resolveMaxContentSizeBytes(arguments: Map<*, *>): Long {
+        val maxMb = (arguments["maximumContentSize"] as? Number)?.toDouble()
+        return if (maxMb != null && maxMb > 0) {
+            (maxMb * 1024 * 1024).toLong()
+        } else {
+            MAX_CONTENT_SIZE_BYTES
+        }
+    }
 
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         val viewID = "webview-view-type"
@@ -135,11 +150,16 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
         var is_html2bitmap = arguments["is_html2bitmap"] as? Boolean ?: false
         if (duration == null) duration = 2000.00
         val tag = "webcontent_converter";
+        val maxContentSizeBytes = resolveMaxContentSizeBytes(arguments)
 
         when (method) {
             "contentToImage" -> {
-                if (content.toByteArray(Charsets.UTF_8).size > MAX_CONTENT_SIZE_BYTES) {
-                    result.error("CONTENT_TOO_LARGE", "Content exceeds maximum size of 100MB", null)
+                if (content.toByteArray(Charsets.UTF_8).size > maxContentSizeBytes) {
+                    result.error(
+                        "CONTENT_TOO_LARGE",
+                        "Content exceeds maximum size of ${maxContentSizeBytes / (1024 * 1024)}MB",
+                        null
+                    )
                     return
                 }
                 if (conversionQueue.isQueueFull()) {
@@ -163,8 +183,12 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
             }
 
             "contentToPDF" -> {
-                if (content.toByteArray(Charsets.UTF_8).size > MAX_CONTENT_SIZE_BYTES) {
-                    result.error("CONTENT_TOO_LARGE", "Content exceeds maximum size of 100MB", null)
+                if (content.toByteArray(Charsets.UTF_8).size > maxContentSizeBytes) {
+                    result.error(
+                        "CONTENT_TOO_LARGE",
+                        "Content exceeds maximum size of ${maxContentSizeBytes / (1024 * 1024)}MB",
+                        null
+                    )
                     return
                 }
                 if (conversionQueue.isQueueFull()) {
@@ -187,8 +211,12 @@ class WebcontentConverterPlugin : FlutterPlugin, MethodCallHandler, ActivityAwar
                 }
             }
             "printPreview" -> {
-                if (content.toByteArray(Charsets.UTF_8).size > MAX_CONTENT_SIZE_BYTES) {
-                    result.error("CONTENT_TOO_LARGE", "Content exceeds maximum size of 100MB", null)
+                if (content.toByteArray(Charsets.UTF_8).size > maxContentSizeBytes) {
+                    result.error(
+                        "CONTENT_TOO_LARGE",
+                        "Content exceeds maximum size of ${maxContentSizeBytes / (1024 * 1024)}MB",
+                        null
+                    )
                     return
                 }
                 if (conversionQueue.isQueueFull()) {

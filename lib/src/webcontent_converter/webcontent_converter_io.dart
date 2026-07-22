@@ -105,6 +105,7 @@ class WebcontentConverter {
     double duration = 2000,
     int scale = 3,
     Map<String, dynamic> args = const {},
+    int? maximumContentSize,
     bool enableLogger = true,
   }) async {
     Uint8List result = Uint8List.fromList([]);
@@ -116,6 +117,7 @@ class WebcontentConverter {
         duration: duration,
         scale: scale,
         args: args,
+        maximumContentSize: maximumContentSize,
         enableLogger: enableLogger,
       );
     } on Exception catch (e) {
@@ -144,6 +146,7 @@ class WebcontentConverter {
     double duration = 2000,
     int scale = 3,
     Map<String, dynamic> args = const {},
+    int? maximumContentSize,
     bool enableLogger = true,
   }) async {
     Uint8List result = Uint8List.fromList([]);
@@ -155,6 +158,7 @@ class WebcontentConverter {
         duration: duration,
         scale: scale,
         args: args,
+        maximumContentSize: maximumContentSize,
         enableLogger: enableLogger,
       );
     } on Exception catch (e) {
@@ -185,6 +189,10 @@ class WebcontentConverter {
     double duration = 2000,
     int scale = 3,
     Map<String, dynamic> args = const {},
+    // Overrides the native side's default max content size (in MB) for
+    // this call only -- see CONTENT_TOO_LARGE handling in the Windows/
+    // Android plugins (`maximumContentSize` in their arguments map).
+    int? maximumContentSize,
     bool enableLogger = true,
   }) async {
     final Map<String, dynamic> arguments = {
@@ -196,6 +204,9 @@ class WebcontentConverter {
     ///
     if (args.isNotEmpty) {
       arguments.addAll(args);
+    }
+    if (maximumContentSize != null) {
+      arguments['maximumContentSize'] = maximumContentSize;
     }
     Uint8List results = Uint8List.fromList([]);
     final stopwatch = Stopwatch()..start();
@@ -254,6 +265,7 @@ class WebcontentConverter {
     PdfMargins? margins,
     PaperFormat format = PaperFormat.a4,
     Map<String, dynamic> args = const {},
+    int? maximumContentSize,
     bool enableLogger = true,
   }) async {
     var result;
@@ -266,6 +278,7 @@ class WebcontentConverter {
         margins: margins,
         format: format,
         args: args,
+        maximumContentSize: maximumContentSize,
         enableLogger: enableLogger,
       );
     } on Exception catch (e, stackTrace) {
@@ -296,6 +309,7 @@ class WebcontentConverter {
     PdfMargins? margins,
     PaperFormat format = PaperFormat.a4,
     Map<String, dynamic> args = const {},
+    int? maximumContentSize,
     bool enableLogger = true,
   }) async {
     var result;
@@ -309,6 +323,7 @@ class WebcontentConverter {
         margins: margins,
         format: format,
         args: args,
+        maximumContentSize: maximumContentSize,
         enableLogger: enableLogger,
       );
     } on Exception catch (e, stackTrace) {
@@ -342,6 +357,10 @@ class WebcontentConverter {
     PdfMargins? margins,
     PaperFormat format = PaperFormat.a4,
     Map<String, dynamic> args = const {},
+    // Overrides the native side's default max content size (in MB) for
+    // this call only -- see CONTENT_TOO_LARGE handling in the Windows/
+    // Android plugins (`maximumContentSize` in their arguments map).
+    int? maximumContentSize,
     bool enableLogger = true,
   }) async {
     PdfMargins _margins = margins ?? PdfMargins.zero;
@@ -356,6 +375,9 @@ class WebcontentConverter {
     ///
     if (args.isNotEmpty) {
       arguments.addAll(args);
+    }
+    if (maximumContentSize != null) {
+      arguments['maximumContentSize'] = maximumContentSize;
     }
     final stopwatch = Stopwatch()..start();
     if (enableLogger) {
@@ -405,6 +427,7 @@ class WebcontentConverter {
     PdfMargins? margins,
     PaperFormat format = PaperFormat.a4,
     Map<String, dynamic> args = const {},
+    int? maximumContentSize,
     bool enableLogger = true,
   }) async {
     PdfMargins _margins = margins ?? PdfMargins.zero;
@@ -440,6 +463,7 @@ class WebcontentConverter {
           margins: _margins,
           format: format,
           args: args,
+          maximumContentSize: maximumContentSize,
           enableLogger: enableLogger,
         );
         if (savedPath != null) {
@@ -559,6 +583,10 @@ class WebcontentConverter {
     PdfMargins? margins,
     PaperFormat format = PaperFormat.a4,
     Map<String, dynamic> args = const {},
+    // Overrides the native side's default max content size (in MB) for
+    // this call only -- see CONTENT_TOO_LARGE handling in the Windows/
+    // Android plugins (`maximumContentSize` in their arguments map).
+    int? maximumContentSize,
   }) async {
     try {
       PdfMargins _margins = margins ?? PdfMargins.zero;
@@ -574,6 +602,9 @@ class WebcontentConverter {
       ///
       if (args.isNotEmpty) {
         arguments.addAll(args);
+      }
+      if (maximumContentSize != null) {
+        arguments['maximumContentSize'] = maximumContentSize;
       }
       WebcontentConverter.logger.info(arguments['margins']);
       WebcontentConverter.logger.info(arguments['format']);
@@ -605,6 +636,8 @@ class WebcontentConverter {
           'format': format.toMap(),
           'width': windowWidth,
           'height': windowHeight,
+          if (maximumContentSize != null)
+            'maximumContentSize': maximumContentSize,
         });
         return true;
       } else {

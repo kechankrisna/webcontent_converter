@@ -100,6 +100,9 @@ class WebcontentConverter {
     bool autoClosePage = true,
     int scale = 3,
     Map<String, dynamic> args = const {},
+    // No-op on web (no native size-guard here) -- accepted only so a
+    // shared call site compiles across the io/web/none implementations.
+    int? maximumContentSize,
     bool enableLogger = true,
   }) async {
     Uint8List result = Uint8List.fromList([]);
@@ -128,6 +131,7 @@ class WebcontentConverter {
     bool autoClosePage = true,
     int scale = 3,
     Map<String, dynamic> args = const {},
+    int? maximumContentSize,
     bool enableLogger = true,
   }) async {
     Uint8List result = Uint8List.fromList([]);
@@ -156,6 +160,7 @@ class WebcontentConverter {
     bool autoClosePage = true,
     int scale = 3,
     Map<String, dynamic> args = const {},
+    int? maximumContentSize,
     bool enableLogger = true,
   }) async {
     final stopwatch = Stopwatch()..start();
@@ -210,6 +215,7 @@ class WebcontentConverter {
     PdfMargins? margins,
     PaperFormat format = PaperFormat.a4,
     Map<String, dynamic> args = const {},
+    int? maximumContentSize,
     bool enableLogger = true,
   }) async {
     var result;
@@ -239,6 +245,7 @@ class WebcontentConverter {
     PdfMargins? margins,
     PaperFormat format = PaperFormat.a4,
     Map<String, dynamic> args = const {},
+    int? maximumContentSize,
     bool enableLogger = true,
   }) async {
     var result;
@@ -271,6 +278,7 @@ class WebcontentConverter {
     PaperFormat format = PaperFormat.a4,
     bool autoClosePage = true,
     Map<String, dynamic> args = const {},
+    int? maximumContentSize,
     bool enableLogger = true,
   }) async {
     final stopwatch = Stopwatch()..start();
@@ -320,6 +328,7 @@ class WebcontentConverter {
     PaperFormat format = PaperFormat.a4,
     bool autoClosePage = true,
     Map<String, dynamic> args = const {},
+    int? maximumContentSize,
     bool enableLogger = true,
   }) async {
     var div = web.document.createElement('div') as web.HTMLDivElement;
@@ -419,6 +428,7 @@ class WebcontentConverter {
     PdfMargins? margins,
     PaperFormat format = PaperFormat.a4,
     Map<String, dynamic> args = const {},
+    int? maximumContentSize,
   }) async {
     try {
       const windowFeatures =

@@ -15,7 +15,11 @@ namespace {
 // via a temp file rather than NavigateToString specifically so there's no
 // WebView2-imposed size ceiling to track here (NavigateToString hard-fails
 // past ~2MB, which real-world HTML with embedded images/fonts hits easily).
-const size_t kMaxContentSizeBytes = 100 * 1024 * 1024;
+// Matches Android's own default (see WebcontentConverterPlugin.kt) --
+// there's no shared config between platforms, so kept in sync manually.
+// Overridable per-call via `maximumContentSize` (in MB) -- see
+// GetMaxContentSizeBytes.
+const size_t kMaxContentSizeBytes = 1024 * 1024 * 1024;
 
 // PDF and image requests share one busy slot (see request_in_flight_), so a
 // caller firing several conversions without awaiting each one queues rather
@@ -60,6 +64,14 @@ double GetDouble(const EncodableMap& map, const char* key, double fallback) {
   if (auto* value = std::get_if<int64_t>(&it->second))
     return static_cast<double>(*value);
   return fallback;
+}
+
+size_t GetMaxContentSizeBytes(const EncodableMap& args) {
+  double max_mb = GetDouble(args, "maximumContentSize", 0.0);
+  if (max_mb > 0) {
+    return static_cast<size_t>(max_mb * 1024 * 1024);
+  }
+  return kMaxContentSizeBytes;
 }
 
 }  // namespace
@@ -188,9 +200,13 @@ void WebcontentConverterPlugin::HandleContentToPdf(
   }
 
   // Validate content size to prevent memory exhaustion
-  if (content->size() > kMaxContentSizeBytes) {
+  size_t max_content_size_bytes = GetMaxContentSizeBytes(args);
+  if (content->size() > max_content_size_bytes) {
     result->Error("CONTENT_TOO_LARGE",
-                   "Content exceeds maximum size of 100MB");
+                   "Content exceeds maximum size of " +
+                       std::to_string(max_content_size_bytes /
+                                      (1024 * 1024)) +
+                       "MB");
     return;
   }
 
@@ -271,9 +287,13 @@ void WebcontentConverterPlugin::HandleContentToImage(
   }
 
   // Validate content size to prevent memory exhaustion
-  if (content->size() > kMaxContentSizeBytes) {
+  size_t max_content_size_bytes = GetMaxContentSizeBytes(args);
+  if (content->size() > max_content_size_bytes) {
     result->Error("CONTENT_TOO_LARGE",
-                   "Content exceeds maximum size of 100MB");
+                   "Content exceeds maximum size of " +
+                       std::to_string(max_content_size_bytes /
+                                      (1024 * 1024)) +
+                       "MB");
     return;
   }
 
@@ -404,9 +424,13 @@ void WebcontentConverterPlugin::HandlePrintPreview(
   }
 
   // Validate content size to prevent memory exhaustion
-  if (content->size() > kMaxContentSizeBytes) {
+  size_t max_content_size_bytes = GetMaxContentSizeBytes(args);
+  if (content->size() > max_content_size_bytes) {
     result->Error("CONTENT_TOO_LARGE",
-                   "Content exceeds maximum size of 100MB");
+                   "Content exceeds maximum size of " +
+                       std::to_string(max_content_size_bytes /
+                                      (1024 * 1024)) +
+                       "MB");
     return;
   }
 

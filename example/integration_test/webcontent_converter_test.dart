@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:path/path.dart' as p;
@@ -30,6 +31,48 @@ void main() {
         expect(frame.image.height, greaterThan(0));
       },
       timeout: const Timeout(Duration(minutes: 3)),
+    );
+  });
+
+  // Windows and Android both enforce a content-size guard (default 1GB,
+  // see kMaxContentSizeBytes / MAX_CONTENT_SIZE_BYTES); overridable per call
+  // via `maximumContentSize` (in MB). macOS/iOS have no such guard, so this
+  // group is meaningful there only in that it must not regress (still
+  // succeed) rather than exercising the cap itself.
+  group('contentToImage maximumContentSize override', () {
+    testWidgets(
+      'rejects content larger than a caller-specified cap',
+      (tester) async {
+        // ~2MB of synthetic content -- comfortably over the 1MB cap below.
+        final largeContent = 'A' * (2 * 1024 * 1024);
+        await expectLater(
+          WebcontentConverter.contentToImage(
+            content: largeContent,
+            duration: 1000,
+            enableLogger: false,
+            maximumContentSize: 1,
+          ),
+          throwsA(isA<PlatformException>().having(
+            (e) => e.code,
+            'code',
+            'CONTENT_TOO_LARGE',
+          )),
+        );
+      },
+      timeout: const Timeout(Duration(minutes: 1)),
+    );
+
+    testWidgets(
+      'leaves normal content unaffected when not specified',
+      (tester) async {
+        final bytes = await WebcontentConverter.contentToImage(
+          content: Demo.getShortReceiptContent(),
+          duration: 1000,
+          enableLogger: false,
+        );
+        expect(bytes, isNotEmpty);
+      },
+      timeout: const Timeout(Duration(minutes: 1)),
     );
   });
 
