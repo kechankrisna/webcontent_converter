@@ -1,3 +1,7 @@
+## 0.0.13
+
+- fix: Windows `contentToPDF`'s watchdog timeout now scales with the caller's `duration` (`max(20000ms, duration_ms + 30000ms)`) instead of a flat 20s, matching Android's own `requestTimeoutMs()` pattern. The flat timeout covered navigation + settle + font-wait + `PrintToPdf` combined regardless of content size, and reliably fired against a real 373MB/302-page document now that 0.0.12 raised the content-size cap to 1GB.
+
 ## 0.0.12
 
 - feat: raised the default content-size guard on Windows and Android from 100MB to 1GB (`kMaxContentSizeBytes` / `MAX_CONTENT_SIZE_BYTES`), and added a new optional `maximumContentSize` parameter (in MB) to `contentToImage`, `contentToPDF`, `contentToPDFImage`, and `printPreview` (plus their `filePath*`/`webUri*` wrappers) to override it per call. macOS/iOS have no such guard and are unaffected.
