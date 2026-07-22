@@ -8,8 +8,18 @@ namespace webcontent_converter {
 namespace {
 
 // Covers this request's whole lifecycle -- see RequestWatchdog's class
-// comment for why that's more than just the navigation phase.
-constexpr UINT kRequestTimeoutMs = 20000;
+// comment for why that's more than just the navigation phase. Scaled by
+// duration_ms (the caller's requested settle delay) rather than a flat
+// constant, matching Android's own requestTimeoutMs(): a flat ceiling was
+// fine when content was capped at 100MB, but large payloads (many embedded
+// images, hundreds of paginated labels via page-break-before, external
+// stylesheet/font/script dependencies the settle wait has to resolve
+// through document.fonts.ready, etc.) can need meaningfully longer than a
+// fixed budget for navigation + settle + PrintToPdf to complete -- confirmed
+// against a real 373MB/302-page label document that reliably timed out
+// against the old flat 20s constant.
+constexpr UINT kMinRequestTimeoutMs = 20000;
+constexpr UINT kRequestTimeoutBufferMs = 30000;
 
 std::string WideToUtf8(const std::wstring& wide) {
   if (wide.empty()) return std::string();
@@ -38,7 +48,14 @@ PdfConversionRequest::PdfConversionRequest(
       session_(session) {}
 
 void PdfConversionRequest::Start() {
-  watchdog_.Arm(kRequestTimeoutMs, [this]() { Fail("Request timed out"); });
+  // Avoids std::max here: windows.h's max()/min() macros (no NOMINMAX in
+  // this file) collide with std::max's syntax.
+  double scaled_timeout_ms =
+      duration_ms_ + static_cast<double>(kRequestTimeoutBufferMs);
+  UINT timeout_ms = scaled_timeout_ms > kMinRequestTimeoutMs
+                         ? static_cast<UINT>(scaled_timeout_ms)
+                         : kMinRequestTimeoutMs;
+  watchdog_.Arm(timeout_ms, [this]() { Fail("Request timed out"); });
   auto alive = alive_;
   session_->EnsureAndNavigate(
       content_, duration_ms_,
