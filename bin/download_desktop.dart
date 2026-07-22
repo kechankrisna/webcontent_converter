@@ -69,7 +69,6 @@ Future<void> main(List<String> args) async {
   RevisionInfo chromeInfo;
 
   try {
-    final progress = DownloadProgress();
     chromeInfo = await ChromeHelper.justDownloadChrome(
       version: version,
       cachePath: p.join(savePath, cachePath),
