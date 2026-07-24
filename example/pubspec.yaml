@@ -59,6 +59,8 @@ flutter:
   assets:
     - assets/receipt.html
     - assets/short_receipt.html
+    - assets/short_label.html
+    - assets/long_label.html
     - assets/invoice.html
     - assets/.apps/.local-chrome/150.0.7871.24_chrome-mac-arm64.zip
     - assets/.apps/.local-chrome/150.0.7871.24_chrome-mac-x64.zip

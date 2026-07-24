@@ -2,6 +2,7 @@ import 'dart:io' as io;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:webcontent_converter/webcontent_converter.dart';
@@ -31,11 +32,10 @@ class ContentPDFScreenController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> convert() async {
-    final defaultContent =
-        counter.isEven ? Demo.getShortLabelContent() : Demo.getInvoiceContent();
+  Future<void> convert({required String content_file, required PaperFormat format, required PdfMargins margins}) async {
+    final defaultContent = await rootBundle.loadString("assets/${content_file}");
 
-    var savedPath = "sample_${DateTime.now().millisecondsSinceEpoch}.pdf";
+    var savedPath = "${content_file}_${DateTime.now().millisecondsSinceEpoch}.pdf";
     if (!kIsWeb) {
       final dir = await getApplicationDocumentsDirectory();
       savedPath = join(dir.path, savedPath);
@@ -46,12 +46,8 @@ class ContentPDFScreenController extends ChangeNotifier {
           ? textEditingController.text
           : defaultContent,
       savedPath: savedPath,
-      format: counter.isEven
-          ? PaperFormat.inches(name: "custom", width: 1, height: 1)
-          : PaperFormat.a4,
-      margins: counter.isEven
-          ? PdfMargins.inches(top: 0.00, bottom: 0.00, right: 0.00, left: 0.00)
-          : PdfMargins.inches(top: 0.25, bottom: 0.25, right: 0.25, left: 0.25),
+      format: format,
+      margins: margins,
     );
 
     counter += 1;
@@ -62,9 +58,10 @@ class ContentPDFScreenController extends ChangeNotifier {
     notifyListeners();
   }
 
-  previewPDF() async {
-    final defaultContent =
-        counter.isEven ? Demo.getShortLabelContent() : Demo.getInvoiceContent();
+  previewPDF({
+    required String content_file,
+  }) async {
+    final defaultContent = await rootBundle.loadString("assets/${content_file}");
     WebcontentConverter.printPreview(
       content: textEditingController.text.isNotEmpty
           ? textEditingController.text

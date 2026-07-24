@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:printing/printing.dart';
 import 'package:provider/provider.dart';
+import 'package:webcontent_converter/page.dart';
 
 import './controllers/content_pdf_screen_controller.dart';
 // import 'package:webcontent_converter_example/services/webview_helper.dart';
@@ -42,12 +43,65 @@ class ContentPdfScreenScaffold extends StatelessWidget {
           IconButton(
             icon: Icon(Icons.picture_as_pdf),
             onPressed: () async {
-              await controller.convert();
+              await controller.convert(
+                content_file: "invoice.html",
+                format: PaperFormat.a4,
+                margins: PdfMargins.inches(
+                  top: 0.25,
+                  bottom: 0.25,
+                  right: 0.25,
+                  left: 0.25,
+                ),
+              );
             },
+            tooltip: "Convert to PDF (invoice)",
+          ),
+          IconButton(
+            icon: Icon(Icons.picture_as_pdf),
+            onPressed: () async {
+              await controller.convert(
+                content_file: "short_label.html",
+                format: PaperFormat.inches(
+                  name: "custom",
+                  width: 1,
+                  height: 1,
+                ),
+                margins: PdfMargins.inches(
+                  top: 0.00,
+                  bottom: 0.00,
+                  right: 0.00,
+                  left: 0.00,
+                ),
+              );
+            },
+            tooltip: "Convert to PDF (short label)",
+          ),
+          IconButton(
+            icon: Icon(Icons.picture_as_pdf),
+            onPressed: () async {
+              await controller.convert(
+                content_file: "long_label.html",
+                format: PaperFormat.inches(
+                  name: "custom",
+                  width: 1.57,
+                  height: 1.18,
+                ),
+                margins: PdfMargins.inches(
+                  top: 0.00,
+                  bottom: 0.00,
+                  right: 0.00,
+                  left: 0.00,
+                ),
+              );
+            },
+            tooltip: "Convert to PDF (long label)",
           ),
           IconButton(
             icon: Icon(Icons.chrome_reader_mode),
-            onPressed: controller.previewPDF,
+            onPressed: () async {
+              await controller.previewPDF(content_file: "invoice.html");
+            },
+            tooltip: "Preview PDF",
           ),
         ],
       ),
@@ -82,8 +136,9 @@ class ContentPdfScreenScaffold extends StatelessWidget {
                       return await controller.file!.readAsBytes();
                     },
                     useActions: false,
-                    scrollViewDecoration:
-                        BoxDecoration(color: Colors.transparent),
+                    scrollViewDecoration: BoxDecoration(
+                      color: Colors.transparent,
+                    ),
                   ),
                 ),
               ),
