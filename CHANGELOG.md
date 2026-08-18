@@ -1,3 +1,8 @@
+## 0.0.14
+
+- feat(example): added short/long label PDF conversion sample screens, with `convert()`/`previewPDF()` now taking content file, format, and margins per call instead of alternating on a hardcoded counter.
+- chore(android): upgraded the Gradle wrapper from 8.10.2 to 8.14 for both the plugin module and the example app.
+
 ## 0.0.13
 
 - fix: Windows `contentToPDF`'s watchdog timeout now scales with the caller's `duration` (`max(20000ms, duration_ms + 30000ms)`) instead of a flat 20s, matching Android's own `requestTimeoutMs()` pattern. The flat timeout covered navigation + settle + font-wait + `PrintToPdf` combined regardless of content size, and reliably fired against a real 373MB/302-page document now that 0.0.12 raised the content-size cap to 1GB.
