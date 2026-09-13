@@ -88,7 +88,7 @@ SPEC CHECKSUMS:
   printing: 54ff03f28fe9ba3aa93358afb80a8595a071dd07
   SDWebImage: e9fc87c1aab89a8ab1bbd74eba378c6f53be8abf
   SwiftyGif: 706c60cf65fa2bc5ee0313beece843c8eb8194d4
-  webcontent_converter: 841d2e25e82b9c8767bb4d262f7c91df7d0f2cfa
+  webcontent_converter: bb6332742c20b22cad244f8c20157efc37e62395
 
 PODFILE CHECKSUM: 9c46fd01abff66081b39f5fa5767b3f1d0b11d76
 
