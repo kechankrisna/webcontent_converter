@@ -1,3 +1,9 @@
+## 0.0.16
+
+- feat: added Swift Package Manager support for iOS and macOS, alongside the existing CocoaPods support (both are required by Flutter's current plugin policy). Verified on the example app: `FlutterGeneratedPluginSwiftPackage` genuinely lists this plugin as a dependency, and the full integration test suite passes via both CocoaPods and SPM on iOS Simulator and macOS, including a real round-trip proving a never-migrated (CocoaPods-only) consumer still works unaffected.
+- refactor: removed the unused Objective-C plugin registration shim (`WebcontentConverterPlugin.h`/`.m` — neither generated registrant referenced it) and renamed the Swift implementation class from `SwiftWebcontentConverterPlugin` to `WebcontentConverterPlugin`, updating `pluginClass` in `pubspec.yaml` to match. No behavior change.
+- fix(example): removed a `flutter.config.enable-swift-package-manager: false` override in `example/pubspec.yaml` left over from before this plugin had SPM support, which was silently forcing every build back onto CocoaPods regardless of the global Flutter config.
+
 ## 0.0.15
 
 - chore: verified support for Flutter 3.47.4/Dart 3.13.3. `pub get`, `flutter analyze` (0 issues), and the full unit + integration test suites pass on iOS Simulator and Android emulator; the example app also builds and boots cleanly in Chrome. `example/`'s iOS and macOS projects had their minimum deployment targets raised (iOS 13.0 → 15.0, macOS 10.15 → 12.0) by Flutter's own tooling migration, now required by current Flutter/Xcode toolchains.
