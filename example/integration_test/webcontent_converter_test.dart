@@ -45,19 +45,32 @@ void main() {
       (tester) async {
         // ~2MB of synthetic content -- comfortably over the 1MB cap below.
         final largeContent = 'A' * (2 * 1024 * 1024);
-        await expectLater(
-          WebcontentConverter.contentToImage(
-            content: largeContent,
-            duration: 1000,
-            enableLogger: false,
-            maximumContentSize: 1,
-          ),
-          throwsA(isA<PlatformException>().having(
-            (e) => e.code,
-            'code',
-            'CONTENT_TOO_LARGE',
-          )),
+        final conversion = WebcontentConverter.contentToImage(
+          content: largeContent,
+          duration: 1000,
+          enableLogger: false,
+          maximumContentSize: 1,
         );
+
+        // Only Android and Windows enforce the content-size guard (see the
+        // group comment above); macOS/iOS have none, so the call must not
+        // throw there. It's not guaranteed to produce a non-empty image for
+        // content this pathological (a single 2MB unbroken "word" the
+        // WebView may fail to lay out) -- that's a real, pre-existing
+        // native-rendering edge case unrelated to this guard, so this just
+        // confirms the call resolves rather than asserting on its bytes.
+        if (Platform.isAndroid || Platform.isWindows) {
+          await expectLater(
+            conversion,
+            throwsA(isA<PlatformException>().having(
+              (e) => e.code,
+              'code',
+              'CONTENT_TOO_LARGE',
+            )),
+          );
+        } else {
+          await expectLater(conversion, completes);
+        }
       },
       timeout: const Timeout(Duration(minutes: 1)),
     );

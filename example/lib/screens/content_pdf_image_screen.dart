@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'controllers/content_pdf_image_screen_controller.dart';
+
 // import 'package:webcontent_converter_example/services/webview_helper.dart';
 
 class ContentToPDFImageScreen extends StatefulWidget {
+  const ContentToPDFImageScreen({super.key});
+
   @override
-  _ContentToPDFImageScreenState createState() =>
+  State<ContentToPDFImageScreen> createState() =>
       _ContentToPDFImageScreenState();
 }
 
@@ -43,7 +46,7 @@ class ContentToPDFImageScreenScaffold extends StatelessWidget {
         actions: [
           IconButton(
             icon: Icon(Icons.picture_as_pdf),
-            onPressed: ()=> controller.convert(),
+            onPressed: () => controller.convert(),
             tooltip: "convert to receipt PDF Image",
           ),
           IconButton(
@@ -53,7 +56,7 @@ class ContentToPDFImageScreenScaffold extends StatelessWidget {
           ),
           IconButton(
             icon: Icon(Icons.picture_as_pdf),
-            onPressed: ()=> controller.convert(isReceipt: false),
+            onPressed: () => controller.convert(isReceipt: false),
             tooltip: "convert to invoice PDF Image",
           ),
           IconButton(
@@ -104,9 +107,10 @@ class ContentToPDFImageScreenScaffold extends StatelessWidget {
                           width: double.infinity,
                           alignment: Alignment.topCenter,
                           decoration: BoxDecoration(
-                              border: Border.all(color: Colors.blue)),
+                            border: Border.all(color: Colors.blue),
+                          ),
                           child: Image.memory(controller.bytes!),
-                        )
+                        ),
                     ],
                   ),
                 ),

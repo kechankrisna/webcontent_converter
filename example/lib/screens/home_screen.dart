@@ -3,23 +3,20 @@ import 'package:webcontent_converter/webcontent_converter.dart';
 import 'package:webcontent_converter_example/services/demo.dart';
 
 class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
   @override
-  _HomeScreenState createState() => _HomeScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("HOME SCREEN"),
-      ),
+      appBar: AppBar(title: Text("HOME SCREEN")),
       body: ListView(
         children: [
-          ListTile(
-            title: Text("Image converter"),
-            leading: Icon(Icons.image),
-          ),
+          ListTile(title: Text("Image converter"), leading: Icon(Icons.image)),
           ListTile(
             title: Text("content to image"),
             onTap: () =>
@@ -48,7 +45,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           ListTile(
             title: Text("content to pdf image"),
-            onTap: () => Navigator.of(context).pushNamed("/content_pdf_image_screen"),
+            onTap: () =>
+                Navigator.of(context).pushNamed("/content_pdf_image_screen"),
             trailing: Icon(Icons.arrow_right),
           ),
           ListTile(
@@ -82,12 +80,12 @@ class _HomeScreenState extends State<HomeScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           WebcontentConverter.printPreview(
+            /// url: "https://www.google.com",
 
-              /// url: "https://www.google.com",
-
-              content: Demo.getInvoiceContent(),
-              autoClose: false,
-              duration: 1000);
+            content: Demo.getInvoiceContent(),
+            autoClose: false,
+            duration: 1000,
+          );
         },
         child: Icon(Icons.print),
       ),

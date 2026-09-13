@@ -34,8 +34,9 @@ class ContentImageScreenController extends ChangeNotifier {
   }
 
   Future<void> convert() async {
-    final defaultContent =
-        counter.isEven ? Demo.getShortReceiptContent() : Demo.getReceiptContent();
+    final defaultContent = counter.isEven
+        ? Demo.getShortReceiptContent()
+        : Demo.getReceiptContent();
 
     var savedPath = "sample_${DateTime.now().millisecondsSinceEpoch}.pdf";
     if (!kIsWeb) {
@@ -62,10 +63,8 @@ class ContentImageScreenController extends ChangeNotifier {
     WebcontentConverter.logger.info("completed");
     if (!kIsWeb) file = io.File(savedPath);
 
-    bytes != null && file != null
-        ? await file!.writeAsBytes(bytes!)
-        : null;
-    WebcontentConverter.logger.info(result.length ?? '');
+    bytes != null && file != null ? await file!.writeAsBytes(bytes!) : null;
+    WebcontentConverter.logger.info(result.length);
     notifyListeners();
   }
 
@@ -102,9 +101,10 @@ class ContentImageScreenController extends ChangeNotifier {
     }
   }
 
-  previewPDF() async {
-    final defaultContent =
-        counter.isEven ? Demo.getShortReceiptContent() : Demo.getReceiptContent();
+  Future<void> previewPDF() async {
+    final defaultContent = counter.isEven
+        ? Demo.getShortReceiptContent()
+        : Demo.getReceiptContent();
     WebcontentConverter.printPreview(
       content: textEditingController.text.isNotEmpty
           ? textEditingController.text
@@ -112,17 +112,17 @@ class ContentImageScreenController extends ChangeNotifier {
     );
   }
 
-  startPrintWireless() async {
+  Future<void> startPrintWireless() async {
     // var p = ESCPrinterService(_bytes);
     // p.startPrint();
   }
 
-  startPrintBluetooth() {
+  void startPrintBluetooth() {
     // var p = ESCPrinterService(_bytes);
     // p.startBluePrint();
   }
 
-  changeCounter(int v) {
+  void changeCounter(int v) {
     counter = v;
     notifyListeners();
   }

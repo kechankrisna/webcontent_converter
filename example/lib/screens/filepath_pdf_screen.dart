@@ -7,8 +7,10 @@ import 'package:printing/printing.dart';
 import 'package:webcontent_converter/webcontent_converter.dart';
 
 class FilePathToPDFScreen extends StatefulWidget {
+  const FilePathToPDFScreen({super.key});
+
   @override
-  _FilePathToPDFScreenState createState() => _FilePathToPDFScreenState();
+  State<FilePathToPDFScreen> createState() => _FilePathToPDFScreenState();
 }
 
 class _FilePathToPDFScreenState extends State<FilePathToPDFScreen> {
@@ -20,10 +22,7 @@ class _FilePathToPDFScreenState extends State<FilePathToPDFScreen> {
       appBar: AppBar(
         title: Text("Filepath to PDF"),
         actions: [
-          IconButton(
-            icon: Icon(Icons.picture_as_pdf),
-            onPressed: _convert,
-          ),
+          IconButton(icon: Icon(Icons.picture_as_pdf), onPressed: _convert),
           IconButton(
             icon: Icon(Icons.chrome_reader_mode),
             onPressed: _previewPDF,
@@ -41,8 +40,9 @@ class _FilePathToPDFScreenState extends State<FilePathToPDFScreen> {
                     return await _file!.readAsBytes();
                   },
                   useActions: false,
-                  scrollViewDecoration:
-                      BoxDecoration(color: Colors.transparent),
+                  scrollViewDecoration: BoxDecoration(
+                    color: Colors.transparent,
+                  ),
                 ),
               )
             : null,
@@ -51,7 +51,7 @@ class _FilePathToPDFScreenState extends State<FilePathToPDFScreen> {
   }
 
   ///[convert asset file html] content into pdf
-  _convert() async {
+  Future<void> _convert() async {
     var savedPath = "sample.pdf";
     if (!kIsWeb) {
       var dir = await getApplicationDocumentsDirectory();
@@ -75,5 +75,5 @@ class _FilePathToPDFScreenState extends State<FilePathToPDFScreen> {
     WebcontentConverter.logger.info(result ?? '');
   }
 
-  _previewPDF() async {}
+  Future<void> _previewPDF() async {}
 }

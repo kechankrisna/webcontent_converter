@@ -35,11 +35,11 @@ class ContentPDFImageScreenController extends ChangeNotifier {
   Future<void> convert({bool isReceipt = true}) async {
     final defaultContent = isReceipt
         ? (counter.isEven
-            ? Demo.getShortReceiptContent()
-            : Demo.getReceiptContent())
+              ? Demo.getShortReceiptContent()
+              : Demo.getReceiptContent())
         : (counter.isEven
-            ? Demo.getInvoiceContent()
-            : Demo.getInvoiceContent());
+              ? Demo.getInvoiceContent()
+              : Demo.getInvoiceContent());
 
     var savedPath = "sample_${DateTime.now().millisecondsSinceEpoch}.pdf";
     if (!kIsWeb) {
@@ -52,12 +52,16 @@ class ContentPDFImageScreenController extends ChangeNotifier {
           ? textEditingController.text
           : defaultContent,
       args: {
-        "format": isReceipt ? null: {
-          "width": PaperFormat.a4.width,
-          "height": PaperFormat.a4.height,
-          "name": PaperFormat.a4.name,
-        },
-        "margins": isReceipt ? null: {'top': 0.25, 'bottom': 0.25, 'right': 0.25, 'left': 0.25},
+        "format": isReceipt
+            ? null
+            : {
+                "width": PaperFormat.a4.width,
+                "height": PaperFormat.a4.height,
+                "name": PaperFormat.a4.name,
+              },
+        "margins": isReceipt
+            ? null
+            : {'top': 0.25, 'bottom': 0.25, 'right': 0.25, 'left': 0.25},
         // "landscape": false,
         // "printBackground": true,
         // "scale": 1.0,
@@ -79,18 +83,18 @@ class ContentPDFImageScreenController extends ChangeNotifier {
     if (!kIsWeb) file = io.File(savedPath);
 
     bytes != null && file != null ? await file!.writeAsBytes(bytes!) : null;
-    WebcontentConverter.logger.info(result.length ?? '');
+    WebcontentConverter.logger.info(result.length);
     notifyListeners();
   }
 
-  previewPDF({bool isReceipt = true}) async {
+  Future<void> previewPDF({bool isReceipt = true}) async {
     final defaultContent = isReceipt
         ? (counter.isEven
-            ? Demo.getShortReceiptContent()
-            : Demo.getReceiptContent())
+              ? Demo.getShortReceiptContent()
+              : Demo.getReceiptContent())
         : (counter.isEven
-            ? Demo.getInvoiceContent()
-            : Demo.getInvoiceContent());
+              ? Demo.getInvoiceContent()
+              : Demo.getInvoiceContent());
     WebcontentConverter.printPreview(
       content: textEditingController.text.isNotEmpty
           ? textEditingController.text
@@ -98,17 +102,17 @@ class ContentPDFImageScreenController extends ChangeNotifier {
     );
   }
 
-  startPrintWireless() async {
+  Future<void> startPrintWireless() async {
     // var p = ESCPrinterService(_bytes);
     // p.startPrint();
   }
 
-  startPrintBluetooth() {
+  void startPrintBluetooth() {
     // var p = ESCPrinterService(_bytes);
     // p.startBluePrint();
   }
 
-  changeCounter(int v) {
+  void changeCounter(int v) {
     counter = v;
     notifyListeners();
   }

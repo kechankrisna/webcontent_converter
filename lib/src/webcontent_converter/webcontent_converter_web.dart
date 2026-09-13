@@ -32,8 +32,9 @@ bool checkHtml2PdfInstallation() =>
 
 /// [WebcontentConverter] will convert html, html file, web uri, into raw bytes image or pdf file
 class WebcontentConverter {
-  static const MethodChannel _channel =
-      const MethodChannel('webcontent_converter');
+  static const MethodChannel _channel = const MethodChannel(
+    'webcontent_converter',
+  );
 
   static Future<String?> get platformVersion async {
     final String? version = await _channel.invokeMethod('getPlatformVersion');
@@ -58,32 +59,39 @@ class WebcontentConverter {
       LevelMessages.debug,
       LevelMessages.info,
       LevelMessages.error,
-      LevelMessages.warning
+      LevelMessages.warning,
     ],
-    printer: (Object object, {String? name, LevelMessages? level, StackTrace? stackTrace}) =>
-        easyLogDefaultPrinter('[${DateTime.now()}] $object',
-            name: name, level: level, stackTrace: stackTrace),
+    printer:
+        (
+          Object object, {
+          String? name,
+          LevelMessages? level,
+          StackTrace? stackTrace,
+        }) => easyLogDefaultPrinter(
+          '[${DateTime.now()}] $object',
+          name: name,
+          level: level,
+          stackTrace: stackTrace,
+        ),
   );
 
-  static Future<void> ensureInitialized({
-    String? content,
-  }) async {
+  static Future<void> ensureInitialized({String? content}) async {
     if (!checkHtml2PdfInstallation()) {
       assert(
-          checkHtml2PdfInstallation(),
-          'html2pdf not added in web/index.html. '
-          'Run «flutter pub run webcontent_converter:install_web» or add script manually');
+        checkHtml2PdfInstallation(),
+        'html2pdf not added in web/index.html. '
+        'Run «flutter pub run webcontent_converter:install_web» or add script manually',
+      );
     }
   }
 
-  static Future<void> initWebcontentConverter({
-    String? content,
-  }) async {
+  static Future<void> initWebcontentConverter({String? content}) async {
     if (!checkHtml2PdfInstallation()) {
       assert(
-          checkHtml2PdfInstallation(),
-          'html2pdf not added in web/index.html. '
-          'Run «flutter pub run webcontent_converter:install_web» or add script manually');
+        checkHtml2PdfInstallation(),
+        'html2pdf not added in web/index.html. '
+        'Run «flutter pub run webcontent_converter:install_web» or add script manually',
+      );
     }
   }
 
@@ -166,7 +174,8 @@ class WebcontentConverter {
     final stopwatch = Stopwatch()..start();
     if (enableLogger) {
       logger.info(
-          "[contentToImage] starting: content=${content.length} chars, scale=$scale");
+        "[contentToImage] starting: content=${content.length} chars, scale=$scale",
+      );
     }
     var div = web.document.createElement('div') as web.HTMLDivElement;
     // div.setInnerHtml(content, validator: AllowAll());
@@ -177,14 +186,14 @@ class WebcontentConverter {
     web.document.body?.children.add(div);
 
     var opt = {
-        "scale": scale,
-        "allowTaint": true,
-        "logging": true,
-        "useCORS": true,
-        "filename": "savedPath",
-        "image": {"type": 'png', "quality": 0.98},
-        "html2canvas": {"scale": 5},
-      };
+      "scale": scale,
+      "allowTaint": true,
+      "logging": true,
+      "useCORS": true,
+      "filename": "savedPath",
+      "image": {"type": 'png', "quality": 0.98},
+      "html2canvas": {"scale": 5},
+    };
 
     if (enableLogger) logger.debug("[contentToImage]: opt: $opt");
     List<int> result = [];
@@ -203,7 +212,8 @@ class WebcontentConverter {
 
     if (enableLogger) {
       logger.info(
-          "[contentToImage] completed: ${result.length} bytes in ${stopwatch.elapsedMilliseconds}ms");
+        "[contentToImage] completed: ${result.length} bytes in ${stopwatch.elapsedMilliseconds}ms",
+      );
     }
     return Uint8List.fromList(result);
   }
@@ -284,7 +294,8 @@ class WebcontentConverter {
     final stopwatch = Stopwatch()..start();
     if (enableLogger) {
       logger.info(
-          "[contentToPDF] starting: content=${content.length} chars, savedPath=$savedPath, format=${format.toMap()}");
+        "[contentToPDF] starting: content=${content.length} chars, savedPath=$savedPath, format=${format.toMap()}",
+      );
     }
     var div = web.document.createElement('div') as web.HTMLDivElement;
     // div.setInnerHtml(content, validator: AllowAll());
@@ -304,11 +315,11 @@ class WebcontentConverter {
         "format": [format.width, format.height],
         "orientation": 'portrait',
         "dpi": "300",
-        "useCORS": "true"
+        "useCORS": "true",
       },
       "pagebreak": {
-        "mode": ['avoid-all', 'css', 'legacy']
-      }
+        "mode": ['avoid-all', 'css', 'legacy'],
+      },
     };
 
     await (html2pdf(div, opt.jsify()).toDart);
@@ -316,7 +327,8 @@ class WebcontentConverter {
     web.document.body?.children.delete(div);
     if (enableLogger) {
       logger.info(
-          "[contentToPDF] completed in ${stopwatch.elapsedMilliseconds}ms");
+        "[contentToPDF] completed in ${stopwatch.elapsedMilliseconds}ms",
+      );
     }
     return null;
   }
@@ -348,11 +360,11 @@ class WebcontentConverter {
         "format": [format.width, format.height],
         "orientation": 'portrait',
         "dpi": "300",
-        "useCORS": "true"
+        "useCORS": "true",
       },
       "pagebreak": {
-        "mode": ['avoid-all', 'css', 'legacy']
-      }
+        "mode": ['avoid-all', 'css', 'legacy'],
+      },
     };
 
     List<int> result = [];
@@ -378,47 +390,46 @@ class WebcontentConverter {
     double? width,
     double? height,
     Map<String, dynamic> args = const {},
-  }) =>
-      Builder(builder: (_) {
-        final uniqueKey = Random.secure().nextInt(10000);
-        final String viewType = 'webview-view-type-$uniqueKey';
-        // Pass parameters to the platform side.
-        final Map<String, dynamic> creationParams = <String, dynamic>{};
-        final _width = width ?? 1;
-        final _height = height ?? 1;
-        creationParams['width'] = _width;
-        creationParams['height'] = _height;
-        creationParams['content'] = content;
-        creationParams['url'] = url;
-        logger.debug(
-            "[embedWebView]: width: $_width, height: $_height, url: $url content length: ${content?.length}");
+  }) => Builder(
+    builder: (_) {
+      final uniqueKey = Random.secure().nextInt(10000);
+      final String viewType = 'webview-view-type-$uniqueKey';
+      // Pass parameters to the platform side.
+      final Map<String, dynamic> creationParams = <String, dynamic>{};
+      final _width = width ?? 1;
+      final _height = height ?? 1;
+      creationParams['width'] = _width;
+      creationParams['height'] = _height;
+      creationParams['content'] = content;
+      creationParams['url'] = url;
+      logger.debug(
+        "[embedWebView]: width: $_width, height: $_height, url: $url content length: ${content?.length}",
+      );
 
-        final iframe = web.HTMLIFrameElement()
-          ..style.width = '100%'
-          ..style.height = '100%'
-          ..style.border = 'none'
-          ..allowFullscreen = true;
+      final iframe = web.HTMLIFrameElement()
+        ..style.width = '100%'
+        ..style.height = '100%'
+        ..style.border = 'none'
+        ..allowFullscreen = true;
 
-        // Prefer inline content when available
-        if (content != null && content.isNotEmpty) {
-          iframe.srcdoc = content.toJS; // String expected; avoid toJS
-          iframe.src = 'about:blank';
-        } else {
-          iframe.src = url ?? 'about:blank';
-        }
-        ui.platformViewRegistry.registerViewFactory(
-          viewType,
-          (int _) => iframe,
-        );
+      // Prefer inline content when available
+      if (content != null && content.isNotEmpty) {
+        iframe.srcdoc = content.toJS; // String expected; avoid toJS
+        iframe.src = 'about:blank';
+      } else {
+        iframe.src = url ?? 'about:blank';
+      }
+      ui.platformViewRegistry.registerViewFactory(viewType, (int _) => iframe);
 
-        return SafeArea(
-          child: SizedBox(
-            width: _width,
-            height: height,
-            child: HtmlElementView(viewType: viewType),
-          ),
-        );
-      });
+      return SafeArea(
+        child: SizedBox(
+          width: _width,
+          height: height,
+          child: HtmlElementView(viewType: viewType),
+        ),
+      );
+    },
+  );
 
   static Future<bool> printPreview({
     String? url,
@@ -435,14 +446,17 @@ class WebcontentConverter {
           "left=100,top=100,width=800,height=800,popup=yes,_self";
       (globalContext['open'] as JSObject);
       JSObject printWindow = globalContext.callMethod(
-          'open'.toJS, [url ?? '', "mozillaWindow", windowFeatures].toJSBox);
+        'open'.toJS,
+        [url ?? '', "mozillaWindow", windowFeatures].toJSBox,
+      );
       JSObject? document = printWindow.has("document")
           ? printWindow['document'] as JSObject
           : null;
       // ref: https://developer.mozilla.org/en-US/docs/Web/API/Document
 
-      JSObject? window =
-          printWindow.has('window') ? printWindow['window'] as JSObject : null;
+      JSObject? window = printWindow.has('window')
+          ? printWindow['window'] as JSObject
+          : null;
       // ref: https://developer.mozilla.org/en-US/docs/Web/API/Window
 
       if (content != null) {
@@ -462,10 +476,10 @@ class WebcontentConverter {
         window?.callMethod('close'.toJS);
       }
 
-      return Future.value(true);
+      return true;
     } on Exception catch (e) {
       WebcontentConverter.logger.error("[method:printPreview]: $e");
-      return Future.value(false);
+      return false;
     }
   }
 }

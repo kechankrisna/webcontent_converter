@@ -12,6 +12,8 @@ void main() async {
 }
 
 class ReproScreen extends StatefulWidget {
+  const ReproScreen({super.key});
+
   @override
   State<ReproScreen> createState() => _ReproScreenState();
 }
@@ -33,10 +35,12 @@ class _ReproScreenState extends State<ReproScreen> {
         autoClose: false,
         duration: 1000,
       );
-      print("PRINTPREVIEW REPRO: SUCCESS result=$result");
+      WebcontentConverter.logger.info(
+        "PRINTPREVIEW REPRO: SUCCESS result=$result",
+      );
       setState(() => status = "printPreview returned: $result");
     } catch (e) {
-      print("PRINTPREVIEW REPRO: FAILED $e");
+      WebcontentConverter.logger.error("PRINTPREVIEW REPRO: FAILED $e");
       setState(() => status = "FAILED: $e");
     }
   }

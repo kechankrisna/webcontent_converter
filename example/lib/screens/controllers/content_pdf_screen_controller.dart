@@ -6,7 +6,6 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:webcontent_converter/webcontent_converter.dart';
-import 'package:webcontent_converter_example/services/demo.dart';
 
 class ContentPDFScreenController extends ChangeNotifier {
   int counter = 1;
@@ -32,10 +31,15 @@ class ContentPDFScreenController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> convert({required String content_file, required PaperFormat format, required PdfMargins margins}) async {
-    final defaultContent = await rootBundle.loadString("assets/${content_file}");
+  Future<void> convert({
+    required String contentFile,
+    required PaperFormat format,
+    required PdfMargins margins,
+  }) async {
+    final defaultContent = await rootBundle.loadString("assets/$contentFile");
 
-    var savedPath = "${content_file}_${DateTime.now().millisecondsSinceEpoch}.pdf";
+    var savedPath =
+        "${contentFile}_${DateTime.now().millisecondsSinceEpoch}.pdf";
     if (!kIsWeb) {
       final dir = await getApplicationDocumentsDirectory();
       savedPath = join(dir.path, savedPath);
@@ -58,10 +62,8 @@ class ContentPDFScreenController extends ChangeNotifier {
     notifyListeners();
   }
 
-  previewPDF({
-    required String content_file,
-  }) async {
-    final defaultContent = await rootBundle.loadString("assets/${content_file}");
+  Future<void> previewPDF({required String contentFile}) async {
+    final defaultContent = await rootBundle.loadString("assets/$contentFile");
     WebcontentConverter.printPreview(
       content: textEditingController.text.isNotEmpty
           ? textEditingController.text

@@ -4,11 +4,14 @@ import 'package:provider/provider.dart';
 import 'package:webcontent_converter/page.dart';
 
 import './controllers/content_pdf_screen_controller.dart';
+
 // import 'package:webcontent_converter_example/services/webview_helper.dart';
 
 class ContentToPDFScreen extends StatefulWidget {
+  const ContentToPDFScreen({super.key});
+
   @override
-  _ContentToPDFScreenState createState() => _ContentToPDFScreenState();
+  State<ContentToPDFScreen> createState() => _ContentToPDFScreenState();
 }
 
 class _ContentToPDFScreenState extends State<ContentToPDFScreen> {
@@ -44,7 +47,7 @@ class ContentPdfScreenScaffold extends StatelessWidget {
             icon: Icon(Icons.picture_as_pdf),
             onPressed: () async {
               await controller.convert(
-                content_file: "invoice.html",
+                contentFile: "invoice.html",
                 format: PaperFormat.a4,
                 margins: PdfMargins.inches(
                   top: 0.25,
@@ -60,12 +63,8 @@ class ContentPdfScreenScaffold extends StatelessWidget {
             icon: Icon(Icons.picture_as_pdf),
             onPressed: () async {
               await controller.convert(
-                content_file: "short_label.html",
-                format: PaperFormat.inches(
-                  name: "custom",
-                  width: 1,
-                  height: 1,
-                ),
+                contentFile: "short_label.html",
+                format: PaperFormat.inches(name: "custom", width: 1, height: 1),
                 margins: PdfMargins.inches(
                   top: 0.00,
                   bottom: 0.00,
@@ -80,7 +79,7 @@ class ContentPdfScreenScaffold extends StatelessWidget {
             icon: Icon(Icons.picture_as_pdf),
             onPressed: () async {
               await controller.convert(
-                content_file: "long_label.html",
+                contentFile: "long_label.html",
                 format: PaperFormat.inches(
                   name: "custom",
                   width: 1.57,
@@ -99,7 +98,7 @@ class ContentPdfScreenScaffold extends StatelessWidget {
           IconButton(
             icon: Icon(Icons.chrome_reader_mode),
             onPressed: () async {
-              await controller.previewPDF(content_file: "invoice.html");
+              await controller.previewPDF(contentFile: "invoice.html");
             },
             tooltip: "Preview PDF",
           ),

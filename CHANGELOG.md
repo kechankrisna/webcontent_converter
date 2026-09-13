@@ -1,3 +1,10 @@
+## 0.0.15
+
+- chore: verified support for Flutter 3.47.4/Dart 3.13.3. `pub get`, `flutter analyze` (0 issues), and the full unit + integration test suites pass on iOS Simulator and Android emulator; the example app also builds and boots cleanly in Chrome. `example/`'s iOS and macOS projects had their minimum deployment targets raised (iOS 13.0 → 15.0, macOS 10.15 → 12.0) by Flutter's own tooling migration, now required by current Flutter/Xcode toolchains.
+- fix: `printPreview`'s web implementation no longer wraps its `try`-block return values in `Future.value(...)` inside an already-`async` function (flagged by a lint new to the 3.47.4 analyzer; no behavior change).
+- fix(example): added the missing `flutter_lints` dev dependency so `example/analysis_options.yaml`'s lint include actually resolves (previously silently broken), then cleaned up the ~75 issues that enabling it surfaced: missing widget `key` parameters, `library_private_types_in_public_api` on every screen's `createState()`, an undeclared transitive `image` dependency, dead code from an always-false null-aware check, non-camelCase parameter names, and other style/lint fixes.
+- fix(example): the integration test's `maximumContentSize` guard case asserted a `CONTENT_TOO_LARGE` exception on every platform, but Android/Windows are the only platforms that enforce that guard (macOS/iOS don't); the assertion is now platform-conditional, matching the group's own documented intent.
+
 ## 0.0.14
 
 - feat(example): added short/long label PDF conversion sample screens, with `convert()`/`previewPDF()` now taking content file, format, and margins per call instead of alternating on a hardcoded counter.

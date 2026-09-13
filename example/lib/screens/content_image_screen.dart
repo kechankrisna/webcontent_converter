@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'controllers/content_image_screen_controller.dart';
+
 // import 'package:webcontent_converter_example/services/webview_helper.dart';
 
 class ContentToImageScreen extends StatefulWidget {
+  const ContentToImageScreen({super.key});
+
   @override
-  _ContentToImageScreenState createState() => _ContentToImageScreenState();
+  State<ContentToImageScreen> createState() => _ContentToImageScreenState();
 }
 
 class _ContentToImageScreenState extends State<ContentToImageScreen> {

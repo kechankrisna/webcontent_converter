@@ -1,9 +1,6 @@
 import 'dart:developer';
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:webcontent_converter/webcontent_converter.dart';
-import 'package:webcontent_converter_example/services/demo.dart';
 import 'package:window_manager/window_manager.dart';
 import 'route.dart';
 
@@ -19,8 +16,10 @@ void main() async {
 }
 
 class MyApp extends StatefulWidget {
+  const MyApp({super.key});
+
   @override
-  _MyAppState createState() => _MyAppState();
+  State<MyApp> createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> with WindowListener {
@@ -44,7 +43,7 @@ class _MyAppState extends State<MyApp> with WindowListener {
 
   @override
   void onWindowEvent(String eventName) {
-    log(  "onWindowEvent: $eventName");
+    log("onWindowEvent: $eventName");
     super.onWindowEvent(eventName);
   }
 
@@ -54,7 +53,7 @@ class _MyAppState extends State<MyApp> with WindowListener {
 
     /// auto close browser
     await WebcontentConverter.deinitWebcontentConverter();
-    await Future.delayed( Duration(milliseconds: 500));
+    await Future.delayed(Duration(milliseconds: 500));
     super.onWindowClose();
   }
 
