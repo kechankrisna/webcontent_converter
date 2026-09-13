@@ -96,11 +96,11 @@ void main() {
   //   - windows/pdf_image_capture_request.cpp:30,89-92 -- exact
   //     `std::lround(inches * 96)`. This is the platform the group name
   //     and original expectations below were written against.
-  //   - darwin/Classes/SwiftWebcontentConverterPlugin.swift:212-246 (iOS)
+  //   - darwin/webcontent_converter/Sources/webcontent_converter/WebcontentConverterPlugin.swift:212-246 (iOS)
   //     draws page-sized rects through `UIGraphicsImageRenderer`, which
   //     bakes in the device's screen scale (`UIScreen.main.scale`); it
   //     never reads `margins`.
-  //   - darwin/Classes/SwiftWebcontentConverterPlugin.swift:386-412
+  //   - darwin/webcontent_converter/Sources/webcontent_converter/WebcontentConverterPlugin.swift:386-412
   //     (macOS) sizes the WebView to (truncated width + margins + a fixed
   //     300pt pad) then `takeSnapshot`s it, which bakes in the display's
   //     backing scale factor. Height is whatever the page's actual,

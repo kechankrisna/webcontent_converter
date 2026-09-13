@@ -18,7 +18,7 @@ import WebKit
 /// "second call's field reassignment corrupts the first call's still-
 /// pending completion" race the queue was built to prevent, reintroduced
 /// one level down inside a single job's async chain. Retained via
-/// `SwiftWebcontentConverterPlugin.activeDelegates` for the job's lifetime
+/// `WebcontentConverterPlugin.activeDelegates` for the job's lifetime
 /// since `WKWebView.navigationDelegate` is weak.
 private final class JobNavigationDelegate: NSObject, WKNavigationDelegate {
     var onFinish: (() -> Void)?
@@ -47,7 +47,7 @@ private final class JobNavigationDelegate: NSObject, WKNavigationDelegate {
     }
 }
 
-public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
+public class WebcontentConverterPlugin: NSObject, FlutterPlugin {
     let conversionQueue = ConversionQueue(maxQueuedRequests: 32)
 
     // Strong retention for the currently in-flight job's (WKWebView,
@@ -74,7 +74,7 @@ public class SwiftWebcontentConverterPlugin: NSObject, FlutterPlugin {
             let channel = FlutterMethodChannel(
                 name: "webcontent_converter", binaryMessenger: registrar.messenger)
         #endif
-        let instance = SwiftWebcontentConverterPlugin()
+        let instance = WebcontentConverterPlugin()
         registrar.addMethodCallDelegate(instance, channel: channel)
 
         #if os(iOS)

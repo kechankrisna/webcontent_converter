@@ -17,6 +17,6 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   PathProviderPlugin.register(with: registry.registrar(forPlugin: "PathProviderPlugin"))
   PrintingPlugin.register(with: registry.registrar(forPlugin: "PrintingPlugin"))
   ScreenRetrieverMacosPlugin.register(with: registry.registrar(forPlugin: "ScreenRetrieverMacosPlugin"))
-  SwiftWebcontentConverterPlugin.register(with: registry.registrar(forPlugin: "SwiftWebcontentConverterPlugin"))
+  WebcontentConverterPlugin.register(with: registry.registrar(forPlugin: "WebcontentConverterPlugin"))
   WindowManagerPlugin.register(with: registry.registrar(forPlugin: "WindowManagerPlugin"))
 }

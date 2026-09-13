@@ -40,10 +40,10 @@ flutter:
         package: app.mylekha.webcontent_converter
         pluginClass: WebcontentConverterPlugin
       ios:
-        pluginClass: SwiftWebcontentConverterPlugin
+        pluginClass: WebcontentConverterPlugin
         sharedDarwinSource: true
       macos:
-        pluginClass: SwiftWebcontentConverterPlugin
+        pluginClass: WebcontentConverterPlugin
         sharedDarwinSource: true
       windows:
         pluginClass: WebcontentConverterPluginCApi
